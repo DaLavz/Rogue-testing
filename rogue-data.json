@@ -691,5 +691,111 @@
     "defMultiplier": 0.5,
     "damageFloorPercent": 0.1,
     "varianceRange": 0.05
-  }
+  },
+  "stationPool": [
+    {
+      "id": "guncannon",
+      "name": "Guncannon",
+      "series": "UC",
+      "cost": 1,
+      "category": "Ranged",
+      "hp": 165,
+      "maxHp": 165,
+      "atk": 26,
+      "def": 20,
+      "spd": 26,
+      "passive": {
+        "name": "Dual Cannon Support",
+        "description": "Whenever an ally uses their Special Attack, Guncannon automatically fires a free Basic Attack on the same target (no energy cost, no turn used).",
+        "type": "ally_special_followup"
+      },
+      "basic": {
+        "name": "Cannon Shell Volley",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Guncannon Barrage",
+        "description": "0.7x ATK on all 3 enemies + applies DEF Down to all for 1 turn.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      },
+      "ultimate": {
+        "name": "Full Battery Saturation",
+        "description": "0.9x ATK on all enemies + applies ATK Down and DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.9,
+        "effect": {
+          "type": "atk_def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "guntank",
+      "name": "Guntank",
+      "series": "UC",
+      "cost": 1,
+      "category": "Melee",
+      "hp": 195,
+      "maxHp": 195,
+      "atk": 24,
+      "def": 28,
+      "spd": 18,
+      "passive": {
+        "name": "Immovable Platform",
+        "description": "Cannot be affected by SPD Down. Any single hit exceeding 20% of max HP is reduced by 15%.",
+        "type": "tank_mitigation"
+      },
+      "basic": {
+        "name": "180mm Cannon Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Twin Cannon Bombardment",
+        "description": "0.65x ATK on all 3 enemies + applies DoT (Burn) to all for 1 turn.",
+        "type": "damage_dot",
+        "target": "all",
+        "multiplier": 0.65,
+        "energyCost": 4,
+        "effect": {
+          "type": "dot",
+          "value": 8,
+          "duration": 1
+        }
+      },
+      "ultimate": {
+        "name": "Guntank Fortress Mode",
+        "description": "Grants the whole party DEF Up (+30%) for 3 turns; Guntank itself gains an additional +20% DEF.",
+        "type": "team_buff",
+        "target": "self",
+        "selfBuff": {
+          "type": "def_up",
+          "value": 1.5,
+          "duration": 3
+        },
+        "teamBuff": {
+          "type": "def_up",
+          "value": 1.3,
+          "duration": 3
+        }
+      }
+    }
+  ]
 }
