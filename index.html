@@ -1332,20 +1332,20 @@ function showStation(run,zone){
   const cards=$('station-cards');cards.innerHTML='';
   $('station-bar').style.display='none';
 
-  // Offer only units that are: not currently active AND never unlocked/recruited before (any past run)
+  // Offer only from the dedicated recruitable pool (stationPool) — NEVER from DATA.playerUnits,
+  // since that array is the starter roster the player already had access to in the draft.
+  // Exclude anything the player has ever unlocked before (any past run).
   const unlockedIds=new Set(S.unlockedUnits.map(u=>u.id));
-  const notOwned=DATA.playerUnits.filter(u=>
-    !run.playerUnitIds.includes(u.id) && !unlockedIds.has(u.id)
-  );
+  const pool=(DATA.stationPool||[]).filter(u=>!unlockedIds.has(u.id));
 
   let selectedUnit=null;
 
-  if(notOwned.length===0){
+  if(pool.length===0){
     cards.innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No new units available to recruit right now. Skip ahead for a currency reward instead.</div></div>`;
   } else {
     const picks=[];const used=new Set();
-    while(picks.length<3&&picks.length<notOwned.length){
-      const cand=pick(notOwned);
+    while(picks.length<3&&picks.length<pool.length){
+      const cand=pick(pool);
       if(used.has(cand.id)) continue;
       used.add(cand.id);picks.push(cand);
     }
@@ -1397,6 +1397,15 @@ function showStation(run,zone){
 }
 
 function showSwapPicker(run,newUnit){
+  // If this unit isn't already part of the player's known roster, it's a fresh recruit —
+  // persist it the same way boss recruits are persisted, so it's saved and never re-offered.
+  if(!DATA.playerUnits.find(u=>u.id===newUnit.id)){
+    DATA.playerUnits.push(newUnit);
+  }
+  if(!S.unlockedUnits.find(u=>u.id===newUnit.id)){
+    S.unlockedUnits.push(newUnit);
+    saveGame();
+  }
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">Recruit <strong>${newUnit.name}</strong> in place of which active unit?</div></div>`;
   run.playerUnitIds.forEach((id,i)=>{
     const u=byId(id,DATA.playerUnits);if(!u) return;
