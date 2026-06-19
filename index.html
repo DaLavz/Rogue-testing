@@ -774,7 +774,7 @@ function startFloor(run){
     const base=byId(id,DATA.playerUnits);
     if(!base) return null;
     const u=clone(base);
-    u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];
+    u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];u.defeated=false;
     // carry HP between stages (default to full if not tracked yet)
     u.hp=(run.unitHp&&run.unitHp[id]!=null)?run.unitHp[id]:u.maxHp;
     if(u.hp<=0) u.hp=Math.max(1,Math.round(u.maxHp*0.25)); // safety: revive low if somehow 0 entering a stage
@@ -948,7 +948,8 @@ function buildUnitEl(u,isEnemy,C){
 }
 
 function updateUnitEl(div,u){
-  // defeated state
+  // defeated state — HP is the source of truth; clear a stale defeated flag if HP is actually positive
+  if(u.hp>0&&u.defeated) u.defeated=false;
   div.classList.toggle('defeated',u.hp<=0||u.defeated);
 
   // status icons — rebuild only this small subtree (cheap, no animation concerns here)
