@@ -1,0 +1,695 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "phase": 1
+  },
+  "zones": [
+    {
+      "id": "earth",
+      "name": "Earth Front",
+      "seriesName": "UC",
+      "flavorName": "Side 7 — Earth Front",
+      "totalFloors": 10,
+      "background": "earth",
+      "trait": {
+        "id": "zaku_squad_tactics",
+        "name": "Zaku Squad Tactics",
+        "description": "+5% ATK per other Zaku-family unit alive on the enemy side. Bonus drops when only 1 enemy remains.",
+        "affectedFamilies": [
+          "zaku"
+        ]
+      },
+      "gruntPool": [
+        "zaku_ii",
+        "gouf",
+        "dom"
+      ],
+      "acePool": [
+        "chars_zaku_ii",
+        "gaias_gouf",
+        "mquve_gyan"
+      ],
+      "bossId": "ramba_ral_gouf_custom",
+      "aceFloors": [
+        5
+      ],
+      "bossFloor": 10,
+      "fixedEvents": {
+        "8": "station"
+      }
+    }
+  ],
+  "playerUnits": [
+    {
+      "id": "rx78_2",
+      "name": "RX-78-2 Gundam",
+      "series": "UC",
+      "cost": 1,
+      "category": "Melee",
+      "hp": 175,
+      "maxHp": 175,
+      "atk": 28,
+      "def": 22,
+      "spd": 32,
+      "color": "#4a9eff",
+      "passive": {
+        "name": "Legendary Frame",
+        "description": "Basic Attacks generate +3 energy instead of +2.",
+        "type": "energy_boost",
+        "value": 1
+      },
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 3
+      },
+      "special": {
+        "name": "Gundam Hammer + Beam Saber",
+        "description": "1.7× ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Last Shooting",
+        "description": "0.85× ATK on all enemies + applies ATK Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.85,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "dynames",
+      "name": "Gundam Dynames",
+      "series": "00",
+      "cost": 1,
+      "category": "Ranged",
+      "hp": 150,
+      "maxHp": 150,
+      "atk": 30,
+      "def": 16,
+      "spd": 38,
+      "color": "#2ecc71",
+      "passive": {
+        "name": "Sniper Scope Lock",
+        "description": "Hitting the same enemy two turns in a row deals +20% bonus damage on the second hit.",
+        "type": "lock_on",
+        "value": 0.2
+      },
+      "basic": {
+        "name": "GN Sniper Rifle",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Dynames Full Burst",
+        "description": "2.0× ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.0,
+        "energyCost": 5,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Trans-Am Dynames",
+        "description": "2.4× ATK on one target + applies ATK Down and DEF Down for 3 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.4,
+        "effect": {
+          "type": "atk_def_down",
+          "value": 0.85,
+          "duration": 3
+        }
+      }
+    },
+    {
+      "id": "age1_spallow",
+      "name": "AGE-1 Spallow",
+      "series": "AGE",
+      "cost": 1,
+      "category": "Mobility",
+      "hp": 152,
+      "maxHp": 152,
+      "atk": 25,
+      "def": 15,
+      "spd": 58,
+      "color": "#e67e22",
+      "passive": {
+        "name": "Razor Shrike Evasion",
+        "description": "15% chance to dodge any incoming attack.",
+        "type": "dodge",
+        "value": 0.15
+      },
+      "basic": {
+        "name": "Shrike Blade Dash",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Spallow Razor Shrike Assault",
+        "description": "1.8× ATK on one target + applies SPD Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "AGE-1 Spallow Full Drive",
+        "description": "2.2× ATK on one target + ATK Down and SPD Down for 2 turns + Spallow gains +20% SPD for 2 turns.",
+        "type": "damage_debuff_self_buff",
+        "target": "single",
+        "multiplier": 2.2,
+        "effect": {
+          "type": "atk_spd_down",
+          "value": 0.8,
+          "duration": 2
+        },
+        "selfBuff": {
+          "type": "spd_up",
+          "value": 1.2,
+          "duration": 2
+        }
+      }
+    }
+  ],
+  "enemyUnits": [
+    {
+      "id": "zaku_ii",
+      "name": "Zaku II",
+      "fullName": "MS-06F Zaku II",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "zaku",
+      "category": "Melee",
+      "hp": 100,
+      "maxHp": 100,
+      "atk": 22,
+      "def": 12,
+      "spd": 30,
+      "color": "#4a7c3f",
+      "basic": {
+        "name": "Heat Hawk Strike",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Bazooka Barrage",
+        "description": "1.5× ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.5,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "gouf",
+      "name": "Gouf",
+      "fullName": "MS-07B Gouf",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "gouf",
+      "category": "Melee",
+      "hp": 110,
+      "maxHp": 110,
+      "atk": 24,
+      "def": 15,
+      "spd": 26,
+      "color": "#1a5276",
+      "basic": {
+        "name": "Heat Rod Lash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Finger Vulcan Burst",
+        "description": "0.6× ATK on all 3 player units + applies SPD Down to one random target for 1 turn.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.6,
+        "energyCost": 3,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 1,
+          "targetMode": "random_one"
+        }
+      }
+    },
+    {
+      "id": "dom",
+      "name": "Dom",
+      "fullName": "MS-09 Dom",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "dom",
+      "category": "Melee",
+      "hp": 130,
+      "maxHp": 130,
+      "atk": 20,
+      "def": 18,
+      "spd": 20,
+      "color": "#5d4037",
+      "basic": {
+        "name": "Giant Bazooka Slam",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Scattering Beam Gun",
+        "description": "1.3× ATK on one target + applies DoT (Burn) for 2 turns.",
+        "type": "damage_dot",
+        "target": "single",
+        "multiplier": 1.3,
+        "energyCost": 4,
+        "effect": {
+          "type": "dot",
+          "value": 10,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "chars_zaku_ii",
+      "name": "Char's Zaku II",
+      "fullName": "MS-06S Char's Zaku II",
+      "series": "UC",
+      "tier": "ace",
+      "family": "zaku",
+      "category": "Mobility",
+      "hp": 185,
+      "maxHp": 185,
+      "atk": 32,
+      "def": 14,
+      "spd": 62,
+      "color": "#cc2936",
+      "passive": {
+        "name": "The Red Comet",
+        "description": "If Char acts before all 3 player units in a round, gains +10% ATK for that round.",
+        "type": "speed_atk_bonus"
+      },
+      "basic": {
+        "name": "Triple Speed Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Bazooka Precision Shot",
+        "description": "1.8× ATK on one target, ignores 30% of target's DEF.",
+        "type": "damage_pierce",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 5,
+        "defPierce": 0.3
+      },
+      "ultimate": {
+        "name": "Red Comet Charge",
+        "description": "2.5× ATK on one target + ATK Down and SPD Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.5,
+        "effect": {
+          "type": "atk_spd_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "gaias_gouf",
+      "name": "Gaia's Gouf",
+      "fullName": "MS-07B Black Tri-Stars Gouf",
+      "series": "UC",
+      "tier": "ace",
+      "family": "gouf",
+      "category": "Melee",
+      "hp": 200,
+      "maxHp": 200,
+      "atk": 34,
+      "def": 18,
+      "spd": 44,
+      "color": "#1a1a2e",
+      "passive": {
+        "name": "Jet Stream Attack",
+        "description": "Spawns 2 Zaku II tokens on entry. If both tokens are alive when Special is used, damage increases by 20%.",
+        "type": "token_spawn",
+        "tokenId": "zaku_token",
+        "tokenCount": 2
+      },
+      "basic": {
+        "name": "Heat Rod Whip",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Tri-Star Formation Strike",
+        "description": "2.0× ATK on one target + ATK Down for 2 turns. +20% damage if both tokens alive.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.0,
+        "energyCost": 5,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Black Tri-Stars Overwhelming Force",
+        "description": "0.9× ATK on all player units + DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.9,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "mquve_gyan",
+      "name": "M'Quve's Gyan",
+      "fullName": "YMS-15 Gyan",
+      "series": "UC",
+      "tier": "ace",
+      "family": "gyan",
+      "category": "Melee",
+      "hp": 195,
+      "maxHp": 195,
+      "atk": 30,
+      "def": 22,
+      "spd": 38,
+      "color": "#7d3c98",
+      "passive": {
+        "name": "Noble Stratagem",
+        "description": "25% chance to negate incoming Special Attack damage.",
+        "type": "special_negate",
+        "chance": 0.25
+      },
+      "basic": {
+        "name": "Beam Saber Thrust",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Needle Missile Volley",
+        "description": "0.7× ATK on all player units + DoT to all for 1 turn.",
+        "type": "damage_dot",
+        "target": "all",
+        "multiplier": 0.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "dot",
+          "value": 10,
+          "duration": 1
+        }
+      },
+      "ultimate": {
+        "name": "Gyan's Final Gambit",
+        "description": "2.3× ATK on one target + ATK Down and DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.3,
+        "effect": {
+          "type": "atk_def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "ramba_ral_gouf_custom",
+      "name": "Ramba Ral's Gouf Custom",
+      "fullName": "MS-07B-3 Gouf Custom",
+      "series": "UC",
+      "tier": "boss",
+      "family": "gouf",
+      "category": "Melee",
+      "hp": 300,
+      "maxHp": 300,
+      "atk": 38,
+      "def": 22,
+      "spd": 40,
+      "recruitCost": 2,
+      "isBoss": true,
+      "passive": {
+        "name": "This is no Zaku, boy",
+        "description": "Immune to SPD Down status effect.",
+        "type": "status_immune",
+        "immuneTo": "spd_down"
+      },
+      "basic": {
+        "name": "Gatling Shield Burst",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Heat Rod Electrocution",
+        "description": "1.6× ATK on one target + DoT AND ATK Down for 2 turns.",
+        "type": "damage_debuff_dot",
+        "target": "single",
+        "multiplier": 1.6,
+        "energyCost": 5,
+        "effect": {
+          "type": "atk_down_dot",
+          "atkDownValue": 0.85,
+          "dotValue": 10,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Soldier's Pride",
+        "description": "0.9× ATK on all player units + DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.9,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "phases": [
+        {
+          "threshold": 0.5,
+          "forceSpecial": true,
+          "forceUltOnBank": true,
+          "targetMode": "highest_atk",
+          "description": "Ramba Ral's composure cracks — he fights now with desperate conviction."
+        }
+      ]
+    },
+    {
+      "id": "zaku_token",
+      "name": "Zaku Token",
+      "fullName": "Zaku II (Escort)",
+      "series": "UC",
+      "tier": "token",
+      "family": "zaku",
+      "category": "Melee",
+      "hp": 60,
+      "maxHp": 60,
+      "atk": 15,
+      "def": 8,
+      "spd": 20,
+      "color": "#4a7c3f",
+      "isToken": true,
+      "basic": {
+        "name": "Heat Hawk",
+        "description": "Basic melee hit.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "field_technician",
+      "name": "Field Technician",
+      "category": "heal_reward",
+      "rarity": "Uncommon",
+      "description": "Restores 500 HP to one unit of your choice. Reward only — never appears in the shop.",
+      "effect": {
+        "type": "heal_one",
+        "value": 500
+      }
+    },
+    {
+      "id": "repair_spray",
+      "name": "Repair Spray",
+      "category": "consumable",
+      "rarity": "Common",
+      "description": "Restores 100 HP to one unit. Can be used during combat on your turn.",
+      "effect": {
+        "type": "heal_one",
+        "value": 100
+      }
+    },
+    {
+      "id": "ms_repair_kit",
+      "name": "MS Repair Kit",
+      "category": "consumable",
+      "rarity": "Uncommon",
+      "description": "Restores 250 HP to one unit. Can be used during combat on your turn.",
+      "effect": {
+        "type": "heal_one",
+        "value": 250
+      }
+    },
+    {
+      "id": "gn_condenser",
+      "name": "GN Condenser",
+      "category": "consumable",
+      "rarity": "Common",
+      "description": "Instantly fills the shared energy pool to max (8).",
+      "effect": {
+        "type": "fill_energy"
+      }
+    },
+    {
+      "id": "newtype_gene",
+      "name": "Newtype Gene",
+      "category": "run_changer",
+      "rarity": "Legendary",
+      "description": "Enables the Talk option on all boss fights from turn 1. Lost if your run ends.",
+      "effect": {
+        "type": "enable_talk"
+      }
+    },
+    {
+      "id": "gmp_common",
+      "name": "⬡ GMP",
+      "category": "currency",
+      "rarity": "Common",
+      "description": "Standard battlefield currency. Worth 50G.",
+      "effect": {
+        "type": "currency",
+        "value": 50
+      }
+    },
+    {
+      "id": "rs_ore",
+      "name": "⬡ RS Ore",
+      "category": "currency",
+      "rarity": "Uncommon",
+      "description": "Resource Satellite Ore. Worth 150G.",
+      "effect": {
+        "type": "currency",
+        "value": 150
+      }
+    },
+    {
+      "id": "luna_titanium_coating",
+      "name": "Luna Titanium Coating",
+      "category": "passive_boost",
+      "rarity": "Common",
+      "description": "Team +10% DEF for 5 floors.",
+      "effect": {
+        "type": "team_def_up",
+        "value": 1.1,
+        "duration_floors": 5
+      }
+    },
+    {
+      "id": "weapon_calibration",
+      "name": "Weapon Calibration",
+      "category": "passive_boost",
+      "rarity": "Common",
+      "description": "Team +10% ATK for 5 floors.",
+      "effect": {
+        "type": "team_atk_up",
+        "value": 1.1,
+        "duration_floors": 5
+      }
+    },
+    {
+      "id": "thruster_overclocking",
+      "name": "Thruster Overclocking",
+      "category": "passive_boost",
+      "rarity": "Common",
+      "description": "Team +10% SPD for 5 floors.",
+      "effect": {
+        "type": "team_spd_up",
+        "value": 1.1,
+        "duration_floors": 5
+      }
+    }
+  ],
+  "rpsChart": {
+    "Melee": {
+      "advantage": "Mobility",
+      "disadvantage": "Ranged"
+    },
+    "Ranged": {
+      "advantage": "Melee",
+      "disadvantage": "Mobility"
+    },
+    "Mobility": {
+      "advantage": "Ranged",
+      "disadvantage": "Melee"
+    },
+    "advantageMultiplier": 1.5,
+    "disadvantageMultiplier": 0.67
+  },
+  "combatConfig": {
+    "energyMax": 8,
+    "energyPerBasic": 2,
+    "ultGaugeMax": 100,
+    "ultGaugePerTurn": 10,
+    "ultGaugePerCrit": 25,
+    "critMultiplier": 1.5,
+    "defMultiplier": 0.5,
+    "damageFloorPercent": 0.1,
+    "varianceRange": 0.05
+  }
+}
