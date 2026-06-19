@@ -93,8 +93,8 @@ button:active{transform:scale(0.97)}
 
 .turn-order-strip{display:flex;gap:.25rem;padding:.3rem .5rem;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
 .turn-order-strip::-webkit-scrollbar{display:none}
-.turn-pip{min-width:48px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.68rem;color:rgba(255,255,255,.65);flex-shrink:0;overflow:hidden;padding:0 4px}
-.turn-pip.current{border-color:#fff;background:rgba(255,255,255,.12);color:#fff;font-weight:bold}
+.turn-pip{min-width:48px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.68rem;color:rgba(255,255,255,.65);flex-shrink:0;overflow:hidden;padding:0 4px;transition:all .2s ease}
+.turn-pip.current{min-width:64px;height:30px;border-color:#fff;border-width:2px;background:rgba(255,255,255,.18);color:#fff;font-weight:bold;font-size:.78rem;box-shadow:0 0 8px rgba(255,255,255,.3);transform:translateY(-2px)}
 .turn-pip.player-pip{border-color:rgba(74,158,255,.45);color:#8dc8ff}
 .turn-pip.enemy-pip{border-color:rgba(204,41,54,.45);color:#ff8d8d}
 
@@ -279,8 +279,9 @@ button:active{transform:scale(0.97)}
   <div class="title-main">Rogue<br>Gundam</div>
   <div class="title-sub">— PHASE 1 PROTOTYPE —</div>
   <div class="title-buttons">
-    <button class="btn-primary" id="btn-new-run">New Run</button>
+    <button class="btn-primary" id="btn-new-run" disabled>New Run</button>
     <button class="btn-secondary" id="btn-how">How to Play</button>
+    <div id="title-status" style="text-align:center;font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted);margin-top:.4rem">Loading data…</div>
   </div>
 </div>
 
@@ -401,10 +402,43 @@ button:active{transform:scale(0.97)}
 
 <script>
 /* ── EMBEDDED DATA ── */
-const DATA = {"meta":{"version":"0.1.0","phase":1},"zones":[{"id":"earth","name":"Earth Front","seriesName":"UC","flavorName":"Side 7 — Earth Front","totalFloors":10,"background":"earth","trait":{"id":"zaku_squad_tactics","name":"Zaku Squad Tactics","description":"+5% ATK per other Zaku-family unit alive on the enemy side. Bonus drops when only 1 enemy remains.","affectedFamilies":["zaku"]},"gruntPool":["zaku_ii","gouf","dom"],"acePool":["chars_zaku_ii","gaias_gouf","mquve_gyan"],"bossId":"ramba_ral_gouf_custom","aceFloors":[5],"bossFloor":10,"fixedEvents":{"8":"station"}}],"playerUnits":[{"id":"rx78_2","name":"RX-78-2 Gundam","series":"UC","cost":1,"category":"Melee","hp":175,"maxHp":175,"atk":28,"def":22,"spd":32,"color":"#4a9eff","passive":{"name":"Legendary Frame","description":"Basic Attacks generate +3 energy instead of +2.","type":"energy_boost","value":1},"basic":{"name":"Beam Rifle Shot","description":"Standard ranged hit on a single target.","type":"damage","target":"single","multiplier":1.0,"energyGain":3},"special":{"name":"Gundam Hammer + Beam Saber","description":"1.7× ATK on one target + applies DEF Down for 2 turns.","type":"damage_debuff","target":"single","multiplier":1.7,"energyCost":4,"effect":{"type":"def_down","value":0.85,"duration":2}},"ultimate":{"name":"Last Shooting","description":"0.85× ATK on all enemies + applies ATK Down to all for 2 turns.","type":"damage_debuff","target":"all","multiplier":0.85,"effect":{"type":"atk_down","value":0.85,"duration":2}}},{"id":"dynames","name":"Gundam Dynames","series":"00","cost":1,"category":"Ranged","hp":150,"maxHp":150,"atk":30,"def":16,"spd":38,"color":"#2ecc71","passive":{"name":"Sniper Scope Lock","description":"Hitting the same enemy two turns in a row deals +20% bonus damage on the second hit.","type":"lock_on","value":0.20},"basic":{"name":"GN Sniper Rifle","description":"Standard ranged hit on a single target.","type":"damage","target":"single","multiplier":1.0,"energyGain":2},"special":{"name":"Dynames Full Burst","description":"2.0× ATK on one target + applies DEF Down for 2 turns.","type":"damage_debuff","target":"single","multiplier":2.0,"energyCost":5,"effect":{"type":"def_down","value":0.85,"duration":2}},"ultimate":{"name":"Trans-Am Dynames","description":"2.4× ATK on one target + applies ATK Down and DEF Down for 3 turns.","type":"damage_debuff","target":"single","multiplier":2.4,"effect":{"type":"atk_def_down","value":0.85,"duration":3}}},{"id":"age1_spallow","name":"AGE-1 Spallow","series":"AGE","cost":1,"category":"Mobility","hp":152,"maxHp":152,"atk":25,"def":15,"spd":58,"color":"#e67e22","passive":{"name":"Razor Shrike Evasion","description":"15% chance to dodge any incoming attack.","type":"dodge","value":0.15},"basic":{"name":"Shrike Blade Dash","description":"Standard mobility hit on a single target.","type":"damage","target":"single","multiplier":1.0,"energyGain":2},"special":{"name":"Spallow Razor Shrike Assault","description":"1.8× ATK on one target + applies SPD Down for 2 turns.","type":"damage_debuff","target":"single","multiplier":1.8,"energyCost":4,"effect":{"type":"spd_down","value":0.8,"duration":2}},"ultimate":{"name":"AGE-1 Spallow Full Drive","description":"2.2× ATK on one target + ATK Down and SPD Down for 2 turns + Spallow gains +20% SPD for 2 turns.","type":"damage_debuff_self_buff","target":"single","multiplier":2.2,"effect":{"type":"atk_spd_down","value":0.8,"duration":2},"selfBuff":{"type":"spd_up","value":1.2,"duration":2}}}],"enemyUnits":[{"id":"zaku_ii","name":"Zaku II","fullName":"MS-06F Zaku II","series":"UC","tier":"grunt","family":"zaku","category":"Melee","hp":100,"maxHp":100,"atk":22,"def":12,"spd":30,"color":"#4a7c3f","basic":{"name":"Heat Hawk Strike","description":"Standard melee hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Bazooka Barrage","description":"1.5× ATK on one target + applies DEF Down for 2 turns.","type":"damage_debuff","target":"single","multiplier":1.5,"energyCost":4,"effect":{"type":"def_down","value":0.85,"duration":2}}},{"id":"gouf","name":"Gouf","fullName":"MS-07B Gouf","series":"UC","tier":"grunt","family":"gouf","category":"Melee","hp":110,"maxHp":110,"atk":24,"def":15,"spd":26,"color":"#1a5276","basic":{"name":"Heat Rod Lash","description":"Standard melee hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Finger Vulcan Burst","description":"0.6× ATK on all 3 player units + applies SPD Down to one random target for 1 turn.","type":"damage_debuff","target":"all","multiplier":0.6,"energyCost":3,"effect":{"type":"spd_down","value":0.8,"duration":1,"targetMode":"random_one"}}},{"id":"dom","name":"Dom","fullName":"MS-09 Dom","series":"UC","tier":"grunt","family":"dom","category":"Melee","hp":130,"maxHp":130,"atk":20,"def":18,"spd":20,"color":"#5d4037","basic":{"name":"Giant Bazooka Slam","description":"Standard melee hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Scattering Beam Gun","description":"1.3× ATK on one target + applies DoT (Burn) for 2 turns.","type":"damage_dot","target":"single","multiplier":1.3,"energyCost":4,"effect":{"type":"dot","value":10,"duration":2}}},{"id":"chars_zaku_ii","name":"Char's Zaku II","fullName":"MS-06S Char's Zaku II","series":"UC","tier":"ace","family":"zaku","category":"Mobility","hp":185,"maxHp":185,"atk":32,"def":14,"spd":62,"color":"#cc2936","passive":{"name":"The Red Comet","description":"If Char acts before all 3 player units in a round, gains +10% ATK for that round.","type":"speed_atk_bonus"},"basic":{"name":"Triple Speed Slash","description":"Standard melee hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Bazooka Precision Shot","description":"1.8× ATK on one target, ignores 30% of target's DEF.","type":"damage_pierce","target":"single","multiplier":1.8,"energyCost":5,"defPierce":0.3},"ultimate":{"name":"Red Comet Charge","description":"2.5× ATK on one target + ATK Down and SPD Down for 2 turns.","type":"damage_debuff","target":"single","multiplier":2.5,"effect":{"type":"atk_spd_down","value":0.85,"duration":2}}},{"id":"gaias_gouf","name":"Gaia's Gouf","fullName":"MS-07B Black Tri-Stars Gouf","series":"UC","tier":"ace","family":"gouf","category":"Melee","hp":200,"maxHp":200,"atk":34,"def":18,"spd":44,"color":"#1a1a2e","passive":{"name":"Jet Stream Attack","description":"Spawns 2 Zaku II tokens on entry. If both tokens are alive when Special is used, damage increases by 20%.","type":"token_spawn","tokenId":"zaku_token","tokenCount":2},"basic":{"name":"Heat Rod Whip","description":"Standard melee hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Tri-Star Formation Strike","description":"2.0× ATK on one target + ATK Down for 2 turns. +20% damage if both tokens alive.","type":"damage_debuff","target":"single","multiplier":2.0,"energyCost":5,"effect":{"type":"atk_down","value":0.85,"duration":2}},"ultimate":{"name":"Black Tri-Stars Overwhelming Force","description":"0.9× ATK on all player units + DEF Down to all for 2 turns.","type":"damage_debuff","target":"all","multiplier":0.9,"effect":{"type":"def_down","value":0.85,"duration":2}}},{"id":"mquve_gyan","name":"M'Quve's Gyan","fullName":"YMS-15 Gyan","series":"UC","tier":"ace","family":"gyan","category":"Melee","hp":195,"maxHp":195,"atk":30,"def":22,"spd":38,"color":"#7d3c98","passive":{"name":"Noble Stratagem","description":"25% chance to negate incoming Special Attack damage.","type":"special_negate","chance":0.25},"basic":{"name":"Beam Saber Thrust","description":"Standard melee hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Needle Missile Volley","description":"0.7× ATK on all player units + DoT to all for 1 turn.","type":"damage_dot","target":"all","multiplier":0.7,"energyCost":4,"effect":{"type":"dot","value":10,"duration":1}},"ultimate":{"name":"Gyan's Final Gambit","description":"2.3× ATK on one target + ATK Down and DEF Down for 2 turns.","type":"damage_debuff","target":"single","multiplier":2.3,"effect":{"type":"atk_def_down","value":0.85,"duration":2}}},{"id":"ramba_ral_gouf_custom","name":"Ramba Ral's Gouf Custom","fullName":"MS-07B-3 Gouf Custom","series":"UC","tier":"boss","family":"gouf","category":"Melee","hp":300,"maxHp":300,"atk":38,"def":22,"spd":40,"color":"#1a5276","isBoss":true,"passive":{"name":"This is no Zaku, boy","description":"Immune to SPD Down status effect.","type":"status_immune","immuneTo":"spd_down"},"basic":{"name":"Gatling Shield Burst","description":"Standard hit on a single target.","type":"damage","target":"single","multiplier":1.0},"special":{"name":"Heat Rod Electrocution","description":"1.6× ATK on one target + DoT AND ATK Down for 2 turns.","type":"damage_debuff_dot","target":"single","multiplier":1.6,"energyCost":5,"effect":{"type":"atk_down_dot","atkDownValue":0.85,"dotValue":10,"duration":2}},"ultimate":{"name":"Soldier's Pride","description":"0.9× ATK on all player units + DEF Down to all for 2 turns.","type":"damage_debuff","target":"all","multiplier":0.9,"effect":{"type":"def_down","value":0.85,"duration":2}},"phases":[{"threshold":0.5,"forceSpecial":true,"forceUltOnBank":true,"targetMode":"highest_atk","description":"Ramba Ral's composure cracks — he fights now with desperate conviction."}]},{"id":"zaku_token","name":"Zaku Token","fullName":"Zaku II (Escort)","series":"UC","tier":"token","family":"zaku","category":"Melee","hp":60,"maxHp":60,"atk":15,"def":8,"spd":20,"color":"#4a7c3f","isToken":true,"basic":{"name":"Heat Hawk","description":"Basic melee hit.","type":"damage","target":"single","multiplier":1.0}}],"items":[{"id":"field_technician","name":"Field Technician","category":"heal_reward","rarity":"Uncommon","description":"Restores 500 HP to one unit of your choice. Reward only — never appears in the shop.","effect":{"type":"heal_one","value":500}},{"id":"repair_spray","name":"Repair Spray","category":"consumable","rarity":"Common","description":"Restores 100 HP to one unit. Can be used during combat on your turn.","effect":{"type":"heal_one","value":100}},{"id":"ms_repair_kit","name":"MS Repair Kit","category":"consumable","rarity":"Uncommon","description":"Restores 250 HP to one unit. Can be used during combat on your turn.","effect":{"type":"heal_one","value":250}},{"id":"gn_condenser","name":"GN Condenser","category":"consumable","rarity":"Common","description":"Instantly fills the shared energy pool to max (8).","effect":{"type":"fill_energy"}},{"id":"newtype_gene","name":"Newtype Gene","category":"run_changer","rarity":"Legendary","description":"Enables the Talk option on all boss fights from turn 1. Lost if your run ends.","effect":{"type":"enable_talk"}},{"id":"gmp_common","name":"⬡ GMP","category":"currency","rarity":"Common","description":"Standard battlefield currency. Worth 50G.","effect":{"type":"currency","value":50}},{"id":"rs_ore","name":"⬡ RS Ore","category":"currency","rarity":"Uncommon","description":"Resource Satellite Ore. Worth 150G.","effect":{"type":"currency","value":150}},{"id":"luna_titanium_coating","name":"Luna Titanium Coating","category":"passive_boost","rarity":"Common","description":"Team +10% DEF for 5 floors.","effect":{"type":"team_def_up","value":1.10,"duration_floors":5}},{"id":"weapon_calibration","name":"Weapon Calibration","category":"passive_boost","rarity":"Common","description":"Team +10% ATK for 5 floors.","effect":{"type":"team_atk_up","value":1.10,"duration_floors":5}},{"id":"thruster_overclocking","name":"Thruster Overclocking","category":"passive_boost","rarity":"Common","description":"Team +10% SPD for 5 floors.","effect":{"type":"team_spd_up","value":1.10,"duration_floors":5}}],"rpsChart":{"Melee":{"advantage":"Mobility","disadvantage":"Ranged"},"Ranged":{"advantage":"Melee","disadvantage":"Mobility"},"Mobility":{"advantage":"Ranged","disadvantage":"Melee"},"advantageMultiplier":1.5,"disadvantageMultiplier":0.67},"combatConfig":{"energyMax":8,"energyPerBasic":2,"ultGaugeMax":100,"ultGaugePerTurn":10,"ultGaugePerCrit":25,"critMultiplier":1.5,"defMultiplier":0.5,"damageFloorPercent":0.1,"varianceRange":0.05}};
+/* ── DATA — loaded from rogue-data.json (see loadData() at the bottom) ── */
+let DATA = null;
 
 /* ── STATE ── */
-const S = { run:null, combat:null, draft:{slots:[null,null,null]}, inventory:[], currency:0, activePassives:[] };
+const S = { run:null, combat:null, draft:{slots:[null,null,null]}, inventory:[], currency:0, activePassives:[], unlockedUnits:[], persistentCurrency:0 };
+
+/* ── PERSISTENCE (localStorage save) ── */
+const SAVE_KEY='rogueGundamSave_v1';
+function saveGame(){
+  try{
+    const data={
+      unlockedUnits:S.unlockedUnits, // array of custom unit objects ever recruited
+      persistentCurrency:S.persistentCurrency
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(data));
+  }catch(e){ console.warn('Save failed',e); }
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const data=JSON.parse(raw);
+    S.unlockedUnits=data.unlockedUnits||[];
+    S.persistentCurrency=data.persistentCurrency||0;
+    // merge any previously-unlocked recruited units into DATA.playerUnits so they're selectable
+    for(const u of S.unlockedUnits){
+      if(!DATA.playerUnits.find(p=>p.id===u.id)) DATA.playerUnits.push(u);
+    }
+  }catch(e){ console.warn('Load failed',e); }
+}
+function isUnitUnlocked(unitId){
+  return S.unlockedUnits.some(u=>u.id===unitId)||S.unlockedUnits.some(u=>u.recruitedFrom===unitId);
+}
+function hasRecruited(baseEnemyId){
+  // has the player EVER recruited a unit derived from this enemy/boss id (across all saves)
+  return S.unlockedUnits.some(u=>u.recruitedFrom===baseEnemyId);
+}
 
 /* ── UTILS ── */
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -413,7 +447,9 @@ const randF=(a,b)=>Math.random()*(b-a)+a;
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const clone=o=>JSON.parse(JSON.stringify(o));
 const byId=(id,arr)=>arr.find(u=>u.id===id)||null;
-const catLabel=(cat)=>({Melee:'M',Ranged:'R',Mobility:'Mo'}[cat]||cat?.[0]||'?');
+const catLabel=(cat)=>({Melee:'M',Ranged:'R',Mobility:'A'}[cat]||cat?.[0]||'?');
+const catDisplayName=(cat)=>({Melee:'Melee',Ranged:'Ranged',Mobility:'Agility'}[cat]||cat);
+const catColor=(cat)=>({Melee:'#2d8a3e',Ranged:'#3a7bd5',Mobility:'#e08a2e'}[cat]||'#5a5a7a');
 const $=id=>document.getElementById(id);
 
 /* ── SCREENS ── */
@@ -731,15 +767,23 @@ function onWin(C){
   if(C.recruitedUnit){
     const recruited=C.recruitedUnit;
     setTimeout(()=>{
-      // Convert the recruited boss/enemy into a usable player-style unit (best-effort for Phase 1)
-      const asPlayer={
-        id:'recruit_'+recruited.baseId+'_'+Math.random().toString(36).substr(2,5),
-        name:recruited.name,series:recruited.series,cost:4,category:recruited.category,
-        hp:Math.round(recruited.maxHp*0.88),maxHp:Math.round(recruited.maxHp*0.88),
-        atk:Math.round(recruited.atk*0.9),def:Math.round(recruited.def*0.9),spd:Math.round(recruited.spd*0.9),
-        color:recruited.color,passive:recruited.passive,basic:recruited.basic,special:recruited.special,ultimate:recruited.ultimate
-      };
-      DATA.playerUnits.push(asPlayer); // make it selectable for swap
+      // Already recruited this exact boss before? Reuse the existing unlocked unit instead of creating a duplicate.
+      let asPlayer=S.unlockedUnits.find(u=>u.recruitedFrom===recruited.baseId);
+      if(!asPlayer){
+        // Boss recruit cost by zone tier (Earth/early zones = cost 2, matches design: Ramba Ral's Gouf Custom = 2)
+        const recruitCost=recruited.recruitCost!=null?recruited.recruitCost:2;
+        asPlayer={
+          id:'recruit_'+recruited.baseId+'_'+Math.random().toString(36).substr(2,5),
+          recruitedFrom:recruited.baseId,
+          name:recruited.name,series:recruited.series,cost:recruitCost,category:recruited.category,
+          hp:Math.round(recruited.maxHp*0.88),maxHp:Math.round(recruited.maxHp*0.88),
+          atk:Math.round(recruited.atk*0.9),def:Math.round(recruited.def*0.9),spd:Math.round(recruited.spd*0.9),
+          passive:recruited.passive,basic:recruited.basic,special:recruited.special,ultimate:recruited.ultimate
+        };
+        S.unlockedUnits.push(asPlayer);
+        DATA.playerUnits.push(asPlayer);
+        saveGame();
+      }
       showSwapPicker(S.run,asPlayer);
     },700);
     return;
@@ -915,8 +959,8 @@ function buildUnitEl(u,isEnemy,C){
   div.id='rect-'+u.id;
   div.dataset.uid=u.id;div.dataset.enemy=isEnemy;
   if(u.hp<=0||u.defeated) div.classList.add('defeated');
-  div.style.background=u.color||'#2a2a4a';
-  div.style.borderColor=(u.color||'#fff')+'66';
+  div.style.background=catColor(u.category);
+  div.style.borderColor=catColor(u.category)+'66';
 
   const si=document.createElement('div');si.className='unit-status-icons';
   div.appendChild(si);
@@ -948,8 +992,9 @@ function buildUnitEl(u,isEnemy,C){
 }
 
 function updateUnitEl(div,u){
-  // defeated state — HP is the source of truth; clear a stale defeated flag if HP is actually positive
-  if(u.hp>0&&u.defeated) u.defeated=false;
+  // defeated state — HP is the source of truth for death, EXCEPT a unit recruited-alive (Talk success)
+  // is intentionally defeated=true while HP>0 (removed from the fight, not killed) — never self-heal that case.
+  if(u.hp>0&&u.defeated&&!u.recruitedAlive) u.defeated=false;
   div.classList.toggle('defeated',u.hp<=0||u.defeated);
 
   // status icons — rebuild only this small subtree (cheap, no animation concerns here)
@@ -977,6 +1022,9 @@ function updateUnitEl(div,u){
 function setActive(uid){
   document.querySelectorAll('.unit-rect').forEach(r=>r.classList.remove('active-turn'));
   const el=$('rect-'+uid);if(el) el.classList.add('active-turn');
+  document.querySelectorAll('.turn-pip').forEach(p=>p.classList.remove('current'));
+  const pip=document.querySelector(`.turn-pip[data-uid="${uid}"]`);
+  if(pip) pip.classList.add('current');
 }
 
 function renderTurnStrip(C){
@@ -986,6 +1034,7 @@ function renderTurnStrip(C){
     const p=document.createElement('div');
     const isP=C.playerUnits.includes(u);
     p.className='turn-pip '+(isP?'player-pip':'enemy-pip');
+    p.dataset.uid=id;
     if(id===C.activeUnit?.id) p.classList.add('current');
     p.textContent=u.name.split(' ')[0].substring(0,5);
     strip.appendChild(p);
@@ -1021,7 +1070,9 @@ function updateActionBar(u,C){
   const ub=$('btn-ult');ub.disabled=C.playerUlt<100;
   ub.className='action-btn btn-ult'+(C.playerUlt>=100?' ready':'');
   // talk button
-  const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss;
+  const boss=C.enemyUnits.find(e=>e.isBoss);
+  const alreadyRecruited=boss&&hasRecruited(boss.baseId);
+  const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss&&!alreadyRecruited;
   let tb=$('btn-talk');
   if(hasTalk&&!tb){
     tb=document.createElement('button');tb.id='btn-talk';tb.className='action-btn btn-talk';
@@ -1087,15 +1138,15 @@ $('btn-rps-info').addEventListener('click',showRpsInfo);
 function showRpsInfo(){
   openOverlay('Category Matchups',`
     <div class="overlay-section"><div class="overlay-value" style="line-height:1.8">
-      <span style="color:#ff9933">⚔ Melee</span> beats <span style="color:#b87fff">✈ Mobility</span><br>
-      <span style="color:#b87fff">✈ Mobility</span> beats <span style="color:#4a9eff">◎ Ranged</span><br>
-      <span style="color:#4a9eff">◎ Ranged</span> beats <span style="color:#ff9933">⚔ Melee</span>
+      <span style="color:${catColor('Melee')}">⚔ Melee</span> beats <span style="color:${catColor('Mobility')}">✈ Agility</span><br>
+      <span style="color:${catColor('Mobility')}">✈ Agility</span> beats <span style="color:${catColor('Ranged')}">◎ Ranged</span><br>
+      <span style="color:${catColor('Ranged')}">◎ Ranged</span> beats <span style="color:${catColor('Melee')}">⚔ Melee</span>
     </div></div>
     <div class="overlay-section"><div class="overlay-label">Effect</div>
       <div class="overlay-value">Advantage: ×1.5 damage<br>Disadvantage: ×0.67 damage</div>
     </div>
     <div class="overlay-section"><div class="overlay-label">Legend</div>
-      <div class="overlay-value">M = Melee &nbsp; R = Ranged &nbsp; Mo = Mobility</div>
+      <div class="overlay-value">M = Melee &nbsp; R = Ranged &nbsp; A = Agility</div>
     </div>
   `);
 }
@@ -1124,6 +1175,7 @@ function doTalk(C){
 
   if(success){
     boss.defeated=true; // remove from the fight without a kill
+    boss.recruitedAlive=true; // distinguishes "recruited, HP still >0" from a real defeat — never auto-cleared
     log(`<span class="log-heal">${boss.name} stands down and joins your hangar.</span>`);
     renderField(C);
     C.recruitedUnit=boss; // flag for onWin to grant the unit
@@ -1149,10 +1201,10 @@ function hitFX(uid,isPlayer,category,isCrit,dmg){
   pop.textContent=(isCrit?'★ ':'')+dmg;
   el.appendChild(pop);setTimeout(()=>pop.remove(),900);
   const sc=$('sparks-'+uid);if(!sc) return;
-  // Spark palette by attacker category: Ranged=blue/white "bullet", Melee=orange/red "impact", Mobility=purple/white "slash"
-  let cols=['#ff9933','#ffcc00','#ff4444']; // melee default
-  if(category==='Ranged') cols=['#4a9eff','#8dc8ff','#ffffff'];
-  else if(category==='Mobility') cols=['#b87fff','#d4a8ff','#ffffff'];
+  // Spark palette by attacker category, matching the unit-square colors: Melee=green "impact", Ranged=blue "bullet", Agility(Mobility)=orange "slash"
+  let cols=['#2d8a3e','#4ade6a','#a8ffb8']; // melee default (green)
+  if(category==='Ranged') cols=['#3a7bd5','#8dc8ff','#ffffff'];
+  else if(category==='Mobility') cols=['#e08a2e','#ffc06a','#ffffff'];
   const sparkCount=isCrit?9:5;
   for(let i=0;i<sparkCount;i++){
     const s=document.createElement('div');s.className='spark';
@@ -1278,42 +1330,65 @@ function advanceAfterReward(){
 function showStation(run,zone){
   show('station');
   const cards=$('station-cards');cards.innerHTML='';
-  // Offer only units the player doesn't currently have active — never offer duplicates
-  const notOwned=DATA.playerUnits.filter(u=>!run.playerUnitIds.includes(u.id));
-  if(notOwned.length===0){
-    cards.innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No new units available to recruit yet — Phase 1 only includes the 3 starters, and you already have all of them active. This station will offer real choices once more recruitable units are added.</div></div>`;
-    $('station-bar').style.display='block';
-    $('btn-station-ok').textContent='Continue';
-    $('btn-station-ok').onclick=()=>advanceAfterReward();
-    return;
-  }
   $('station-bar').style.display='none';
-  const picks=[];const used=new Set();
-  while(picks.length<3&&picks.length<notOwned.length){
-    const cand=pick(notOwned);
-    if(used.has(cand.id)) continue;
-    used.add(cand.id);picks.push(cand);
-  }
+
+  // Offer only units that are: not currently active AND never unlocked/recruited before (any past run)
+  const unlockedIds=new Set(S.unlockedUnits.map(u=>u.id));
+  const notOwned=DATA.playerUnits.filter(u=>
+    !run.playerUnitIds.includes(u.id) && !unlockedIds.has(u.id)
+  );
+
   let selectedUnit=null;
-  picks.forEach(u=>{
-    const card=document.createElement('div');
-    card.className='reward-card rarity-Uncommon';
-    card.innerHTML=`
-      <div class="reward-card-tile">
-        <div>
-          <div class="reward-card-name">${u.name}</div>
-          <div class="reward-card-sub">${u.series} · ${u.category} · Cost ${u.cost}</div>
+
+  if(notOwned.length===0){
+    cards.innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No new units available to recruit right now. Skip ahead for a currency reward instead.</div></div>`;
+  } else {
+    const picks=[];const used=new Set();
+    while(picks.length<3&&picks.length<notOwned.length){
+      const cand=pick(notOwned);
+      if(used.has(cand.id)) continue;
+      used.add(cand.id);picks.push(cand);
+    }
+    picks.forEach(u=>{
+      const card=document.createElement('div');
+      card.className='reward-card rarity-Uncommon';
+      card.innerHTML=`
+        <div class="reward-card-tile">
+          <div>
+            <div class="reward-card-name">${u.name}</div>
+            <div class="reward-card-sub">${u.series} · ${catDisplayName(u.category)} · Cost ${u.cost}</div>
+          </div>
         </div>
-      </div>
-      <div class="reward-card-desc">HP ${u.maxHp} · ATK ${u.atk} · DEF ${u.def} · SPD ${u.spd}<br>${u.passive?.description||''}</div>`;
-    card.addEventListener('click',()=>{
-      cards.querySelectorAll('.reward-card').forEach(c=>c.classList.remove('selected'));
-      card.classList.add('selected');
-      selectedUnit=u;
-      $('station-bar').style.display='block';
+        <div class="reward-card-desc">HP ${u.maxHp} · ATK ${u.atk} · DEF ${u.def} · SPD ${u.spd}<br>${u.passive?.description||''}</div>`;
+      card.addEventListener('click',()=>{
+        cards.querySelectorAll('.reward-card').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedUnit=u;
+        $('station-bar').style.display='flex';
+        $('btn-station-ok').style.display='inline-block';
+      });
+      cards.appendChild(card);
     });
-    cards.appendChild(card);
+  }
+
+  // Skip option — always available, grants currency, never pulls from storage/forces a swap
+  const skipCard=document.createElement('div');
+  skipCard.className='reward-card rarity-Common';
+  skipCard.innerHTML=`
+    <div class="reward-card-tile">
+      <div>
+        <div class="reward-card-name">Skip — Take Payment</div>
+        <div class="reward-card-sub">No recruit · Receive ⬡ 200 G instead</div>
+      </div>
+    </div>`;
+  skipCard.addEventListener('click',()=>{
+    S.currency+=200;
+    advanceAfterReward();
   });
+  cards.appendChild(skipCard);
+
+  $('station-bar').style.display='flex';
+  $('btn-station-ok').style.display=selectedUnit?'inline-block':'none';
   $('btn-station-ok').textContent='Confirm Recruit';
   $('btn-station-ok').onclick=()=>{
     if(!selectedUnit) return;
@@ -1393,7 +1468,7 @@ $('overlay-bg').addEventListener('click',e=>{if(e.target===$('overlay-bg')) clos
 function showUnitInfo(u,isEnemy,C){
   const ae=Math.round(u.atk*(u.atkMod||1)),de=Math.round(u.def*(u.defMod||1)),se=Math.round(u.spd*(u.spdMod||1));
   let h=`<div class="overlay-section"><div class="overlay-label">Series · Type · Tier</div>
-    <div class="overlay-value">${u.series||'—'} · ${u.category} · ${u.tier||'Player'}</div></div>
+    <div class="overlay-value">${u.series||'—'} · ${catDisplayName(u.category)} · ${u.tier||'Player'}</div></div>
     <div class="overlay-section"><div class="stat-grid">
       <div class="stat-item"><div class="stat-name">HP</div><div class="stat-val">${u.hp}/${u.maxHp}</div></div>
       <div class="stat-item"><div class="stat-name">ATK</div><div class="stat-val">${ae}${u.atkMod!==1?' *':''}</div></div>
@@ -1507,9 +1582,9 @@ function initDraft(){
   DATA.playerUnits.forEach(u=>{
     const card=document.createElement('div');card.className='unit-card';card.dataset.uid=u.id;
     const icon=document.createElement('div');icon.className='unit-card-icon';
-    icon.style.background=u.color||'#2a2a4a';icon.textContent=u.category[0];
+    icon.style.background=catColor(u.category);icon.textContent=catLabel(u.category);
     const info=document.createElement('div');info.className='unit-card-info';
-    info.innerHTML=`<div class="unit-card-name">${u.name}</div><div class="unit-card-meta">${u.series} · ${u.category} · HP ${u.maxHp} ATK ${u.atk} SPD ${u.spd}</div>`;
+    info.innerHTML=`<div class="unit-card-name">${u.name}</div><div class="unit-card-meta">${u.series} · ${catDisplayName(u.category)} · HP ${u.maxHp} ATK ${u.atk} SPD ${u.spd}</div>`;
     const cost=document.createElement('div');cost.className='unit-card-cost';cost.textContent=u.cost;
     card.appendChild(icon);card.appendChild(info);card.appendChild(cost);
     card.addEventListener('click',()=>draftToggle(u.id));
@@ -1564,13 +1639,30 @@ $('btn-new-run').addEventListener('click',initDraft);
 $('btn-how').addEventListener('click',()=>{
   openOverlay('How to Play',`
     <div class="overlay-section"><div class="overlay-label">Flow</div><div class="overlay-value">Draft 3 units → clear 10 stages (1 zone) → collect rewards after each stage.</div></div>
-    <div class="overlay-section"><div class="overlay-label">RPS</div><div class="overlay-value">Melee > Mobility > Ranged > Melee · Advantage ×1.5 · Disadvantage ×0.67</div></div>
+    <div class="overlay-section"><div class="overlay-label">RPS</div><div class="overlay-value">Melee > Agility > Ranged > Melee · Advantage ×1.5 · Disadvantage ×0.67</div></div>
     <div class="overlay-section"><div class="overlay-label">Resources</div><div class="overlay-value">EN max 8 — spent on Specials, gained from Basic attacks.<br>ULT 0–100% — gains per turn and on crits. Use anytime at 100%.</div></div>
     <div class="overlay-section"><div class="overlay-label">Stages</div><div class="overlay-value">10 stages per zone. Stage 5: Ace (yellow). Stage 10: Boss (red). Bosses have a dedicated HP bar at the top.</div></div>
     <div class="overlay-section"><div class="overlay-label">Log</div><div class="overlay-value">Tap blue unit names or gold skill names in the log to see their stats and details.</div></div>`);
 });
 $('btn-restart').addEventListener('click',()=>show('title'));
 $('btn-vic-ok').addEventListener('click',()=>show('title'));
+
+/* ── BOOT: fetch game data, then restore save, then enable the title screen ── */
+async function loadData(){
+  try{
+    const resp=await fetch('./rogue-data.json',{cache:'no-cache'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    DATA=await resp.json();
+    loadGame(); // merge any persisted recruited units now that DATA exists
+    $('btn-new-run').disabled=false;
+    $('title-status').textContent='';
+  }catch(e){
+    console.error('Failed to load rogue-data.json',e);
+    $('title-status').textContent='⚠ Failed to load game data (rogue-data.json). Make sure it is in the same folder/repo path as this page.';
+    $('title-status').style.color='var(--red)';
+  }
+}
+loadData();
 </script>
 </body>
 </html>
