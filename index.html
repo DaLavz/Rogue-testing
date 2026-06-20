@@ -121,6 +121,9 @@ button:active{transform:scale(0.97)}
 .unit-category-label{font-family:var(--font-mono);font-size:.66rem;color:rgba(255,255,255,.55);text-align:center;margin-top:2px}
 
 .unit-hp-bar-wrap{position:absolute;bottom:-22px;left:2px;right:2px}
+.unit-ult-btn{position:absolute;bottom:-44px;left:2px;right:2px;height:18px;border-radius:4px;border:1px solid var(--gold-dark);background:linear-gradient(135deg,#2a1a00,#4a3000);color:var(--gold);font-family:var(--font-mono);font-size:.62rem;font-weight:bold;letter-spacing:.06em;display:none;align-items:center;justify-content:center;cursor:pointer;text-transform:uppercase;z-index:5}
+.unit-ult-btn.ready{display:flex;background:linear-gradient(135deg,#4a3000,#8a5800);border-color:var(--gold);box-shadow:0 0 8px rgba(200,168,75,.4);animation:ultbtnpulse 1.5s ease-in-out infinite}
+.unit-ult-btn.ready:hover{background:linear-gradient(135deg,#8a5800,#c8a84b)}
 .unit-hp-track{height:8px;background:rgba(0,0,0,.55);border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.12)}
 .unit-hp-fill{height:100%;border-radius:3px;transition:width .3s ease,background .3s ease}
 .unit-hp-text{font-family:var(--font-mono);font-size:.66rem;color:var(--text-primary);text-align:center;margin-top:2px;white-space:nowrap}
@@ -160,8 +163,8 @@ button:active{transform:scale(0.97)}
 .log-line .log-system{color:var(--text-dim);font-style:italic}
 .log-divider{border:none;border-top:1px solid var(--border);margin:.3rem 0}
 
-.player-field{padding:1.4rem .5rem .5rem;flex-shrink:0}
-.player-units-row{display:flex;gap:.5rem;justify-content:center;min-height:104px;align-items:flex-start;padding-top:22px}
+.player-field{padding:1.4rem .5rem 2rem;flex-shrink:0}
+.player-units-row{display:flex;gap:.5rem;justify-content:center;min-height:104px;align-items:flex-start;padding-top:22px;margin-bottom:6px}
 
 .resource-bars{padding:.35rem .5rem;flex-shrink:0;display:flex;flex-direction:column;gap:.3rem}
 .resource-row{display:flex;align-items:center;gap:.6rem}
@@ -258,7 +261,7 @@ button:active{transform:scale(0.97)}
   .combat-log-wrap{grid-column:2;grid-row:2/9;margin:.5rem .6rem .5rem 0;border-radius:var(--radius-md)}
   .enemy-field{padding:.6rem .9rem .4rem}
   .enemy-units-row{gap:.7rem;min-height:130px;padding-top:24px}
-  .player-field{padding:1.8rem .9rem 1.4rem}
+  .player-field{padding:1.8rem .9rem 1.8rem}
   .player-units-row{gap:.8rem;min-height:140px;padding-top:28px}
   .unit-rect.enemy-unit{width:110px;height:100px}
   .unit-rect.player-unit{width:120px;height:108px}
@@ -343,7 +346,6 @@ button:active{transform:scale(0.97)}
     <div class="action-row" id="row-main">
       <button class="action-btn btn-basic" id="btn-basic">Basic<span class="btn-cost" id="basic-cost-lbl">+2 EN</span></button>
       <button class="action-btn btn-special" id="btn-special" disabled>Special<span class="btn-cost" id="spec-cost-lbl">4 EN</span></button>
-      <button class="action-btn btn-ult" id="btn-ult" disabled>Ultimate<span class="btn-cost">100%</span></button>
       <button class="action-btn btn-item" id="btn-item">Item<span class="btn-cost">bag</span></button>
     </div>
     <div id="row-target" style="display:none">
@@ -450,6 +452,7 @@ const byId=(id,arr)=>arr.find(u=>u.id===id)||null;
 const catLabel=(cat)=>({Melee:'M',Ranged:'R',Mobility:'A'}[cat]||cat?.[0]||'?');
 const catDisplayName=(cat)=>({Melee:'Melee',Ranged:'Ranged',Mobility:'Agility'}[cat]||cat);
 const catColor=(cat)=>({Melee:'#2d8a3e',Ranged:'#3a7bd5',Mobility:'#e08a2e'}[cat]||'#5a5a7a');
+const hpColor=(cur,max)=>{ const pct=max>0?cur/max*100:0; return pct>50?'var(--green-hp)':pct>25?'var(--yellow-hp)':'var(--red-hp)'; };
 const $=id=>document.getElementById(id);
 
 /* ── SCREENS ── */
@@ -604,10 +607,12 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy){
     const {damage,rpsMult}=calcDmg(attacker,t,ab.multiplier,ab.defPierce||0,isCrit);
     const prev=t.hp;
     t.hp=Math.max(0,t.hp-damage);
-    // ult gain
-    const ug=isCrit?cfg.ultGaugePerCrit:cfg.ultGaugePerTurn;
-    if(!isEnemy) C.playerUlt=Math.min(100,C.playerUlt+ug);
-    else C.enemyUlt=Math.min(100,C.enemyUlt+ug);
+    // ult gain (the ultimate itself doesn't refill the gauge it just spent)
+    if(abilityKey!=='ultimate'){
+      const ug=isCrit?cfg.ultGaugePerCrit:cfg.ultGaugePerTurn;
+      if(!isEnemy) C.playerUlt=Math.min(100,C.playerUlt+ug);
+      else C.enemyUlt=Math.min(100,C.enemyUlt+ug);
+    }
     const cLbl=isCrit?' <span class="log-crit">CRIT!</span>':'';
     const rLbl=rpsMult>1?' <em>(effective)</em>':rpsMult<1?' <em>(resisted)</em>':'';
     log(`→ ${nm(t,!isEnemy)} takes <span class="log-damage">${damage}</span>${cLbl}${rLbl} [${prev}→${t.hp}]`);
@@ -949,7 +954,7 @@ function renderUnits(units,container,isEnemy,C){
   for(const u of units){
     let div=container.querySelector(`[data-uid="${u.id}"]`);
     if(!div){ div=buildUnitEl(u,isEnemy,C); container.appendChild(div); continue; }
-    updateUnitEl(div,u);
+    updateUnitEl(div,u,C);
   }
 }
 
@@ -980,18 +985,33 @@ function buildUnitEl(u,isEnemy,C){
     div.appendChild(hw);
   }
 
+  // Per-unit Ultimate button — player units only, shown when the shared ult gauge is full
+  if(!isEnemy&&!u.isToken){
+    const ultBtn=document.createElement('button');
+    ultBtn.className='unit-ult-btn';
+    ultBtn.textContent='ULT';
+    ultBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      triggerUnitUltimate(u.id,C);
+    });
+    div.appendChild(ultBtn);
+  }
+
   const sc=document.createElement('div');sc.className='spark-container';sc.id='sparks-'+u.id;div.appendChild(sc);
 
   div.addEventListener('click',e=>{
-    if(div.classList.contains('targetable')){selectTarget(u.id,C);}
+    if(div.classList.contains('targetable')){
+      if(C.ultPendingCaster){ resolveUnitUltimateTarget(u.id,C); }
+      else selectTarget(u.id,C);
+    }
     else showUnitInfo(u,isEnemy,C);
   });
 
-  updateUnitEl(div,u);
+  updateUnitEl(div,u,C);
   return div;
 }
 
-function updateUnitEl(div,u){
+function updateUnitEl(div,u,C){
   // defeated state — HP is the source of truth for death, EXCEPT a unit recruited-alive (Talk success)
   // is intentionally defeated=true while HP>0 (removed from the fight, not killed) — never self-heal that case.
   if(u.hp>0&&u.defeated&&!u.recruitedAlive) u.defeated=false;
@@ -1016,6 +1036,16 @@ function updateUnitEl(div,u){
     hf.style.width=hp+'%';
     hf.style.background=hp>50?'var(--green-hp)':hp>25?'var(--yellow-hp)':'var(--red-hp)';
     ht2.textContent=u.hp+'/'+u.maxHp;
+  }
+
+  // per-unit ultimate button — ready only when: shared ult gauge is full, it's the player's
+  // general turn-window (not the enemy's turn), this unit is alive, has an ultimate, and no
+  // other target-selection is currently in progress.
+  const ultBtn=div.querySelector('.unit-ult-btn');
+  if(ultBtn&&C){
+    const canUseUlt=C.playerUlt>=100 && C.waitingForPlayer && !C.pendingAction &&
+      u.hp>0 && !u.defeated && u.ultimate;
+    ultBtn.classList.toggle('ready',!!canUseUlt);
   }
 }
 
@@ -1055,6 +1085,7 @@ function lockActionBar(){
   $('action-bar').classList.add('locked');
   $('row-main').style.display='flex';
   $('row-target').style.display='none';
+  document.querySelectorAll('.unit-ult-btn.ready').forEach(b=>b.classList.remove('ready'));
 }
 function unlockActionBar(){
   $('action-bar').classList.remove('locked');
@@ -1067,8 +1098,8 @@ function updateActionBar(u,C){
   $('btn-special').disabled=C.playerEnergy<cost;
   $('spec-cost-lbl').textContent=cost+' EN';
   $('basic-cost-lbl').textContent=(u.passive?.type==='energy_boost'?'+3':'+2')+' EN';
-  const ub=$('btn-ult');ub.disabled=C.playerUlt<100;
-  ub.className='action-btn btn-ult'+(C.playerUlt>=100?' ready':'');
+  // per-unit ultimate buttons need re-evaluating any time the action bar refreshes (turn change, etc.)
+  refreshUltButtons(C);
   // talk button
   const boss=C.enemyUnits.find(e=>e.isBoss);
   const alreadyRecruited=boss&&hasRecruited(boss.baseId);
@@ -1080,6 +1111,53 @@ function updateActionBar(u,C){
     tb.addEventListener('click',()=>doTalk(C));
     $('row-main').appendChild(tb);
   } else if(!hasTalk&&tb) tb.remove();
+}
+
+function refreshUltButtons(C){
+  document.querySelectorAll('#player-row .unit-rect').forEach(div=>{
+    const u=C.playerUnits.find(p=>p.id===div.dataset.uid);
+    if(u) updateUnitEl(div,u,C);
+  });
+}
+
+/* ── PER-UNIT ULTIMATE (free action, doesn't use a turn, usable for any unit anytime gauge is full) ── */
+function triggerUnitUltimate(unitId,C){
+  if(!C||!C.waitingForPlayer||C.pendingAction) return; // don't allow mid another action's targeting
+  if(C.playerUlt<100) return;
+  const u=C.playerUnits.find(p=>p.id===unitId);
+  if(!u||u.hp<=0||u.defeated||!u.ultimate) return;
+
+  if(u.ultimate.target==='all'){
+    const targets=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+    if(!targets.length) return;
+    execAbility(u,'ultimate',targets,C,false);
+    renderField(C);playPendingFx(C);renderRes(C);
+    // no resumeRound() — using an ultimate never advances/consumes a turn
+    return;
+  }
+
+  // single-target ultimate: enter a dedicated target-pick mode for THIS unit specifically
+  C.ultPendingCaster=unitId;
+  document.querySelectorAll('.enemy-unit').forEach(el=>{
+    const eu=C.enemyUnits.find(e=>e.id===el.dataset.uid);
+    if(eu&&eu.hp>0&&!eu.defeated) el.classList.add('targetable');
+  });
+  // swap the action bar to a cancel-only prompt so Basic/Special can't be clicked mid-pick
+  $('row-main').style.display='none';$('row-target').style.display='block';
+}
+
+function resolveUnitUltimateTarget(targetId,C){
+  const casterId=C.ultPendingCaster;if(!casterId) return false;
+  const u=C.playerUnits.find(p=>p.id===casterId);
+  const t=C.enemyUnits.find(e=>e.id===targetId);
+  document.querySelectorAll('.unit-rect').forEach(el=>el.classList.remove('targetable','targeted'));
+  C.ultPendingCaster=null;
+  $('row-main').style.display='flex';$('row-target').style.display='none';
+  if(!u||!t||u.hp<=0||u.defeated) return true;
+  execAbility(u,'ultimate',[t],C,false);
+  renderField(C);playPendingFx(C);renderRes(C);
+  // no resumeRound() — using an ultimate never advances/consumes a turn
+  return true;
 }
 
 function enterTarget(action,C){
@@ -1125,13 +1203,17 @@ $('btn-special').addEventListener('click',()=>{
   if(u.special?.target==='all'){execAbility(u,'special',C.enemyUnits.filter(e=>e.hp>0&&!e.defeated),C,false);resumeRound(C);}
   else enterTarget('special',C);
 });
-$('btn-ult').addEventListener('click',()=>{
-  const C=S.combat;if(!C?.waitingForPlayer||C.playerUlt<100) return;
-  const u=C.activeUnit;if(!u) return;
-  if(u.ultimate?.target==='all'){execAbility(u,'ultimate',C.enemyUnits.filter(e=>e.hp>0&&!e.defeated),C,false);resumeRound(C);}
-  else enterTarget('ultimate',C);
+$('btn-cancel').addEventListener('click',()=>{
+  const C=S.combat;if(!C) return;
+  if(C.ultPendingCaster){
+    C.ultPendingCaster=null;
+    document.querySelectorAll('.unit-rect').forEach(el=>el.classList.remove('targetable','targeted'));
+    $('row-main').style.display='flex';$('row-target').style.display='none';
+  } else {
+    exitTarget(C);
+  }
+  updateActionBar(C.activeUnit,C);
 });
-$('btn-cancel').addEventListener('click',()=>{const C=S.combat;if(C){exitTarget(C);updateActionBar(C.activeUnit,C);}});
 $('btn-item').addEventListener('click',showInventory);
 $('btn-rps-info').addEventListener('click',showRpsInfo);
 
@@ -1435,9 +1517,10 @@ function showInstantHealPicker(item,onDone){
   S.run.playerUnitIds.forEach(id=>{
     const base=byId(id,DATA.playerUnits);if(!base) return;
     const cur=(S.run.unitHp&&S.run.unitHp[id]!=null)?S.run.unitHp[id]:base.maxHp;
-    h+=`<button class="ih-pick-btn" data-id="${id}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary)">
+    const col=hpColor(cur,base.maxHp);
+    h+=`<button class="ih-pick-btn" data-id="${id}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-left:5px solid ${col};border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary)">
       <span style="font-weight:600">${base.name}</span>
-      <span style="float:right;font-family:var(--font-mono);font-size:.85rem;color:var(--text-muted)">${cur}/${base.maxHp}</span>
+      <span style="float:right;font-family:var(--font-mono);font-size:.85rem;color:${col}">${cur}/${base.maxHp}</span>
     </button>`;
   });
   openOverlay('Use '+item.name,h);
@@ -1561,9 +1644,10 @@ function showHealPicker(itemIdx,amount){
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Restore ${amount} HP to which unit?</div></div>`;
   C.playerUnits.forEach((u,i)=>{
     if(u.hp<=0) return;
-    h+=`<button class="heal-pick-btn" data-i="${i}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:pointer;color:var(--text-primary)">
+    const col=hpColor(u.hp,u.maxHp);
+    h+=`<button class="heal-pick-btn" data-i="${i}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-left:5px solid ${col};border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:pointer;color:var(--text-primary)">
       <span style="font-weight:600">${u.name}</span>
-      <span style="float:right;font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)">${u.hp}/${u.maxHp}</span>
+      <span style="float:right;font-family:var(--font-mono);font-size:.8rem;color:${col}">${u.hp}/${u.maxHp}</span>
     </button>`;
   });
   openOverlay('Use '+item.name,h);
