@@ -83,14 +83,11 @@
       "stationPool": [
         "zeta_gundam",
         "gundam_ground_type",
-        "gm_command",
-        "guncannon",
-        "guntank",
-        "gundam_mk2",
-        "age1_titus",
-        "gundam_x",
-        "gundam_ashtaron"
-      ]
+        "gm_command"
+      ],
+      "fixedEvents": {
+        "8": "station"
+      }
     }
   ],
   "playerUnits": [
@@ -1129,8 +1126,8 @@
       "tier": "boss",
       "family": "sazabi",
       "category": "Mobility",
-      "hp": 550,
-      "maxHp": 550,
+      "hp": 460,
+      "maxHp": 460,
       "atk": 52,
       "def": 28,
       "spd": 58,
@@ -1216,7 +1213,7 @@
       "id": "field_technician",
       "name": "Field Technician",
       "category": "heal_reward",
-      "rarity": "Rare",
+      "rarity": "Uncommon",
       "description": "Restores 500 HP to one unit of your choice. Reward only — never appears in the shop.",
       "effect": {
         "type": "heal_one",
