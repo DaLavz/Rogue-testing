@@ -45,6 +45,7 @@ button:active{transform:scale(0.97)}
 .budget-label{color:var(--text-muted)}
 .draft-slots{display:flex;gap:.5rem;padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0}
 .draft-slot{flex:1;min-height:72px;background:var(--bg-panel);border:2px dashed var(--border);border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.7rem;color:var(--text-dim);font-family:var(--font-mono);padding:.4rem;position:relative;transition:border-color .15s}
+.frontline-badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#5a1a1a;border:1px solid var(--red);border-radius:4px;padding:.15rem .4rem;font-size:.58rem;font-weight:700;letter-spacing:.04em;color:#ff9999;text-align:center;line-height:1.3;white-space:nowrap;z-index:3;pointer-events:none}
 .draft-slot.filled{border-style:solid;border-color:var(--border-bright);background:var(--bg-card)}
 .slot-name{font-size:.78rem;font-weight:600;color:var(--text-primary);text-align:center;font-family:var(--font-display);line-height:1.2}
 .slot-cost{font-size:.65rem;color:var(--gold);font-family:var(--font-mono)}
@@ -99,6 +100,7 @@ button:active{transform:scale(0.97)}
 .combat-dialogue-line .cdl-speaker{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.2rem}
 .combat-dialogue-line .cdl-text{font-family:var(--font-display);font-size:.95rem;color:var(--text-primary);line-height:1.4;font-style:italic}
 #screen-combat{background:var(--bg-void);height:100%;max-height:100%;position:relative;overflow-y:auto}
+#screen-upgrades,#screen-garage,#screen-shop,#screen-transition,#screen-station{overflow-y:auto}
 #screen-combat.active{display:flex;flex-direction:column}
 #screen-combat.bg-earth{background:linear-gradient(180deg,#1a3a6e 0%,#1a3a6e 30%,#2d5a27 30%,#2d5a27 100%)}
 #screen-combat.bg-space{background:radial-gradient(ellipse at 20% 30%,#1a1a3e 0%,#0a0a0f 60%)}
@@ -416,6 +418,19 @@ button:active{transform:scale(0.97)}
   </div>
 </div>
 
+<!-- DICE CHECK ENCOUNTER -->
+<div id="screen-dicecheck" class="screen" style="overflow-y:auto">
+  <div class="reward-header">
+    <h2>Roaming Encounter</h2>
+    <p id="dc-intro">A pilot signals for a moment's truce...</p>
+  </div>
+  <div class="reward-cards" id="dc-body" style="overflow-y:auto;flex:1"></div>
+  <div class="reward-confirm-bar" id="dc-bar" style="display:none">
+    <button class="btn-primary" id="btn-dc-roll">Roll the Dice</button>
+    <button class="btn-secondary" id="btn-dc-skip" style="width:100%;margin-top:.5rem">Skip — Walk Away</button>
+  </div>
+</div>
+
 <!-- ZONE TRANSITION -->
 <div id="screen-transition" class="screen">
   <div class="reward-header">
@@ -529,11 +544,46 @@ function loadGame(){
     S.unlockedUnits=data.unlockedUnits||[];
     S.persistentCurrency=data.persistentCurrency||0;
     S.playerName=data.playerName||null;
+    reconcileUnlockedUnitsWithLiveData();
     // merge any previously-unlocked recruited units into DATA.playerUnits so they're selectable
     for(const u of S.unlockedUnits){
       if(!DATA.playerUnits.find(p=>p.id===u.id)) DATA.playerUnits.push(u);
     }
   }catch(e){ console.warn('Load failed',e); }
+}
+
+// A unit recruited in a past session is a frozen snapshot saved to localStorage — without this step,
+// any later balance fix (category, stats, kit text) to that same unit in rogue-data.json would never
+// reach a player who already recruited it before the fix shipped. This refreshes core combat fields
+// from whichever live source the unit actually came from, every time the save loads.
+const UNIT_FIELDS_TO_REFRESH=['name','series','category','atk','def','spd','passive','basic','special','ultimate'];
+function reconcileUnlockedUnitsWithLiveData(){
+  for(const u of S.unlockedUnits){
+    let liveSource=null;
+    if(u.recruitedFrom){
+      // boss recruit — refresh from the live enemy entry, reapplying the same recruit-stat scaling
+      const liveEnemy=byId(u.recruitedFrom,DATA.enemyUnits);
+      if(liveEnemy){
+        liveSource={...liveEnemy,
+          atk:Math.round(liveEnemy.atk*0.9),def:Math.round(liveEnemy.def*0.9),spd:Math.round(liveEnemy.spd*0.9),
+          maxHp:Math.round(liveEnemy.maxHp*0.88)
+        };
+      }
+    } else if(u.recruitedFromPool){
+      // station-pool recruit (post-duplicate-support) — refresh from its template by the stored link
+      liveSource=byId(u.recruitedFromPool,DATA.recruitablePool);
+    } else {
+      // pre-existing save from before duplicates were supported — id still matches a pool entry directly
+      liveSource=byId(u.id,DATA.recruitablePool);
+    }
+    if(!liveSource) continue; // unit no longer exists in any live source — keep the saved copy as-is
+    for(const field of UNIT_FIELDS_TO_REFRESH){
+      if(liveSource[field]!==undefined) u[field]=liveSource[field];
+    }
+    // HP/maxHp: keep the recruit-scaled maxHp in sync too, but only the max — current run HP is
+    // tracked separately per-run and isn't part of this permanent record.
+    if(liveSource.maxHp!==undefined){ u.maxHp=liveSource.maxHp; u.hp=liveSource.maxHp; }
+  }
 }
 function isUnitUnlocked(unitId){
   return S.unlockedUnits.some(u=>u.id===unitId)||S.unlockedUnits.some(u=>u.recruitedFrom===unitId);
@@ -951,23 +1001,20 @@ function onWin(C){
   if(C.recruitedUnit){
     const recruited=C.recruitedUnit;
     setTimeout(()=>{
-      // Already recruited this exact boss before? Reuse the existing unlocked unit instead of creating a duplicate.
-      let asPlayer=S.unlockedUnits.find(u=>u.recruitedFrom===recruited.baseId);
-      if(!asPlayer){
-        // Boss recruit cost by zone tier (Earth/early zones = cost 2, matches design: Ramba Ral's Gouf Custom = 2)
-        const recruitCost=recruited.recruitCost!=null?recruited.recruitCost:2;
-        asPlayer={
-          id:'recruit_'+recruited.baseId+'_'+Math.random().toString(36).substr(2,5),
-          recruitedFrom:recruited.baseId,
-          name:recruited.name,series:recruited.series,cost:recruitCost,category:recruited.category,
-          hp:Math.round(recruited.maxHp*0.88),maxHp:Math.round(recruited.maxHp*0.88),
-          atk:Math.round(recruited.atk*0.9),def:Math.round(recruited.def*0.9),spd:Math.round(recruited.spd*0.9),
-          passive:recruited.passive,basic:recruited.basic,special:recruited.special,ultimate:recruited.ultimate
-        };
-        S.unlockedUnits.push(asPlayer);
-        DATA.playerUnits.push(asPlayer);
-        saveGame();
-      }
+      // Duplicates are allowed now — every successful Talk creates a fresh recruit, even if you've
+      // recruited this exact boss before in a past run (or even earlier this run).
+      const recruitCost=recruited.recruitCost!=null?recruited.recruitCost:2;
+      const asPlayer={
+        id:'recruit_'+recruited.baseId+'_'+Math.random().toString(36).substr(2,5),
+        recruitedFrom:recruited.baseId,
+        name:recruited.name,series:recruited.series,cost:recruitCost,category:recruited.category,
+        hp:Math.round(recruited.maxHp*0.88),maxHp:Math.round(recruited.maxHp*0.88),
+        atk:Math.round(recruited.atk*0.9),def:Math.round(recruited.def*0.9),spd:Math.round(recruited.spd*0.9),
+        passive:recruited.passive,basic:recruited.basic,special:recruited.special,ultimate:recruited.ultimate
+      };
+      S.unlockedUnits.push(asPlayer);
+      DATA.playerUnits.push(asPlayer);
+      saveGame();
       showSwapPicker(S.run,asPlayer);
     },700);
     return;
@@ -1009,14 +1056,32 @@ function startFloor(run){
     return;
   }
 
+  // Non-Earth zones: every non-ace, non-boss stage rolls a 40% chance to become a roaming
+  // recruitment encounter instead of a fight. Once that triggers, it's a 50/50 coin flip between
+  // the two encounter types: the dice-check (one unit, roll a stat check) or the station (3 units,
+  // pick one outright, no roll). Only one recruitment encounter of EITHER type is allowed per
+  // zone; stationDone covers both, since they're really the same "one recruitment opportunity per
+  // zone" slot wearing different faces.
+  const isFixedFloorType=f===zone.bossFloor||zone.aceFloors.includes(f);
+  if(!fixedEvent&&!isFixedFloorType&&!run.stationDone&&zone.id!=='earth'){
+    if(Math.random()<0.40){
+      run.stationDone=true;
+      if(Math.random()<0.5) showDiceCheckEncounter(run,zone);
+      else showStation(run,zone);
+      return;
+    }
+  }
+
   const pUnits=run.playerUnitIds.map(id=>{
     const base=byId(id,DATA.playerUnits);
     if(!base) return null;
     const u=clone(base);
-    u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];u.defeated=false;
+    u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];
     // carry HP between stages (default to full if not tracked yet)
     u.hp=(run.unitHp&&run.unitHp[id]!=null)?run.unitHp[id]:u.maxHp;
-    if(u.hp<=0) u.hp=Math.max(1,Math.round(u.maxHp*0.25)); // safety: revive low if somehow 0 entering a stage
+    // A unit at 0 HP stays dead/excluded for the rest of the zone — it only comes back at the
+    // next zone transition's revive-at-30% step. No per-stage safety-net revive anymore.
+    u.defeated=u.hp<=0;
     // apply active team passives as base stat multipliers
     for(const p of S.activePassives){
       const t=p.effect.type;
@@ -1358,10 +1423,8 @@ function updateActionBar(u,C){
   $('basic-cost-lbl').textContent=(u.passive?.type==='energy_boost'?'+3':'+2')+' EN';
   // per-unit ultimate buttons need re-evaluating any time the action bar refreshes (turn change, etc.)
   refreshUltButtons(C);
-  // talk button
-  const boss=C.enemyUnits.find(e=>e.isBoss);
-  const alreadyRecruited=boss&&hasRecruited(boss.baseId);
-  const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss&&!alreadyRecruited;
+  // talk button — Talk is always available on a boss fight (regardless of past recruits; duplicates are fine)
+  const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss;
   let tb=$('btn-talk');
   if(hasTalk&&!tb){
     tb=document.createElement('button');tb.id='btn-talk';tb.className='action-btn btn-talk';
@@ -1638,13 +1701,25 @@ function statusDesc(t){return({atk_down:'Reduces ATK — all outgoing damage is 
 
 /* ── REWARD ── */
 // Relative spawn weight per rarity tier — higher = more common. Legendary is deliberately very rare.
-const RARITY_WEIGHT={Common:100,Uncommon:45,Rare:18,Epic:8,Legendary:3};
+const RARITY_WEIGHT={Common:100,Uncommon:58,Rare:18,Epic:8,Legendary:5};
+// Each zone past the first nudges higher-rarity odds up slightly (not a big jump) — zone index 0 = Earth (no bonus).
+function zoneRarityMultiplier(rarity,zoneIndex){
+  if(zoneIndex<=0) return 1;
+  const bumpPerZone={Common:0,Uncommon:0.08,Rare:0.12,Epic:0.15,Legendary:0.18};
+  return 1+(bumpPerZone[rarity]||0)*zoneIndex;
+}
+function currentZoneIndex(){
+  if(!S.run) return 0;
+  return DATA.zones.findIndex(z=>z.id===S.run.zoneId);
+}
 function weightedPick(items){
-  const total=items.reduce((s,it)=>s+(RARITY_WEIGHT[it.rarity]||10),0);
+  const zIdx=currentZoneIndex();
+  const weights=items.map(it=>(RARITY_WEIGHT[it.rarity]||10)*zoneRarityMultiplier(it.rarity,zIdx));
+  const total=weights.reduce((s,w)=>s+w,0);
   let roll=Math.random()*total;
-  for(const it of items){
-    roll-=(RARITY_WEIGHT[it.rarity]||10);
-    if(roll<=0) return it;
+  for(let i=0;i<items.length;i++){
+    roll-=weights[i];
+    if(roll<=0) return items[i];
   }
   return items[items.length-1];
 }
@@ -1789,14 +1864,29 @@ function showStation(run,zone){
   const cards=$('station-cards');cards.innerHTML='';
   $('station-bar').style.display='none';
 
-  // Offer only from THIS zone's dedicated recruitable pool (zone.stationPool, resolved against the
+  // Offer from THIS zone's dedicated recruitable pool (zone.stationPool, resolved against the
   // shared recruitablePool) — NEVER from DATA.playerUnits, since that's the starter roster the player
-  // already had access to in the draft. Exclude anything the player has ever unlocked before (any past run).
-  const unlockedIds=new Set(S.unlockedUnits.map(u=>u.id));
-  const zonePoolIds=zone.stationPool||[];
-  const pool=zonePoolIds
-    .map(id=>byId(id,DATA.recruitablePool||[]))
-    .filter(u=>u&&!unlockedIds.has(u.id));
+  // already had access to in the draft. Already-unlocked units stay in the pool and can be recruited
+  // again — duplicates are intentionally allowed, so finishing a pool once doesn't permanently empty
+  // that zone's station for the rest of the game.
+  //
+  // Cross-zone blending: every zone past the first has a small, decreasing chance of pulling from
+  // the PREVIOUS zone actually visited this run, instead of its own pool — 40% for zone 2 (looking
+  // back at zone 1), 35% for zone 3 (looking back at zone 2), and so on, dropping 5 points per step
+  // further into the run. Zone 1 (Earth) has nothing before it, so it always uses its own pool.
+  const visitedIdx=run.visitedZones.indexOf(zone.id);
+  const prevZoneId=visitedIdx>0?run.visitedZones[visitedIdx-1]:null;
+  const prevZone=prevZoneId?DATA.zones.find(z=>z.id===prevZoneId):null;
+  const crossZoneChance=Math.max(0,0.40-0.05*(visitedIdx-1));
+  const usePrevZonePool=prevZone&&visitedIdx>0&&Math.random()<crossZoneChance;
+  const effectiveZone=usePrevZonePool?prevZone:zone;
+
+  const zonePoolIds=effectiveZone.stationPool||[];
+  const pool=zonePoolIds.map(id=>byId(id,DATA.recruitablePool||[])).filter(Boolean);
+
+  if(usePrevZonePool){
+    cards.innerHTML+=`<div class="overlay-section" style="padding:.5rem 1rem 0"><div class="overlay-value" style="font-size:.78rem;color:var(--gold)">⚡ A familiar unit from before has found its way here...</div></div>`;
+  }
 
   let selectedUnit=null;
 
@@ -1838,11 +1928,11 @@ function showStation(run,zone){
     <div class="reward-card-tile">
       <div>
         <div class="reward-card-name">Skip — Take Payment</div>
-        <div class="reward-card-sub">No recruit · Receive ⬡ 200 G instead</div>
+        <div class="reward-card-sub">No recruit · Receive ⬡ 100 G instead</div>
       </div>
     </div>`;
   skipCard.addEventListener('click',()=>{
-    S.currency+=200;
+    S.currency+=100;
     advanceAfterReward();
   });
   cards.appendChild(skipCard);
@@ -1856,21 +1946,155 @@ function showStation(run,zone){
   };
 }
 
+const MAX_STORAGE_UNITS=4; // off-field cap: 3 active + up to 4 in storage = 7 max roster per run
+
+/* ── DICE-CHECK RECRUITMENT ENCOUNTER (non-Earth zones) ── */
+// Stat ranges across the whole roster, used to normalize wildly different scales (HP ~150-265,
+// DEF ~15-30) into a comparable 0-30 bonus before adding to a d100 roll. Computed once from
+// whatever's actually in DATA at the time, so it stays correct as more units get added later.
+function getStatRange(stat){
+  const all=[...(DATA.playerUnits||[]),...(DATA.recruitablePool||[])];
+  const key=stat==='hp'?'maxHp':stat;
+  const vals=all.map(u=>u[key]).filter(v=>typeof v==='number');
+  return {min:Math.min(...vals),max:Math.max(...vals)};
+}
+function normalizedStatBonus(unit,stat){
+  const key=stat==='hp'?'maxHp':stat;
+  const val=unit[key];
+  if(typeof val!=='number') return 0;
+  const {min,max}=getStatRange(stat);
+  if(max<=min) return 15; // degenerate case, shouldn't happen with a real roster
+  const pct=(val-min)/(max-min); // 0..1 across the roster's actual range for this stat
+  return Math.round(pct*30); // 0..30 bonus
+}
+
+// DC scales gently with how many zones the player has already cleared — zone index 1 (the second
+// zone overall, e.g. UC Space) is the easiest non-Earth DC; each zone after nudges it up a bit.
+function getDiceCheckDC(run){
+  const zoneIdx=run.visitedZones.length-1; // 1 for the 2nd zone, 2 for the 3rd, etc.
+  return Math.min(80,45+Math.max(0,zoneIdx-1)*8); // 45 at zone 2, +8 per zone after that, capped at 80
+}
+
+const STAT_LABELS={hp:'HP',atk:'Attack',def:'Defense',spd:'Speed'};
+
+function showDiceCheckEncounter(run,zone){
+  show('dicecheck');
+  // The encountered "pilot" is flavor text only — the actual recruitable unit comes from this
+  // zone's stationPool, matching how all other recruitment in this zone works.
+  const zonePoolIds=zone.stationPool||[];
+  const candidates=zonePoolIds.map(id=>byId(id,DATA.recruitablePool||[])).filter(Boolean);
+  if(!candidates.length){
+    // No recruitable content defined for this zone yet — fail safe into a currency-only outcome
+    $('dc-body').innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No one answers your call this time.</div></div>`;
+    $('dc-bar').style.display='block';
+    $('btn-dc-roll').style.display='none';
+    $('btn-dc-skip').textContent='Continue';
+    $('btn-dc-skip').onclick=()=>advanceAfterReward();
+    return;
+  }
+  const candidate=pick(candidates);
+  const stat=pick(['hp','atk','def','spd']);
+  const dc=getDiceCheckDC(run);
+
+  $('dc-intro').textContent=`${candidate.name} watches your approach, weapon half-raised, waiting to see what you're made of.`;
+
+  let selectedUnitId=null;
+
+  const render=()=>{
+    let h=`<div class="overlay-section" style="padding:0"><div class="reward-card-tile" style="background:#1a3a5a;border-radius:8px;padding:1rem;margin-bottom:.6rem">
+      <div class="reward-card-name">${candidate.name}</div>
+      <div class="reward-card-sub">${candidate.series} · ${catDisplayName(candidate.category)} · Cost ${candidate.cost}</div>
+      <div style="font-family:var(--font-mono);font-size:.78rem;margin-top:.4rem;color:var(--text-muted)">HP ${candidate.maxHp} · ATK ${candidate.atk} · DEF ${candidate.def} · SPD ${candidate.spd}</div>
+    </div></div>`;
+    h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">This pilot wants to test your <strong style="color:var(--gold)">${STAT_LABELS[stat]}</strong> — beat <strong>${dc}</strong> on a d100 + your chosen unit's ${STAT_LABELS[stat]} bonus.</div></div>`;
+    h+=`<div class="overlay-section"><div class="overlay-label">Choose a unit to put forward</div></div>`;
+    run.playerUnitIds.concat((run.recruitedThisRun||[]).filter(id=>!run.playerUnitIds.includes(id))).forEach(id=>{
+      const u=byId(id,DATA.playerUnits);if(!u) return;
+      const bonus=normalizedStatBonus(u,stat);
+      const selected=selectedUnitId===id;
+      h+=`<button class="dc-unit-btn" data-id="${id}" style="display:block;width:100%;text-align:left;background:${selected?'var(--gold)':'var(--bg-card)'};color:${selected?'var(--bg-void)':'var(--text-primary)'};border:1px solid var(--border-bright);border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:pointer">
+        <span style="font-weight:600">${u.name}</span>
+        <span style="float:right;font-family:var(--font-mono);font-size:.78rem">HP ${u.maxHp} ATK ${u.atk} DEF ${u.def} SPD ${u.spd} <strong style="color:${selected?'var(--bg-void)':'var(--gold)'}">+${bonus}</strong></span>
+      </button>`;
+    });
+    $('dc-body').innerHTML=h;
+    document.querySelectorAll('.dc-unit-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{ selectedUnitId=btn.dataset.id; render(); });
+    });
+    $('dc-bar').style.display='block';
+    $('btn-dc-roll').disabled=!selectedUnitId;
+    $('btn-dc-roll').style.opacity=selectedUnitId?'1':'.4';
+  };
+  render();
+
+  $('btn-dc-roll').onclick=()=>{
+    if(!selectedUnitId) return;
+    resolveDiceCheck(run,candidate,stat,dc,selectedUnitId);
+  };
+  $('btn-dc-skip').textContent='Skip — Walk Away';
+  $('btn-dc-skip').onclick=()=>advanceAfterReward();
+}
+
+function resolveDiceCheck(run,candidate,stat,dc,unitId){
+  const u=byId(unitId,DATA.playerUnits);
+  const bonus=normalizedStatBonus(u,stat);
+  const roll=1+Math.floor(Math.random()*100); // d100
+  const total=roll+bonus;
+  const success=total>=dc;
+
+  let h=`<div class="overlay-section" style="padding:0"><div class="reward-card-tile" style="background:${success?'#1a5a1a':'#5a1a1a'};border-radius:8px;padding:1rem;margin-bottom:.6rem">
+    <div class="reward-card-name">${success?'Success!':'Failed...'}</div>
+    <div class="reward-card-sub">${u.name}'s ${STAT_LABELS[stat]} check: d100 roll ${roll} + ${bonus} bonus = ${total} vs DC ${dc}</div>
+  </div></div>`;
+
+  if(success){
+    h+=`<div class="overlay-section"><div class="overlay-value">${candidate.name} stands down and agrees to join your crew.</div></div>`;
+    $('dc-body').innerHTML=h;
+    $('dc-bar').style.display='block';
+    $('btn-dc-roll').style.display='none';
+    $('btn-dc-skip').textContent='Continue';
+    $('btn-dc-skip').onclick=()=>showSwapPicker(run,candidate);
+  } else {
+    h+=`<div class="overlay-section"><div class="overlay-value">${candidate.name} isn't convinced and slips away — but leaves behind ⬡ 150 G for your trouble.</div></div>`;
+    $('dc-body').innerHTML=h;
+    $('dc-bar').style.display='block';
+    $('btn-dc-roll').style.display='none';
+    $('btn-dc-skip').textContent='Continue';
+    $('btn-dc-skip').onclick=()=>{ S.currency+=150; advanceAfterReward(); };
+  }
+}
+
 function showSwapPicker(run,newUnit){
-  // If this unit isn't already part of the player's known roster, it's a fresh recruit —
-  // persist it the same way boss recruits are persisted, so it's saved and never re-offered.
-  if(!DATA.playerUnits.find(u=>u.id===newUnit.id)){
-    DATA.playerUnits.push(newUnit);
-  }
-  if(!S.unlockedUnits.find(u=>u.id===newUnit.id)){
-    S.unlockedUnits.push(newUnit);
+  // Station recruits are templates from the shared recruitablePool (stable ids like "guntank").
+  // Instantiate a unique copy with its own generated id so duplicates are real, separate entries —
+  // matching how boss recruits already work — while keeping recruitedFromPool so a future data
+  // reconciliation pass can still refresh this copy's stats from the live template.
+  const isTemplate=DATA.recruitablePool&&DATA.recruitablePool.some(u=>u.id===newUnit.id)&&!newUnit.recruitedFromPool&&!newUnit.recruitedFrom;
+  let instance=newUnit;
+  if(isTemplate){
+    instance={...newUnit,id:'pool_'+newUnit.id+'_'+Math.random().toString(36).substr(2,5),recruitedFromPool:newUnit.id};
+    DATA.playerUnits.push(instance);
+    S.unlockedUnits.push(instance);
     saveGame();
+  } else if(!DATA.playerUnits.find(u=>u.id===instance.id)){
+    DATA.playerUnits.push(instance);
+    if(!S.unlockedUnits.find(u=>u.id===instance.id)){ S.unlockedUnits.push(instance); saveGame(); }
   }
-  // Track for this run's Garage screen — recruits stay swappable for the rest of THIS run only.
-  if(run.recruitedThisRun&&!run.recruitedThisRun.includes(newUnit.id)){
-    run.recruitedThisRun.push(newUnit.id);
+
+  // Storage cap check: storage = everyone recruited this run who ISN'T currently active.
+  // Recruiting a brand-new unit (not already tracked) would add one more to storage — if that
+  // pushes storage past the cap, the player must release a storage unit first.
+  const alreadyTracked=run.recruitedThisRun&&run.recruitedThisRun.includes(instance.id);
+  const currentStorageCount=(run.recruitedThisRun||[]).filter(id=>!run.playerUnitIds.includes(id)).length;
+  if(!alreadyTracked&&currentStorageCount>=MAX_STORAGE_UNITS){
+    showStorageReleasePicker(run,instance);
+    return;
   }
-  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">Recruit <strong>${newUnit.name}</strong> in place of which active unit?</div></div>`;
+
+  if(run.recruitedThisRun&&!alreadyTracked){
+    run.recruitedThisRun.push(instance.id);
+  }
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">Recruit <strong>${instance.name}</strong> in place of which active unit?</div></div>`;
   run.playerUnitIds.forEach((id,i)=>{
     const u=byId(id,DATA.playerUnits);if(!u) return;
     h+=`<button class="swap-pick-btn" data-i="${i}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary)">
@@ -1884,12 +2108,41 @@ function showSwapPicker(run,newUnit){
       e.stopPropagation();
       const i=parseInt(btn.dataset.i);
       const oldId=run.playerUnitIds[i];
-      run.playerUnitIds[i]=newUnit.id;
+      run.playerUnitIds[i]=instance.id;
       // carry over fresh full HP for the new recruit, drop old unit's tracked HP
-      if(run.unitHp){ delete run.unitHp[oldId]; run.unitHp[newUnit.id]=newUnit.maxHp; }
+      if(run.unitHp){ delete run.unitHp[oldId]; run.unitHp[instance.id]=instance.maxHp; }
       closeOverlay();
       advanceAfterReward();
     });
+  });
+}
+
+function showStorageReleasePicker(run,newUnit){
+  const storageIds=(run.recruitedThisRun||[]).filter(id=>!run.playerUnitIds.includes(id));
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">Storage is full (${MAX_STORAGE_UNITS}/${MAX_STORAGE_UNITS}). Release one unit from storage to make room for <strong>${newUnit.name}</strong>, or skip to leave storage as-is and lose this recruit.</div></div>`;
+  storageIds.forEach(id=>{
+    const u=byId(id,DATA.playerUnits);if(!u) return;
+    h+=`<button class="storage-release-btn" data-id="${id}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary)">
+      <span style="font-weight:600">${u.name}</span>
+      <span style="float:right;font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)">Release</span>
+    </button>`;
+  });
+  h+=`<div class="overlay-section"><button id="storage-skip-btn" class="btn-secondary" style="width:100%">Skip — Don't Recruit</button></div>`;
+  openOverlay('Storage Full',h);
+  document.querySelectorAll('.storage-release-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const releaseId=btn.dataset.id;
+      run.recruitedThisRun=run.recruitedThisRun.filter(id=>id!==releaseId);
+      closeOverlay();
+      showSwapPicker(run,newUnit);
+    });
+  });
+  const skipBtn=$('storage-skip-btn');
+  if(skipBtn) skipBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    closeOverlay();
+    advanceAfterReward();
   });
 }
 
@@ -2140,7 +2393,18 @@ function initDraft(){
   show('draft');S.draft.slots=[null,null,null];
   updateSlots();
   const list=$('draft-list');list.innerHTML='';
+  // Meta-progression locker shows ONE card per distinct unit identity, never one per duplicate
+  // copy — a unit's "identity" is its recruitedFromPool/recruitedFrom link if it has one, or its
+  // own id otherwise (starters, and any unit with no recruit-origin tag).
+  const seenIdentities=new Set();
+  const distinctUnits=[];
   DATA.playerUnits.forEach(u=>{
+    const identity=u.recruitedFromPool||u.recruitedFrom||u.id;
+    if(seenIdentities.has(identity)) return;
+    seenIdentities.add(identity);
+    distinctUnits.push(u);
+  });
+  distinctUnits.forEach(u=>{
     const card=document.createElement('div');card.className='unit-card';card.dataset.uid=u.id;
     const icon=document.createElement('div');icon.className='unit-card-icon';
     icon.style.background=catColor(u.category);icon.textContent=catLabel(u.category);
@@ -2175,6 +2439,14 @@ function updateSlots(){
       el.innerHTML=`<span class="slot-name">${u?.name||'?'}</span><span class="slot-cost">Cost ${u?.cost}</span><span class="slot-cat">${u?.category}</span><button class="slot-remove">✕</button>`;
       el.querySelector('.slot-remove').addEventListener('click',e=>{e.stopPropagation();slots[i]=null;updateSlots();updateDraftCards();});
     } else {el.classList.remove('filled');el.innerHTML=`<span style="color:var(--text-dim);font-size:.7rem;font-family:var(--font-mono)">Empty</span>`;}
+    // Slot 0 always keeps its frontline warning badge, even after innerHTML gets replaced above —
+    // grunts default-target this slot, so it's worth flagging regardless of fill state.
+    if(i===0){
+      const badge=document.createElement('div');
+      badge.className='frontline-badge';
+      badge.innerHTML='⚔ FRONTLINE<br><span style="font-size:.6rem;opacity:.85">Grunts target this slot most</span>';
+      el.appendChild(badge);
+    }
   }
   $('draft-used').textContent=total;
   $('btn-draft-go').disabled=!slots.every(s=>s!==null);
@@ -2252,7 +2524,9 @@ function renderGarage(){
   let selectedSlot=null;
 
   const render=()=>{
+    const storageCount=(run.recruitedThisRun||[]).filter(id=>!run.playerUnitIds.includes(id)).length;
     let h=`<div class="overlay-section"><div class="overlay-label">Active Squad (tap a slot, then tap a replacement)</div></div>`;
+    h+=`<div class="overlay-section" style="padding-top:0"><div class="overlay-value" style="font-size:.78rem;color:var(--text-muted)">Storage: ${storageCount}/${MAX_STORAGE_UNITS} units held off-field this run</div></div>`;
     h+=`<div style="display:flex;gap:.5rem;margin-bottom:.8rem">`;
     run.playerUnitIds.forEach((id,i)=>{
       const u=byId(id,DATA.playerUnits);if(!u) return;
