@@ -37,15 +37,7 @@
       "bossFloor": 10,
       "fixedEvents": {
         "8": "station"
-      },
-      "stationPool": [
-        "guncannon",
-        "guntank",
-        "gundam_mk2",
-        "age1_titus",
-        "gundam_x",
-        "gundam_ashtaron"
-      ]
+      }
     },
     {
       "id": "uc_space",
@@ -79,12 +71,7 @@
         5
       ],
       "bossFloor": 10,
-      "doubleAceChance": 0.25,
-      "stationPool": [
-        "zeta_gundam",
-        "gundam_ground_type",
-        "gm_command"
-      ]
+      "doubleAceChance": 0.25
     }
   ],
   "playerUnits": [
@@ -1828,6 +1815,398 @@
         "effect": {
           "type": "atk_down",
           "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "strike_rouge",
+      "name": "Strike Rouge",
+      "series": "SEED",
+      "cost": 1,
+      "category": "Melee",
+      "hp": 160,
+      "maxHp": 160,
+      "atk": 23,
+      "def": 20,
+      "spd": 33,
+      "passive": {
+        "name": "Combat Medic Training",
+        "description": "Can use up to 3 heal items on its turn instead of the usual 2.",
+        "type": "heal_cap_boost",
+        "cap": 3
+      },
+      "basic": {
+        "name": "Aile Striker Beam Rifle",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Defensive Beam Saber Guard",
+        "description": "1.5x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.5,
+        "energyCost": 3,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Cagalli's Resolve",
+        "description": "Survives any single hit at 1 HP once per fight, then 1.8x ATK counter-strike on the attacker.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.8
+      }
+    },
+    {
+      "id": "gundam_sandrock",
+      "name": "Gundam Sandrock",
+      "series": "Wing",
+      "cost": 2,
+      "category": "Melee",
+      "hp": 215,
+      "maxHp": 215,
+      "atk": 28,
+      "def": 24,
+      "spd": 30,
+      "passive": {
+        "name": "Quatre's Compassion",
+        "description": "Can use up to 3 heal items on its turn instead of the usual 2. Also generates +2 energy whenever an ally drops below 40% HP.",
+        "type": "heal_cap_boost",
+        "cap": 3,
+        "secondaryEffect": "ally_low_hp_energy"
+      },
+      "basic": {
+        "name": "Twin Heat Shotel Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Heat Shotel Cross Cut",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Desert Guardian",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "gn005_virtue",
+      "name": "GN-005 Virtue",
+      "series": "00",
+      "cost": 2,
+      "category": "Ranged",
+      "hp": 225,
+      "maxHp": 225,
+      "atk": 27,
+      "def": 26,
+      "spd": 26,
+      "passive": {
+        "name": "Trans-Am Field Medic",
+        "description": "When using heal items, its 2 uses can be split between 2 different units instead of being locked onto one target.",
+        "type": "split_heal"
+      },
+      "basic": {
+        "name": "GN Bazooka Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "GN Shield Bits Barrier",
+        "description": "Grants a 60 HP shield (DEF Up) to self for 2 turns + 1.5x ATK on one target.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.5,
+        "energyCost": 3,
+        "effect": {
+          "type": "def_up",
+          "value": 1.2,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Trans-Am Burst",
+        "description": "2.0x ATK on one target + sheds armor permanently for +10% SPD and +10% ATK for the rest of the fight.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.0,
+        "selfBuff": {
+          "type": "atk_spd_up",
+          "value": 1.1,
+          "duration": 99
+        }
+      }
+    },
+    {
+      "id": "calamity_gundam",
+      "name": "Calamity Gundam",
+      "series": "SEED",
+      "cost": 1,
+      "category": "Ranged",
+      "hp": 185,
+      "maxHp": 185,
+      "atk": 18,
+      "def": 28,
+      "spd": 16,
+      "passive": {
+        "name": "Immovable Fortress",
+        "description": "Cannot be SPD-buffed. All incoming damage reduced by 10% flat.",
+        "type": "dmg_taken_reduction",
+        "value": 0.9
+      },
+      "basic": {
+        "name": "Hyper Impulse Cannon",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Anchor Down — Covering Fire",
+        "description": "No damage. Grants the whole team +12% DEF for 2 turns.",
+        "type": "team_buff_only",
+        "target": "self",
+        "energyCost": 3,
+        "teamBuff": {
+          "type": "def_up",
+          "value": 1.12,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Last Stand Bombardment",
+        "description": "0.9x ATK on all enemies + applies DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.9,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "seravee_gundam",
+      "name": "Seravee Gundam",
+      "series": "00",
+      "cost": 3,
+      "category": "Ranged",
+      "hp": 250,
+      "maxHp": 250,
+      "atk": 22,
+      "def": 27,
+      "spd": 24,
+      "passive": {
+        "name": "Seraphim Support Array",
+        "description": "Whenever an ally's HP drops below 50%, Seravee gains +1 energy at the start of its next turn.",
+        "type": "ally_low_hp_energy_bonus",
+        "value": 1
+      },
+      "basic": {
+        "name": "GN Cannon Volley",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Seraphim Formation — Rally",
+        "description": "No damage. Grants the whole team +15% ATK and +10% DEF for 2 turns.",
+        "type": "team_buff_only",
+        "target": "self",
+        "energyCost": 4,
+        "teamBuff": {
+          "type": "atk_def_up",
+          "value": 1.15,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "GN Cannon Full Burst",
+        "description": "1.0x ATK on all enemies + applies DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "nu_gundam",
+      "name": "Nu Gundam",
+      "series": "UC",
+      "cost": 4,
+      "category": "Ranged",
+      "hp": 280,
+      "maxHp": 280,
+      "atk": 40,
+      "def": 28,
+      "spd": 34,
+      "passive": {
+        "name": "Psycoframe Resonance",
+        "description": "Once per fight, automatically survives a lethal hit at 1 HP while below 25% HP (Fin Funnel barrier).",
+        "type": "survive_lethal_once",
+        "threshold": 0.25
+      },
+      "basic": {
+        "name": "Fin Funnel Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Funnel Barrage",
+        "description": "0.85x ATK on all enemies + applies ATK Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.85,
+        "energyCost": 5,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Fin Funnel Full Spread",
+        "description": "2.4x ATK on one target + grants the whole team +18% ATK for 2 turns.",
+        "type": "damage_team_buff",
+        "target": "single",
+        "multiplier": 2.4,
+        "teamBuff": {
+          "type": "atk_up",
+          "value": 1.18,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "xi_gundam",
+      "name": "Xi Gundam",
+      "series": "UC",
+      "cost": 4,
+      "category": "Ranged",
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 38,
+      "def": 25,
+      "spd": 44,
+      "passive": {
+        "name": "Crit Synergy Targeting",
+        "description": "Special costs 1 less energy if an ally landed a crit last turn.",
+        "type": "crit_synergy_energy_discount",
+        "value": 1
+      },
+      "basic": {
+        "name": "Mega Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Precision Beam Cannon",
+        "description": "1.9x ATK on one target, ignores 20% of target's DEF.",
+        "type": "damage_pierce",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4,
+        "defPierce": 0.2
+      },
+      "ultimate": {
+        "name": "Hathaway's Command",
+        "description": "2.3x ATK on one target + grants the whole team +18% SPD for 2 turns.",
+        "type": "damage_team_buff",
+        "target": "single",
+        "multiplier": 2.3,
+        "teamBuff": {
+          "type": "spd_up",
+          "value": 1.18,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "raphael_gundam",
+      "name": "Raphael Gundam",
+      "series": "00",
+      "cost": 4,
+      "category": "Ranged",
+      "hp": 290,
+      "maxHp": 290,
+      "atk": 39,
+      "def": 32,
+      "spd": 22,
+      "passive": {
+        "name": "Tactical AI Targeting",
+        "description": "Special auto-targets the highest-ATK enemy, dealing +20% damage if that target is already debuffed.",
+        "type": "auto_target_highest_atk_bonus",
+        "value": 1.2
+      },
+      "basic": {
+        "name": "GN Mega Launcher Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "GN Mega Launcher Focused Blast",
+        "description": "1.85x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.85,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Seven Sword/G Full Burst",
+        "description": "2.3x ATK on one target + grants the whole team +18% DEF for 2 turns.",
+        "type": "damage_team_buff",
+        "target": "single",
+        "multiplier": 2.3,
+        "teamBuff": {
+          "type": "def_up",
+          "value": 1.18,
           "duration": 2
         }
       }
