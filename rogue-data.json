@@ -924,7 +924,7 @@
       "name": "Guntank",
       "series": "UC",
       "cost": 1,
-      "category": "Melee",
+      "category": "Ranged",
       "hp": 195,
       "maxHp": 195,
       "atk": 24,
