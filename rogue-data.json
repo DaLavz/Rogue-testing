@@ -46,6 +46,51 @@
         "gundam_x",
         "gundam_ashtaron"
       ]
+    },
+    {
+      "id": "uc_space",
+      "name": "UC Space",
+      "seriesName": "UC",
+      "flavorName": "A Baoa Qu — The Graveyard",
+      "totalFloors": 10,
+      "background": "space",
+      "trait": {
+        "id": "minovsky_interference",
+        "name": "Minovsky Particle Interference",
+        "description": "Player Ranged-category damage -15% while 2+ enemies are alive. Drops once only 1 enemy remains.",
+        "effectType": "player_ranged_debuff",
+        "value": 0.85
+      },
+      "gruntPool": [
+        "gelgoog",
+        "hizack",
+        "gaza_c",
+        "geara_doga",
+        "jagd_doga",
+        "rick_dom_ii"
+      ],
+      "acePool": [
+        "lalah_elmeth",
+        "haman_qubeley",
+        "full_frontal_sinanju"
+      ],
+      "bossId": "sazabi",
+      "aceFloors": [
+        5
+      ],
+      "bossFloor": 10,
+      "doubleAceChance": 0.15,
+      "stationPool": [
+        "zeta_gundam",
+        "gundam_ground_type",
+        "gm_command",
+        "guncannon",
+        "guntank",
+        "gundam_mk2",
+        "age1_titus",
+        "gundam_x",
+        "gundam_ashtaron"
+      ]
     }
   ],
   "playerUnits": [
@@ -724,6 +769,446 @@
           "duration": 2
         }
       }
+    },
+    {
+      "id": "gelgoog",
+      "name": "Gelgoog",
+      "fullName": "MS-14A Gelgoog",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "gelgoog",
+      "category": "Ranged",
+      "hp": 115,
+      "maxHp": 115,
+      "atk": 26,
+      "def": 14,
+      "spd": 32,
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Beam Naginata Cross-Slash",
+        "description": "1.6x ATK on one target, ignores 20% of target's DEF.",
+        "type": "damage_pierce",
+        "target": "single",
+        "multiplier": 1.6,
+        "energyCost": 4,
+        "defPierce": 0.2
+      }
+    },
+    {
+      "id": "hizack",
+      "name": "Hizack",
+      "fullName": "RMS-106 Hizack",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "hizack",
+      "category": "Ranged",
+      "hp": 120,
+      "maxHp": 120,
+      "atk": 23,
+      "def": 15,
+      "spd": 35,
+      "basic": {
+        "name": "Beam Rifle Burst",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Vulcan + Rifle Combo",
+        "description": "0.7x ATK then 0.9x ATK on one target, second hit applies SPD Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.6,
+        "energyCost": 3,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "gaza_c",
+      "name": "Gaza-C",
+      "fullName": "AMX-003 Gaza-C",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "gaza",
+      "category": "Mobility",
+      "hp": 105,
+      "maxHp": 105,
+      "atk": 24,
+      "def": 12,
+      "spd": 42,
+      "basic": {
+        "name": "Beam Saber Dash",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Transformation Assault",
+        "description": "1.7x ATK on one target + applies ATK Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "geara_doga",
+      "name": "Geara Doga",
+      "fullName": "AMS-119 Geara Doga",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "geara_doga",
+      "category": "Melee",
+      "hp": 140,
+      "maxHp": 140,
+      "atk": 24,
+      "def": 19,
+      "spd": 30,
+      "basic": {
+        "name": "Beam Assault Rifle Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Sturm Faust Launch",
+        "description": "1.8x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "jagd_doga",
+      "name": "Jagd Doga",
+      "fullName": "AMS-119S Jagd Doga",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "jagd_doga",
+      "category": "Mobility",
+      "hp": 130,
+      "maxHp": 130,
+      "atk": 27,
+      "def": 15,
+      "spd": 45,
+      "basic": {
+        "name": "Funnel Probe",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Psycho-Frame Resonance",
+        "description": "1.5x ATK on one target + applies ATK Down and SPD Down for 1 turn each.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.5,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_spd_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "rick_dom_ii",
+      "name": "Rick Dom II",
+      "fullName": "MS-09R-2 Rick Dom II",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "dom",
+      "category": "Ranged",
+      "hp": 128,
+      "maxHp": 128,
+      "atk": 25,
+      "def": 17,
+      "spd": 28,
+      "basic": {
+        "name": "Giant Bazooka Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Scattering Beam Sweep",
+        "description": "0.55x ATK on all 3 player units + applies DoT to one random target for 1 turn.",
+        "type": "damage_dot",
+        "target": "all",
+        "multiplier": 0.55,
+        "energyCost": 3,
+        "effect": {
+          "type": "dot",
+          "value": 8,
+          "duration": 1,
+          "targetMode": "random_one"
+        }
+      }
+    },
+    {
+      "id": "lalah_elmeth",
+      "name": "Lalah Sune's Elmeth",
+      "fullName": "MAN-08 Elmeth",
+      "series": "UC",
+      "tier": "ace",
+      "family": "elmeth",
+      "category": "Mobility",
+      "hp": 240,
+      "maxHp": 240,
+      "atk": 35,
+      "def": 16,
+      "spd": 58,
+      "passive": {
+        "name": "Newtype Awareness",
+        "description": "20% chance to dodge any incoming attack entirely.",
+        "type": "dodge",
+        "value": 0.2
+      },
+      "basic": {
+        "name": "Bit Probe Strike",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Psycommu Bit Barrage",
+        "description": "0.85x ATK on all 3 player units + applies ATK Down to all for 1 turn.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.85,
+        "energyCost": 5,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      },
+      "ultimate": {
+        "name": "Lalah's Resonance",
+        "description": "2.2x ATK on one target + applies ATK Down and DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.2,
+        "effect": {
+          "type": "atk_def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "haman_qubeley",
+      "name": "Haman Karn's Qubeley",
+      "fullName": "AMX-004 Qubeley",
+      "series": "UC",
+      "tier": "ace",
+      "family": "qubeley",
+      "category": "Mobility",
+      "hp": 255,
+      "maxHp": 255,
+      "atk": 36,
+      "def": 18,
+      "spd": 52,
+      "passive": {
+        "name": "Jet Stream Attack",
+        "description": "Summons 1 Gaza-C token when Haman drops below 60% HP. If the token is alive, Haman gains +10% ATK each round.",
+        "type": "token_spawn",
+        "tokenId": "gaza_c_token",
+        "tokenCount": 1,
+        "spawnTrigger": "hp_threshold",
+        "spawnThreshold": 0.6
+      },
+      "basic": {
+        "name": "Funnel Strike",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Queen's Funnels",
+        "description": "0.8x ATK on all 3 player units + applies SPD Down to one target for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.8,
+        "energyCost": 5,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 2,
+          "targetMode": "random_one"
+        }
+      },
+      "ultimate": {
+        "name": "Absolute Authority",
+        "description": "2.4x ATK on one target + applies DEF Down for 3 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 3
+        }
+      }
+    },
+    {
+      "id": "full_frontal_sinanju",
+      "name": "Full Frontal's Sinanju",
+      "fullName": "MSN-06S Sinanju",
+      "series": "UC",
+      "tier": "ace",
+      "family": "sinanju",
+      "category": "Mobility",
+      "hp": 265,
+      "maxHp": 265,
+      "atk": 40,
+      "def": 17,
+      "spd": 60,
+      "passive": {
+        "name": "The Second Coming of Char",
+        "description": "If Full Frontal acts before all 3 player units in a round, his Special costs 1 less energy that turn.",
+        "type": "speed_cost_reduction"
+      },
+      "basic": {
+        "name": "Beam Rifle Precision",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Sinanju Beam Axe Assault",
+        "description": "1.9x ATK on one target + applies ATK Down and SPD Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_spd_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Vestige of Char",
+        "description": "2.6x ATK on one target, ignores all DEF.",
+        "type": "damage_pierce",
+        "target": "single",
+        "multiplier": 2.6,
+        "defPierce": 1.0
+      }
+    },
+    {
+      "id": "sazabi",
+      "name": "Char Aznable's Sazabi",
+      "fullName": "MSN-04 Sazabi",
+      "series": "UC",
+      "tier": "boss",
+      "family": "sazabi",
+      "category": "Mobility",
+      "hp": 550,
+      "maxHp": 550,
+      "atk": 52,
+      "def": 28,
+      "spd": 58,
+      "recruitCost": 4,
+      "isBoss": true,
+      "passive": {
+        "name": "Revenge of Char",
+        "description": "The first time Sazabi's Special hits a player unit, that unit's SPD buffs are blocked for 2 turns.",
+        "type": "special_hit_debuff_block"
+      },
+      "basic": {
+        "name": "Beam Shot Rifle",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Funnels + Beam Tomahawk",
+        "description": "1.8x ATK on one target + applies DoT and SPD Down for 2 turns.",
+        "type": "damage_debuff_dot",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 5,
+        "effect": {
+          "type": "atk_down_dot",
+          "atkDownValue": 0.85,
+          "dotValue": 12,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Sazabi Full Power",
+        "description": "1.0x ATK on all player units + applies ATK Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "phases": [
+        {
+          "threshold": 0.5,
+          "forceSpecial": true,
+          "forceUltOnBank": true,
+          "targetMode": "highest_spd",
+          "description": "Char abandons calculation for pure aggression — the Sazabi blazes with everything he has left."
+        }
+      ],
+      "introLines": [
+        "\"Newtype or not, you cannot win against thirty years of hatred!\"",
+        "\"I am Char Aznable! I will end this — for Lalah, for everyone!\""
+      ]
+    },
+    {
+      "id": "gaza_c_token",
+      "name": "Gaza-C Escort",
+      "fullName": "AMX-003 Gaza-C (Escort)",
+      "series": "UC",
+      "tier": "token",
+      "family": "gaza",
+      "category": "Mobility",
+      "isToken": true,
+      "hp": 70,
+      "maxHp": 70,
+      "atk": 18,
+      "def": 10,
+      "spd": 38,
+      "basic": {
+        "name": "Beam Saber Dash",
+        "description": "Basic mobility hit.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      }
     }
   ],
   "items": [
@@ -731,7 +1216,7 @@
       "id": "field_technician",
       "name": "Field Technician",
       "category": "heal_reward",
-      "rarity": "Uncommon",
+      "rarity": "Rare",
       "description": "Restores 500 HP to one unit of your choice. Reward only — never appears in the shop.",
       "effect": {
         "type": "heal_one",
@@ -1190,6 +1675,167 @@
         "selfBuff": {
           "type": "def_up",
           "value": 1.25,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "zeta_gundam",
+      "name": "Zeta Gundam",
+      "series": "UC",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 265,
+      "maxHp": 265,
+      "atk": 40,
+      "def": 26,
+      "spd": 56,
+      "passive": {
+        "name": "Bio-Sensor Resonance",
+        "description": "When Zeta drops below 30% HP, gains +35% ATK and +20% SPD for the rest of the fight, but takes +15% increased damage from all sources.",
+        "type": "low_hp_power_surge",
+        "threshold": 0.3,
+        "atkBonus": 1.35,
+        "spdBonus": 1.2,
+        "dmgTakenPenalty": 1.15
+      },
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Zeta Waverider Crash",
+        "description": "2.0x ATK on one target + applies ATK Down and SPD Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.0,
+        "energyCost": 5,
+        "effect": {
+          "type": "atk_spd_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Bio-Sensor Eruption",
+        "description": "1.0x ATK on all enemies + applies ATK Down to all for 2 turns + Zeta gains +15% SPD for 3 turns.",
+        "type": "damage_debuff_self_buff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        },
+        "selfBuff": {
+          "type": "spd_up",
+          "value": 1.15,
+          "duration": 3
+        }
+      }
+    },
+    {
+      "id": "gundam_ground_type",
+      "name": "Gundam Ground Type",
+      "series": "UC",
+      "cost": 1,
+      "category": "Ranged",
+      "hp": 170,
+      "maxHp": 170,
+      "atk": 27,
+      "def": 21,
+      "spd": 30,
+      "passive": {
+        "name": "Earth Federation Reliability",
+        "description": "Basic Attacks have a 10% chance to generate +1 extra energy.",
+        "type": "basic_bonus_energy_chance",
+        "chance": 0.1
+      },
+      "basic": {
+        "name": "Beam Spray Gun Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "100mm Machine Gun Burst",
+        "description": "1.6x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.6,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Federation Last Stand",
+        "description": "2.1x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.1,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "gm_command",
+      "name": "GM Command",
+      "series": "UC",
+      "cost": 2,
+      "category": "Ranged",
+      "hp": 205,
+      "maxHp": 205,
+      "atk": 31,
+      "def": 23,
+      "spd": 36,
+      "passive": {
+        "name": "Officer's Coordination",
+        "description": "Whenever an ally drops below 50% HP, GM Command gains +10% DEF for 2 turns.",
+        "type": "ally_low_hp_def_bonus",
+        "value": 0.1
+      },
+      "basic": {
+        "name": "Beam Spray Gun Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Command Beam Saber Combo",
+        "description": "1.75x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.75,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Officer's Resolve",
+        "description": "0.9x ATK on all enemies + applies ATK Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.9,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
           "duration": 2
         }
       }
