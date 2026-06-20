@@ -310,7 +310,7 @@ button:active{transform:scale(0.97)}
 <!-- TITLE -->
 <div id="screen-title" class="screen active">
   <div class="title-main">Rogue<br>Gundam</div>
-  <div class="title-sub">— PHASE 2 PROTOTYPE —</div>
+  <div class="title-sub">— PHASE 1 PROTOTYPE —</div>
   <div id="title-captain-row" style="text-align:center;margin:.3rem 0 .6rem;display:none">
     <span style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-muted)">Captain <span id="title-captain-name" style="color:var(--gold);font-weight:700"></span></span>
     <button id="btn-rename-captain" style="background:none;border:none;color:var(--blue);font-size:.72rem;text-decoration:underline;cursor:pointer;margin-left:.5rem">change</button>
@@ -477,7 +477,7 @@ button:active{transform:scale(0.97)}
   <div class="reward-cards" id="shop-body" style="overflow-y:auto;flex:1"></div>
   <div class="reward-confirm-bar">
     <button class="btn-secondary" id="btn-shop-inventory" style="width:100%;margin-bottom:.5rem">Inventory / Heal</button>
-    <button class="btn-primary" id="btn-shop-done">Continue</button>
+    <button class="btn-primary" id="btn-shop-done">Continue to Garage &amp; Upgrades →</button>
   </div>
 </div>
 
@@ -1037,7 +1037,7 @@ function onWin(C){
 
 /* ── RUN START ── */
 function startRun(ids){
-  S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{},visitedZones:['earth'],recruitedThisRun:[]};
+  S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{},visitedZones:['earth'],recruitedThisRun:[],doubleAceZone:false,teamUpgrades:{dmg:0,def:0}};
   // init HP tracking to full
   ids.forEach(id=>{const base=byId(id,DATA.playerUnits);if(base) S.run.unitHp[id]=base.maxHp;});
   S.inventory=[];S.currency=0;S.activePassives=[];
@@ -1062,7 +1062,7 @@ function startFloor(run){
   // pick one outright, no roll). Only one recruitment encounter of EITHER type is allowed per
   // zone; stationDone covers both, since they're really the same "one recruitment opportunity per
   // zone" slot wearing different faces.
-  const isFixedFloorType=f===zone.bossFloor||zone.aceFloors.includes(f);
+  const isFixedFloorType=f===zone.bossFloor||getEffectiveAceFloors(run,zone).includes(f);
   if(!fixedEvent&&!isFixedFloorType&&!run.stationDone&&zone.id!=='earth'){
     if(Math.random()<0.40){
       run.stationDone=true;
@@ -1089,17 +1089,23 @@ function startFloor(run){
       else if(t==='team_def_up') u.def=Math.round(u.def*p.effect.value);
       else if(t==='team_spd_up') u.spd=Math.round(u.spd*p.effect.value);
     }
+    // apply permanent team-wide DMG/DEF upgrades bought this run (separate from the temporary
+    // passive-boost items above — these never expire, they last the whole run)
+    if(run.teamUpgrades){
+      if(run.teamUpgrades.dmg) u.atk=Math.round(u.atk*(1+TEAM_UPGRADE_PERCENT_PER_TIER*run.teamUpgrades.dmg));
+      if(run.teamUpgrades.def) u.def=Math.round(u.def*(1+TEAM_UPGRADE_PERCENT_PER_TIER*run.teamUpgrades.def));
+    }
     return u;
   }).filter(Boolean);
 
   const isBoss=f===zone.bossFloor;
-  const isAce=zone.aceFloors.includes(f);
+  const isAce=getEffectiveAceFloors(run,zone).includes(f);
   const isFinalBoss=isBoss&&zone.id==='final';
   const eUnits=buildEncounter(zone,f,isBoss,isAce);
 
   const C={zoneId:run.zoneId,floor:f,isBoss,isAce,isFinalBoss,playerUnits:pUnits,enemyUnits:eUnits,
     playerEnergy:0,enemyEnergy:0,playerUlt:run.bankedUlt||0,enemyUlt:0,round:1,
-    waitingForPlayer:false,activeUnit:null,currentOrder:[],pendingAction:null,healUsage:{}};
+    waitingForPlayer:false,activeUnit:null,currentOrder:[],pendingAction:null,healUsage:{},isDoubleAce:run.doubleAceZone};
   S.combat=C;
   initCombatUI(C,zone);
   startRoundAfterIntro(C);
@@ -1712,9 +1718,18 @@ function currentZoneIndex(){
   if(!S.run) return 0;
   return DATA.zones.findIndex(z=>z.id===S.run.zoneId);
 }
+// Per-item multiplier on top of its rarity tier's base weight — lets one specific item's drop
+// rate be tuned without affecting every other item that happens to share the same rarity.
+// Newtype Gene is boosted here specifically because it's the only Legendary the player actually
+// interacts with often; any future Legendary item should default to 1 (no override) unless tuned.
+const ITEM_WEIGHT_OVERRIDE={newtype_gene:2.6};
+
 function weightedPick(items){
   const zIdx=currentZoneIndex();
-  const weights=items.map(it=>(RARITY_WEIGHT[it.rarity]||10)*zoneRarityMultiplier(it.rarity,zIdx));
+  // Extra one-time boost when the cleared stage was an ace fight inside a double-ace zone variant —
+  // these fights are tougher than a normal stage, so the reward should feel noticeably better.
+  const bonusBoost=S._rewardBonusBoost||{};
+  const weights=items.map(it=>(RARITY_WEIGHT[it.rarity]||10)*zoneRarityMultiplier(it.rarity,zIdx)*(1+(bonusBoost[it.rarity]||0))*(ITEM_WEIGHT_OVERRIDE[it.id]||1));
   const total=weights.reduce((s,w)=>s+w,0);
   let roll=Math.random()*total;
   for(let i=0;i<items.length;i++){
@@ -1756,10 +1771,15 @@ function generateRewardPool(){
 
 function showReward(C){
   show('reward');
-  $('reward-title').textContent='Stage '+C.floor+' Cleared';
+  const isBonusAceReward=C.isAce&&C.isDoubleAce;
+  $('reward-title').textContent=(isBonusAceReward?'⚔ Ace Defeated — ':'')+'Stage '+C.floor+' Cleared';
   $('reward-bar').style.display='none';
   const cards=$('reward-cards');cards.innerHTML='';
+  // Better rewards for clearing an ace fight inside a double-ace zone variant — these fights
+  // replace what would normally be easier grunt stages, so the payoff should feel proportionate.
+  S._rewardBonusBoost=isBonusAceReward?{Uncommon:0.25,Rare:0.4,Epic:0.5,Legendary:0.6}:null;
   const picked=generateRewardPool();
+  S._rewardBonusBoost=null; // one-shot, never leaks into the next (normal) reward screen
   let sel=null;
   picked.forEach(item=>{
     const card=document.createElement('div');
@@ -1855,7 +1875,24 @@ function enterNextZone(){
   S.run.currentFloor=1;
   S.run.stationDone=false;
   delete S.run._pendingNextZone;
+  rollDoubleAceVariant(S.run);
   startFloor(S.run);
+}
+
+// 25% chance per zone (rolled once, at zone entry) for the "double-ace" variant: instead of a
+// single ace on stage 5, stages 4 and 8 both become ace encounters and stage 5 reverts to a
+// normal grunt stage. This is a deliberate trade-off — it also removes 2 of the 8 stages that
+// would otherwise be eligible for a roaming recruitment encounter, so double-ace zones naturally
+// have fewer encounter opportunities. Compensated by better rewards after each of the 2 ace fights.
+function rollDoubleAceVariant(run){
+  const zone=DATA.zones.find(z=>z.id===run.zoneId);
+  const chance=zone.doubleAceChance!=null?zone.doubleAceChance:0.25;
+  run.doubleAceZone=!!(zone.aceFloors.length===1&&Math.random()<chance);
+}
+
+function getEffectiveAceFloors(run,zone){
+  if(run.doubleAceZone&&zone.aceFloors.length===1) return [4,8];
+  return zone.aceFloors;
 }
 
 /* ── STATION (guaranteed recruit stop) ── */
@@ -2444,7 +2481,7 @@ function updateSlots(){
     if(i===0){
       const badge=document.createElement('div');
       badge.className='frontline-badge';
-      badge.innerHTML='⚔ FRONTLINE<br><span style="font-size:.6rem;opacity:.85">Grunts target this slot most</span>';
+      badge.textContent='⚔ Frontline - dmg sponge';
       el.appendChild(badge);
     }
   }
@@ -2605,6 +2642,13 @@ const UPGRADE_MAX_TIER=5;
 const HP_PERCENT_PER_TIER=0.03; // +3% max HP per tier
 const ATK_PERCENT_PER_TIER=0.03; // +3% ATK per tier, mirrors HP for this first pass
 
+// Team-wide DMG/DEF upgrades — separate from the per-unit HP/ATK upgrades above. One button each,
+// buffs the WHOLE active squad at once rather than a single chosen unit. 4 tiers, flat 100G per
+// tier (no zone scaling, unlike the per-unit ones), +5% per tier (so +20% at max tier 4).
+const TEAM_UPGRADE_MAX_TIER=4;
+const TEAM_UPGRADE_COST=100;
+const TEAM_UPGRADE_PERCENT_PER_TIER=0.05;
+
 function ensureUpgradeTiers(unit){
   if(!unit.upgradeTiers) unit.upgradeTiers={hp:0,atk:0,special:0,ultimate:0};
   return unit.upgradeTiers;
@@ -2614,6 +2658,22 @@ function renderUpgradeScreen(){
   $('upgrades-currency').textContent=S.currency;
   const cost=getUpgradeCost();
   let h='';
+
+  // Team-wide section — one button each for DMG and DEF, buffs the whole active squad at once.
+  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
+  h+=`<div class="reward-card rarity-Rare" style="cursor:default">
+    <div class="reward-card-tile" style="min-height:50px">
+      <div>
+        <div class="reward-card-name">Squad-Wide Upgrades</div>
+        <div class="reward-card-sub">Affects all 3 equipped units at once</div>
+      </div>
+    </div>
+    <div class="reward-card-desc" style="display:block">
+      ${renderTeamUpgradeRow('dmg','Team Damage',teamTiers.dmg)}
+      ${renderTeamUpgradeRow('def','Team Defense',teamTiers.def)}
+    </div>
+  </div>`;
+
   S.run.playerUnitIds.forEach(id=>{
     const u=byId(id,DATA.playerUnits);if(!u) return;
     const tiers=ensureUpgradeTiers(u);
@@ -2637,6 +2697,12 @@ function renderUpgradeScreen(){
       const unitId=btn.dataset.unit;
       const stat=btn.dataset.stat;
       buyUpgrade(unitId,stat);
+    });
+  });
+  document.querySelectorAll('.team-upgrade-buy-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      buyTeamUpgrade(btn.dataset.stat);
     });
   });
 }
@@ -2679,6 +2745,35 @@ function buyUpgrade(unitId,stat){
     const baseAtk=u.baseAtk||(u.baseAtk=u.atk);
     u.atk=Math.round(baseAtk*(1+ATK_PERCENT_PER_TIER*tiers.atk));
   }
+  renderUpgradeScreen();
+}
+
+function renderTeamUpgradeRow(stat,label,tier){
+  const maxed=tier>=TEAM_UPGRADE_MAX_TIER;
+  const canAfford=S.currency>=TEAM_UPGRADE_COST;
+  const pips=Array.from({length:TEAM_UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
+  const pctSoFar=Math.round(tier*TEAM_UPGRADE_PERCENT_PER_TIER*100);
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
+    <div>
+      <div style="font-size:.85rem;font-weight:600">${label} <span style="color:var(--gold);font-family:var(--font-mono);font-size:.75rem">${pips}</span></div>
+      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${TEAM_UPGRADE_MAX_TIER}${maxed?' (max)':''} · +${pctSoFar}% so far</div>
+    </div>
+    ${maxed
+      ?`<span style="color:var(--text-dim);font-size:.78rem">MAXED</span>`
+      :`<button class="team-upgrade-buy-btn" data-stat="${stat}" ${canAfford?'':'disabled'}
+          style="background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.35rem .7rem;font-size:.78rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
+          ⬡ ${TEAM_UPGRADE_COST}
+        </button>`
+    }
+  </div>`;
+}
+
+function buyTeamUpgrade(stat){
+  if(S.currency<TEAM_UPGRADE_COST) return;
+  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
+  if(teamTiers[stat]>=TEAM_UPGRADE_MAX_TIER) return;
+  S.currency-=TEAM_UPGRADE_COST;
+  teamTiers[stat]++;
   renderUpgradeScreen();
 }
 $('btn-upgrades-done').addEventListener('click',()=>enterNextZone());
@@ -2882,7 +2977,7 @@ function shopAdvanceTurn(){
 /* ── BOOT: fetch game data, then restore save, then enable the title screen ── */
 async function loadData(){
   try{
-    const resp=await fetch('./rogue-data.json',{cache:'no-cache'});
+    const resp=await fetch('./rogue-data.json?v='+Date.now(),{cache:'no-store'});
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     DATA=await resp.json();
     loadGame(); // merge any persisted recruited units now that DATA exists
