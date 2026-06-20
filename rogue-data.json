@@ -79,7 +79,7 @@
         5
       ],
       "bossFloor": 10,
-      "doubleAceChance": 0.15,
+      "doubleAceChance": 0.25,
       "stationPool": [
         "zeta_gundam",
         "gundam_ground_type",
@@ -1625,12 +1625,12 @@
       "name": "Gundam Ashtaron",
       "series": "After War X",
       "cost": 2,
-      "category": "Melee",
+      "category": "Mobility",
       "hp": 218,
       "maxHp": 218,
       "atk": 34,
       "def": 22,
-      "spd": 40,
+      "spd": 48,
       "passive": {
         "name": "Twin Brother's Fury",
         "description": "If any ally unit currently has a debuff active, Ashtaron gains +15% ATK for that round.",
@@ -1638,15 +1638,15 @@
         "value": 0.15
       },
       "basic": {
-        "name": "Ashtaron Crab Claw Slash",
-        "description": "Standard melee hit on a single target.",
+        "name": "Ashtaron Pincer Dash",
+        "description": "Standard mobility hit on a single target.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0,
         "energyGain": 2
       },
       "special": {
-        "name": "Ashtaron Hercules Claw Full Drive",
+        "name": "Ashtaron Twin-Claw Flurry",
         "description": "1.9x ATK on one target + applies ATK Down and DEF Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
