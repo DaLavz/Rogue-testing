@@ -81,6 +81,9 @@ button:active{transform:scale(0.97)}
 /* COMBAT SCREEN */
 
 /* Ace/Boss warning banner — full-width flash overlay, auto-dismisses */
+.stage-title-card{position:absolute;top:0;left:0;right:0;bottom:0;z-index:65;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .4s ease;background:rgba(0,0,0,0)}
+.stage-title-card.show{opacity:1}
+.stage-title-card .stc-text{font-family:var(--font-display);font-weight:800;font-size:2.6rem;letter-spacing:.12em;color:#fff;text-shadow:0 0 20px rgba(255,255,255,.5),0 2px 10px rgba(0,0,0,.8)}
 .combat-warning-banner{position:absolute;top:38%;left:0;right:0;z-index:60;display:flex;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s ease}
 .combat-warning-banner.show{opacity:1}
 .combat-warning-banner .cwb-text{font-family:var(--font-display);font-weight:700;font-size:1.5rem;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 1.4rem;border-radius:6px;background:rgba(10,10,15,.85);text-align:center;text-shadow:0 0 14px currentColor}
@@ -95,7 +98,7 @@ button:active{transform:scale(0.97)}
 .combat-dialogue-line.tier-boss .cdl-box{border-left-color:#ff3b3b}
 .combat-dialogue-line .cdl-speaker{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.2rem}
 .combat-dialogue-line .cdl-text{font-family:var(--font-display);font-size:.95rem;color:var(--text-primary);line-height:1.4;font-style:italic}
-#screen-combat{background:var(--bg-void);height:100%;max-height:100%;position:relative}
+#screen-combat{background:var(--bg-void);height:100%;max-height:100%;position:relative;overflow-y:auto}
 #screen-combat.active{display:flex;flex-direction:column}
 #screen-combat.bg-earth{background:linear-gradient(180deg,#1a3a6e 0%,#1a3a6e 30%,#2d5a27 30%,#2d5a27 100%)}
 #screen-combat.bg-space{background:radial-gradient(ellipse at 20% 30%,#1a1a3e 0%,#0a0a0f 60%)}
@@ -181,6 +184,7 @@ button:active{transform:scale(0.97)}
 .log-line .log-heal{color:#6bff6b}
 .log-line .log-phase{color:var(--red);font-style:italic}
 .log-line .log-system{color:var(--text-dim);font-style:italic}
+.log-line .log-quote{color:var(--gold);font-style:italic}
 .log-divider{border:none;border-top:1px solid var(--border);margin:.3rem 0}
 
 .player-field{padding:1.4rem .5rem 2rem;flex-shrink:0}
@@ -291,7 +295,7 @@ button:active{transform:scale(0.97)}
   .action-btn{padding:.85rem .5rem;font-size:1.05rem;min-height:64px;gap:.15rem}
   .action-btn .btn-cost{font-size:.74rem}
 
-  .combat-warning-banner,.combat-dialogue-line{position:absolute;left:0;right:0;z-index:60;pointer-events:none}
+  .combat-warning-banner,.combat-dialogue-line,.stage-title-card{position:absolute;left:0;right:0;z-index:60;pointer-events:none}
 
   .unit-rect.enemy-unit{width:104px;height:94px}
   .unit-rect.player-unit{width:112px;height:100px}
@@ -305,10 +309,25 @@ button:active{transform:scale(0.97)}
 <div id="screen-title" class="screen active">
   <div class="title-main">Rogue<br>Gundam</div>
   <div class="title-sub">— PHASE 1 PROTOTYPE —</div>
+  <div id="title-captain-row" style="text-align:center;margin:.3rem 0 .6rem;display:none">
+    <span style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-muted)">Captain <span id="title-captain-name" style="color:var(--gold);font-weight:700"></span></span>
+    <button id="btn-rename-captain" style="background:none;border:none;color:var(--blue);font-size:.72rem;text-decoration:underline;cursor:pointer;margin-left:.5rem">change</button>
+  </div>
   <div class="title-buttons">
     <button class="btn-primary" id="btn-new-run" disabled>New Run</button>
     <button class="btn-secondary" id="btn-how">How to Play</button>
     <div id="title-status" style="text-align:center;font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted);margin-top:.4rem">Loading data…</div>
+  </div>
+</div>
+
+<!-- CAPTAIN NAME ENTRY -->
+<div id="screen-name-entry" class="screen">
+  <div class="title-main" style="font-size:1.8rem">Identify Yourself</div>
+  <div class="title-sub" style="margin-bottom:1.2rem">Your crew needs a name to call you, Captain.</div>
+  <div style="padding:0 1.2rem;max-width:380px;margin:0 auto;width:100%">
+    <input id="captain-name-input" type="text" maxlength="20" placeholder="Enter your name"
+      style="width:100%;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:8px;padding:.75rem .9rem;color:var(--text-primary);font-family:var(--font-display);font-size:1.05rem;text-align:center;margin-bottom:.8rem">
+    <button class="btn-primary" id="btn-confirm-name" style="width:100%">Confirm</button>
   </div>
 </div>
 
@@ -339,6 +358,7 @@ button:active{transform:scale(0.97)}
 
 <!-- COMBAT -->
 <div id="screen-combat" class="screen bg-earth">
+  <div class="stage-title-card" id="stage-title-card"><div class="stc-text" id="stage-title-text">STAGE 1</div></div>
   <div class="combat-warning-banner" id="combat-warning"><div class="cwb-text" id="combat-warning-text">WARNING</div></div>
   <div class="combat-dialogue-line" id="combat-dialogue"><div class="cdl-box"><div class="cdl-speaker" id="cdl-speaker">PILOT</div><div class="cdl-text" id="cdl-text">"..."</div></div></div>
   <div class="top-bar">
@@ -396,6 +416,56 @@ button:active{transform:scale(0.97)}
   </div>
 </div>
 
+<!-- ZONE TRANSITION -->
+<div id="screen-transition" class="screen">
+  <div class="reward-header">
+    <h2 id="transition-title">Zone Cleared</h2>
+    <p id="transition-sub">Your squad has been fully repaired and revived.</p>
+  </div>
+  <div class="reward-cards" id="transition-body" style="overflow-y:auto;flex:1"></div>
+  <div class="reward-confirm-bar">
+    <button class="btn-primary" id="btn-transition-shop">Visit Shop</button>
+    <button class="btn-secondary" id="btn-transition-continue" style="width:100%;margin-top:.5rem">Continue to Next Zone</button>
+  </div>
+</div>
+
+<!-- UPGRADES -->
+<div id="screen-upgrades" class="screen">
+  <div class="reward-header">
+    <h2>Upgrades</h2>
+    <p>⬡ <span id="upgrades-currency">0</span> G available</p>
+  </div>
+  <div class="reward-cards" id="upgrades-body" style="overflow-y:auto;flex:1"></div>
+  <div class="reward-confirm-bar">
+    <button class="btn-primary" id="btn-upgrades-done">Enter Next Zone</button>
+  </div>
+</div>
+
+<!-- GARAGE -->
+<div id="screen-garage" class="screen">
+  <div class="reward-header">
+    <h2>Ship Garage</h2>
+    <p>Swap your active squad using units recruited this run</p>
+  </div>
+  <div class="reward-cards" id="garage-body" style="overflow-y:auto;flex:1"></div>
+  <div class="reward-confirm-bar">
+    <button class="btn-primary" id="btn-garage-done">Continue to Upgrades</button>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div id="screen-shop" class="screen">
+  <div class="reward-header">
+    <h2>Shop</h2>
+    <p>⬡ <span id="shop-currency">0</span> G available</p>
+  </div>
+  <div class="reward-cards" id="shop-body" style="overflow-y:auto;flex:1"></div>
+  <div class="reward-confirm-bar">
+    <button class="btn-secondary" id="btn-shop-inventory" style="width:100%;margin-bottom:.5rem">Inventory / Heal</button>
+    <button class="btn-primary" id="btn-shop-done">Continue</button>
+  </div>
+</div>
+
 <!-- REWARD -->
 <div id="screen-reward" class="screen">
   <div class="reward-header">
@@ -445,7 +515,8 @@ function saveGame(){
   try{
     const data={
       unlockedUnits:S.unlockedUnits, // array of custom unit objects ever recruited
-      persistentCurrency:S.persistentCurrency
+      persistentCurrency:S.persistentCurrency,
+      playerName:S.playerName||null
     };
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
   }catch(e){ console.warn('Save failed',e); }
@@ -457,6 +528,7 @@ function loadGame(){
     const data=JSON.parse(raw);
     S.unlockedUnits=data.unlockedUnits||[];
     S.persistentCurrency=data.persistentCurrency||0;
+    S.playerName=data.playerName||null;
     // merge any previously-unlocked recruited units into DATA.playerUnits so they're selectable
     for(const u of S.unlockedUnits){
       if(!DATA.playerUnits.find(p=>p.id===u.id)) DATA.playerUnits.push(u);
@@ -594,12 +666,17 @@ function aiAction(enemy,C){
 
   if(tier==='grunt'||tier==='token'){
     target=players[0];
-    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<.5) ability='special';
+    // Grunts now use Special whenever they can afford it and it's off cooldown-equivalent — much
+    // more aggressive than before (was 50%), since waiting on a free Basic with energy banked felt passive.
+    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<.8) ability='special';
   } else if(tier==='ace'){
     const adv=players.find(p=>rps(enemy.category,p.category)>1);
     target=adv||players[0];
-    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<.4)) ability='special';
-    if(enemy.ultimate&&C.enemyUlt>=100&&(enemy.hp/enemy.maxHp<.3||Math.random()<.3)) ability='ultimate';
+    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<.65)) ability='special';
+    // Aces now fire their Ultimate aggressively once banked — previously held back too cautiously
+    // (30% baseline chance) which let players stall them out for free. Still slightly more eager
+    // at low HP, but the floor is much higher now.
+    if(enemy.ultimate&&C.enemyUlt>=100&&(enemy.hp/enemy.maxHp<.3||Math.random()<.75)) ability='ultimate';
   } else if(tier==='boss'){
     const hpPct=enemy.hp/enemy.maxHp;
     const phase2=enemy.phases&&hpPct<enemy.phases[0]?.threshold;
@@ -609,8 +686,11 @@ function aiAction(enemy,C){
       target=players.reduce((b,p)=>p.atk*(p.atkMod||1)>b.atk*(b.atkMod||1)?p:b,players[0]);
     } else {
       target=players.reduce((b,p)=>p.spd*(p.spdMod||1)>b.spd*(b.spdMod||1)?p:b,players[0]);
-      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<.35)) ability='special';
-      if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<.5) ability='ultimate';
+      // Boss phase 1: noticeably more willing to use Special even without an RPS edge (was 35%, now 60%)
+      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<.6)) ability='special';
+      // Boss ultimate fires as soon as it's banked and the boss is below 70% HP, not just <50% —
+      // bosses were sitting on a full gauge too long before using it.
+      if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<.7) ability='ultimate';
     }
   }
   return {ability,target};
@@ -626,6 +706,7 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   const cfg=DATA.combatConfig;
   let tlist=[];
   if(ab.target==='single') tlist=[targets[0]];
+  else if(ab.target==='self') tlist=[]; // no damage targets — self/team buff-only ultimate (e.g. Guntank's Fortress Mode)
   else tlist=isEnemy?C.playerUnits.filter(p=>p.hp>0):C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
 
   // energy
@@ -682,8 +763,16 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
         log(`→ <span class="log-status" data-s="${e.type}">${statusLabel(e.type)}</span> → ${nm(et,!isEnemy)} (${e.duration}t)`);
       }
     }
-    // self buff
-    if(!isEnemy&&abilityKey==='ultimate'&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
+  }
+  // self buff (fires once regardless of target count — including target:"self" ultimates with no damage targets)
+  if(!isEnemy&&abilityKey==='ultimate'&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
+  // team buff (whole active party, not just the caster) — e.g. Mk-II's Super Gundam Formation, Guntank's Fortress Mode
+  if(!isEnemy&&abilityKey==='ultimate'&&ab.teamBuff){
+    for(const ally of C.playerUnits){
+      if(ally.hp<=0||ally.defeated) continue;
+      applyStatus(ally,ab.teamBuff);
+    }
+    log(`→ <span class="log-status">${statusLabel(ab.teamBuff.type)}</span> → whole party`);
   }
 
   // defeats
@@ -882,13 +971,24 @@ function onWin(C){
     return;
   }
 
-  if(C.floor>=10){setTimeout(()=>{$('vic-text').textContent='Zone cleared! All 10 stages completed.';show('victory');},700);return;}
+  if(C.floor>=10){
+    setTimeout(()=>{
+      const remaining=DATA.zones.filter(z=>!S.run.visitedZones.includes(z.id));
+      if(remaining.length===0){
+        $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
+        show('victory');
+      } else {
+        showZoneTransition(remaining);
+      }
+    },700);
+    return;
+  }
   setTimeout(()=>showReward(C),600);
 }
 
 /* ── RUN START ── */
 function startRun(ids){
-  S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{}};
+  S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{},visitedZones:['earth'],recruitedThisRun:[]};
   // init HP tracking to full
   ids.forEach(id=>{const base=byId(id,DATA.playerUnits);if(base) S.run.unitHp[id]=base.maxHp;});
   S.inventory=[];S.currency=0;S.activePassives=[];
@@ -1010,31 +1110,42 @@ function initCombatUI(C,zone){
 function delayMs(ms){return new Promise(r=>setTimeout(r,ms));}
 
 async function playIntroSequence(C){
-  const featured=C.enemyUnits.find(e=>e.tier==='ace'||e.tier==='boss'||e.isBoss);
-  if(!featured) return; // grunt-only floor, no intro needed
-
-  const isBoss=featured.tier==='boss'||featured.isBoss;
   lockActionBar();
 
-  // Warning banner
+  // Stage title card — plays on EVERY stage, grunt or otherwise, before anything else.
+  const stc=$('stage-title-card');
+  const stcText=$('stage-title-text');
+  stcText.textContent='STAGE '+C.floor;
+  await delayMs(80);
+  stc.classList.add('show');
+  await delayMs(1100);
+  stc.classList.remove('show');
+  await delayMs(300);
+
+  const featured=C.enemyUnits.find(e=>e.tier==='ace'||e.tier==='boss'||e.isBoss);
+  if(!featured) return; // grunt-only floor — stage title already played, nothing further needed
+
+  const isBoss=featured.tier==='boss'||featured.isBoss;
+
+  // Warning banner — ace/boss floors show the stage number alongside the warning text
   const banner=$('combat-warning');
   const bannerText=$('combat-warning-text');
   banner.className='combat-warning-banner '+(isBoss?'boss':'ace');
-  bannerText.textContent=isBoss?'⚠ Warning: boss unit attacking':'⚠ Warning: ace pilot ahead';
+  bannerText.textContent=(isBoss?'⚠ Warning: boss unit attacking':'⚠ Warning: ace pilot ahead')+' — Stage '+C.floor;
   await delayMs(80);
   banner.classList.add('show');
   await delayMs(1500);
   banner.classList.remove('show');
   await delayMs(350);
 
-  // Dialogue lines (if defined for this unit)
+  // Dialogue lines (if defined for this unit) — stage number shown alongside the speaker name
   const lines=featured.introLines;
   if(lines&&lines.length){
     const dlg=$('combat-dialogue');
     const speakerEl=$('cdl-speaker');
     const textEl=$('cdl-text');
     dlg.className='combat-dialogue-line'+(isBoss?' tier-boss':'');
-    speakerEl.textContent=featured.name;
+    speakerEl.textContent=featured.name+' — Stage '+C.floor;
     for(const line of lines){
       textEl.textContent=line;
       dlg.classList.add('show');
@@ -1269,12 +1380,17 @@ function triggerUnitUltimate(unitId,C){
   const u=C.playerUnits.find(p=>p.id===unitId);
   if(!u||u.hp<=0||u.defeated||!u.ultimate) return;
 
-  if(u.ultimate.target==='all'){
-    const targets=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
-    if(!targets.length) return;
+  if(u.ultimate.target==='all'||u.ultimate.target==='self'){
+    // AoE ultimates need live enemy targets; self/team-buff ultimates (target:"self") need none —
+    // pass an empty array either way and let execAbility's own target resolution decide.
+    const targets=u.ultimate.target==='all'?C.enemyUnits.filter(e=>e.hp>0&&!e.defeated):[];
+    if(u.ultimate.target==='all'&&!targets.length) return;
     execAbility(u,'ultimate',targets,C,false);
     renderField(C);playPendingFx(C);renderRes(C);
-    // no resumeRound() — using an ultimate never advances/consumes a turn
+    // no resumeRound() — using an ultimate never advances/consumes a turn — but we STILL must
+    // check whether that ultimate just won (or lost) the fight, since killing the last enemy
+    // via a free-action ultimate doesn't otherwise pass through the normal turn-resolution path.
+    checkEnd(C);
     return;
   }
 
@@ -1298,7 +1414,9 @@ function resolveUnitUltimateTarget(targetId,C){
   if(!u||!t||u.hp<=0||u.defeated) return true;
   execAbility(u,'ultimate',[t],C,false);
   renderField(C);playPendingFx(C);renderRes(C);
-  // no resumeRound() — using an ultimate never advances/consumes a turn
+  // no resumeRound() — using an ultimate never advances/consumes a turn — but we STILL must
+  // check whether that ultimate just won (or lost) the fight (e.g. one-shotting the last enemy).
+  checkEnd(C);
   return true;
 }
 
@@ -1389,18 +1507,40 @@ function showRpsInfo(){
   `);
 }
 
+const TALK_LINES=[
+  "Stand down! There's no honor left in this fight!",
+  "You don't have to die here today!",
+  "I can feel it... you're hesitating. Listen to me!",
+  "This isn't the way! Lower your weapon!",
+  "We don't have to be enemies! Just stop!",
+  "Look around you — is this really what you wanted?",
+  "I know you can hear me! Don't make me do this!",
+  "There's still a way out of this — take it!",
+  "Stop! I don't want to destroy you!",
+  "You're better than this! End it now!",
+  "Whatever they told you, it isn't worth dying for!",
+  "I can sense your doubt — trust it!",
+  "This war doesn't need another corpse! Stand down!",
+  "Fight beside us instead! It's not too late!",
+  "Please — just put it down. Nobody else has to fall."
+];
+
 function doTalk(C){
   const boss=C.enemyUnits.find(e=>!e.defeated&&e.hp>0);if(!boss||!C.isBoss) return;
   const pct=boss.hp/boss.maxHp;
   log(`<span class="log-system">${C.activeUnit.name} attempts <span class="log-skill">Talk</span> with ${boss.name}…</span>`);
+  log(`<span class="log-quote">"${pick(TALK_LINES)}"</span>`);
   let success=false;
-  if(pct<=.15){
+  if(pct<=.10){
     success=true;
     log('<span class="log-heal">The enemy hesitates — Talk succeeded!</span>');
-  } else if(pct<=.40){
-    if(Math.random()<(.40-pct)*4){
+  } else if(pct<=.30){
+    // Rare scaling chance between 30% and 11% HP — never reaches a guarantee, stays a genuine gamble.
+    // Linear from ~4% chance at 30% HP up to ~22% chance right above the 10% guarantee floor.
+    const chance=0.04+(0.30-pct)/(0.30-0.10)*0.18;
+    if(Math.random()<chance){
       success=true;
-      log('<span class="log-heal">Talk succeeded!</span>');
+      log('<span class="log-heal">Against the odds — Talk succeeded!</span>');
     } else {
       const d=Math.round(boss.atk*.8);
       C.activeUnit.hp=Math.max(0,C.activeUnit.hp-d);
@@ -1408,7 +1548,10 @@ function doTalk(C){
       renderField(C);
     }
   } else {
-    log(`<span class="log-damage">${boss.name} is not ready to listen.</span>`);
+    const d=Math.round(boss.atk*.8);
+    C.activeUnit.hp=Math.max(0,C.activeUnit.hp-d);
+    log(`${boss.name} isn't ready to listen — retaliates for <span class="log-damage">${d}</span> damage.`);
+    renderField(C);
   }
 
   if(success){
@@ -1489,6 +1632,18 @@ function statusLabel(t){return({atk_down:'ATK Down',def_down:'DEF Down',spd_down
 function statusDesc(t){return({atk_down:'Reduces ATK — all outgoing damage is lowered.',def_down:'Reduces DEF — incoming damage is increased.',spd_down:'Reduces SPD — unit may act later in turn order.',atk_up:'Increases ATK — all outgoing damage is raised.',def_up:'Increases DEF — incoming damage is reduced.',spd_up:'Increases SPD — unit acts sooner.',dot:'Burn — deals damage at the start of this unit\'s turn.'}[t]||'Status effect.');}
 
 /* ── REWARD ── */
+// Relative spawn weight per rarity tier — higher = more common. Legendary is deliberately very rare.
+const RARITY_WEIGHT={Common:100,Uncommon:45,Rare:18,Epic:8,Legendary:3};
+function weightedPick(items){
+  const total=items.reduce((s,it)=>s+(RARITY_WEIGHT[it.rarity]||10),0);
+  let roll=Math.random()*total;
+  for(const it of items){
+    roll-=(RARITY_WEIGHT[it.rarity]||10);
+    if(roll<=0) return it;
+  }
+  return items[items.length-1];
+}
+
 function generateRewardPool(){
   // Build eligible pool: exclude owned unique legendaries (run_changer)
   const owned=new Set(S.inventory.map(i=>i.id));
@@ -1500,17 +1655,17 @@ function generateRewardPool(){
   const nonCurrency=pool.filter(it=>it.category!=='currency');
 
   const picked=[];
-  // At most ONE currency option, chosen randomly among rarities
+  // At most ONE currency option, chosen randomly among rarities (still rarity-weighted)
   const includeCurrency=Math.random()<0.5&&currencyItems.length>0;
   if(includeCurrency){
-    picked.push(clone(pick(currencyItems)));
+    picked.push(clone(weightedPick(currencyItems)));
   }
-  // Fill remaining slots from non-currency, no duplicates
+  // Fill remaining slots from non-currency, rarity-weighted, no duplicates
   const used=new Set(picked.map(p=>p.id));
   let guard=0;
   while(picked.length<3&&guard<200){
     guard++;
-    const cand=pick(nonCurrency);
+    const cand=weightedPick(nonCurrency);
     if(!cand) break;
     if(used.has(cand.id)) continue;
     used.add(cand.id);
@@ -1560,7 +1715,66 @@ function advanceAfterReward(){
   // tick passive durations
   S.activePassives=S.activePassives.map(p=>({...p,floorsLeft:p.floorsLeft-1})).filter(p=>p.floorsLeft>0);
   S.run.currentFloor++;
-  if(S.run.currentFloor>10){$('vic-text').textContent='Zone complete!';show('victory');return;}
+  if(S.run.currentFloor>10){
+    const remaining=DATA.zones.filter(z=>!S.run.visitedZones.includes(z.id));
+    if(remaining.length===0){
+      $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
+      show('victory');
+      return;
+    }
+    showZoneTransition(remaining);
+    return;
+  }
+  startFloor(S.run);
+}
+
+function showZoneTransition(remainingZones){
+  show('transition');
+  const nextZone=pick(remainingZones);
+  S.run._pendingNextZone=nextZone.id;
+
+  // Alive units are fully healed. Dead (defeated) units are revived, but only at 30% HP, not full.
+  const revivedIds=[];
+  S.run.playerUnitIds.forEach(id=>{
+    const base=byId(id,DATA.playerUnits);
+    if(!base) return;
+    const wasDead=(S.run.unitHp[id]||0)<=0;
+    if(wasDead){
+      S.run.unitHp[id]=Math.max(1,Math.round(base.maxHp*0.3));
+      revivedIds.push(id);
+    } else {
+      S.run.unitHp[id]=base.maxHp;
+    }
+  });
+
+  $('transition-title').textContent='Zone Cleared';
+  $('transition-sub').textContent=revivedIds.length
+    ? 'Surviving units fully repaired. Fallen units recovered at reduced strength.'
+    : 'Your squad has been fully repaired.';
+  let h=`<div class="overlay-section" style="padding:0"><div class="reward-card-tile" style="background:#1a3a5a;border-radius:8px;padding:1rem;margin-bottom:.6rem">
+    <div class="reward-card-name">Next: ${nextZone.flavorName}</div>
+    <div class="reward-card-sub">${nextZone.seriesName} · 10 stages ahead</div>
+  </div></div>`;
+  S.run.playerUnitIds.forEach(id=>{
+    const u=byId(id,DATA.playerUnits);if(!u) return;
+    const wasRevived=revivedIds.includes(id);
+    const hp=S.run.unitHp[id];
+    h+=`<div style="background:var(--bg-card);border-radius:6px;padding:.5rem .65rem;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600">${u.name}${wasRevived?' <span style="color:var(--red);font-size:.7rem">(revived)</span>':''}</span>
+      <span style="font-family:var(--font-mono);color:${wasRevived?'var(--yellow-hp)':'var(--green-hp)'};font-size:.85rem">${hp}/${u.maxHp} ${wasRevived?'':'✓'}</span>
+    </div>`;
+  });
+  $('transition-body').innerHTML=h;
+}
+
+function enterNextZone(){
+  const nextZoneId=S.run._pendingNextZone;
+  if(!nextZoneId) return;
+  S.run.zoneId=nextZoneId;
+  S.run.visitedZones.push(nextZoneId);
+  S.run.currentFloor=1;
+  S.run.stationDone=false;
+  delete S.run._pendingNextZone;
   startFloor(S.run);
 }
 
@@ -1646,6 +1860,10 @@ function showSwapPicker(run,newUnit){
   if(!S.unlockedUnits.find(u=>u.id===newUnit.id)){
     S.unlockedUnits.push(newUnit);
     saveGame();
+  }
+  // Track for this run's Garage screen — recruits stay swappable for the rest of THIS run only.
+  if(run.recruitedThisRun&&!run.recruitedThisRun.includes(newUnit.id)){
+    run.recruitedThisRun.push(newUnit.id);
   }
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">Recruit <strong>${newUnit.name}</strong> in place of which active unit?</div></div>`;
   run.playerUnitIds.forEach((id,i)=>{
@@ -1973,7 +2191,35 @@ $('btn-draft-go').addEventListener('click',()=>{
 });
 
 /* ── NAV BUTTONS ── */
-$('btn-new-run').addEventListener('click',initDraft);
+$('btn-new-run').addEventListener('click',()=>{
+  if(!S.playerName){ show('name-entry'); $('captain-name-input').focus(); return; }
+  initDraft();
+});
+$('btn-rename-captain').addEventListener('click',()=>{
+  show('name-entry');
+  $('captain-name-input').value=S.playerName||'';
+  $('captain-name-input').focus();
+});
+function confirmCaptainName(){
+  const val=$('captain-name-input').value.trim();
+  if(!val) return;
+  S.playerName=val.substring(0,20);
+  saveGame();
+  updateCaptainNameDisplay();
+  show('title');
+}
+$('btn-confirm-name').addEventListener('click',confirmCaptainName);
+$('captain-name-input').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmCaptainName(); });
+
+function updateCaptainNameDisplay(){
+  const row=$('title-captain-row');
+  if(S.playerName){
+    $('title-captain-name').textContent=S.playerName;
+    row.style.display='block';
+  } else {
+    row.style.display='none';
+  }
+}
 $('btn-how').addEventListener('click',()=>{
   openOverlay('How to Play',`
     <div class="overlay-section"><div class="overlay-label">Flow</div><div class="overlay-value">Draft 3 units → clear 10 stages (1 zone) → collect rewards after each stage.</div></div>
@@ -1984,6 +2230,375 @@ $('btn-how').addEventListener('click',()=>{
 });
 $('btn-restart').addEventListener('click',()=>show('title'));
 $('btn-vic-ok').addEventListener('click',()=>show('title'));
+$('btn-transition-continue').addEventListener('click',()=>showGarage());
+$('btn-transition-shop').addEventListener('click',()=>showShop());
+$('btn-shop-done').addEventListener('click',()=>showGarage());
+$('btn-shop-inventory').addEventListener('click',()=>openShopInventory());
+function showGarage(){
+  show('garage');
+  renderGarage();
+}
+
+function renderGarage(){
+  const run=S.run;
+  // Available pool: current 3 active + anything recruited THIS run not currently active.
+  // Deliberately excludes the full meta-progression locker (S.unlockedUnits) — only this run's gains count.
+  const availableIds=[...new Set([...run.playerUnitIds,...(run.recruitedThisRun||[])])];
+  let selectedSlot=null;
+
+  const render=()=>{
+    let h=`<div class="overlay-section"><div class="overlay-label">Active Squad (tap a slot, then tap a replacement)</div></div>`;
+    h+=`<div style="display:flex;gap:.5rem;margin-bottom:.8rem">`;
+    run.playerUnitIds.forEach((id,i)=>{
+      const u=byId(id,DATA.playerUnits);if(!u) return;
+      const hp=run.unitHp[id];
+      h+=`<button class="garage-slot-btn${selectedSlot===i?' selected':''}" data-slot="${i}" style="flex:1;background:${selectedSlot===i?'var(--gold)':'var(--bg-card)'};color:${selectedSlot===i?'var(--bg-void)':'var(--text-primary)'};border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .4rem;cursor:pointer;text-align:center">
+        <div style="font-weight:700;font-size:.85rem">${u.name}</div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;margin-top:.2rem">${hp}/${u.maxHp} HP</div>
+      </button>`;
+    });
+    h+=`</div>`;
+
+    if(selectedSlot!=null){
+      h+=`<div class="overlay-section"><div class="overlay-label">Replace with</div></div>`;
+      const candidates=availableIds.filter(id=>id!==run.playerUnitIds[selectedSlot]);
+      if(!candidates.length){
+        h+=`<div class="overlay-section"><div class="overlay-value" style="color:var(--text-muted)">No other units recruited this run yet.</div></div>`;
+      }
+      candidates.forEach(id=>{
+        const u=byId(id,DATA.playerUnits);if(!u) return;
+        const isActiveElsewhere=run.playerUnitIds.includes(id);
+        h+=`<button class="garage-pick-btn" data-id="${id}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:pointer;color:var(--text-primary)">
+          <span style="font-weight:600">${u.name}</span>
+          <span style="float:right;font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted)">${isActiveElsewhere?'(swap places)':'Cost '+u.cost}</span>
+        </button>`;
+      });
+    }
+
+    $('garage-body').innerHTML=h;
+    document.querySelectorAll('.garage-slot-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const slot=parseInt(btn.dataset.slot);
+        selectedSlot=(selectedSlot===slot)?null:slot;
+        render();
+      });
+    });
+    document.querySelectorAll('.garage-pick-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const newId=btn.dataset.id;
+        const otherSlot=run.playerUnitIds.indexOf(newId);
+        if(otherSlot!==-1&&otherSlot!==selectedSlot){
+          // swap places between two active slots
+          const tmp=run.playerUnitIds[selectedSlot];
+          run.playerUnitIds[selectedSlot]=newId;
+          run.playerUnitIds[otherSlot]=tmp;
+        } else {
+          run.playerUnitIds[selectedSlot]=newId;
+          if(run.unitHp[newId]==null){
+            const u=byId(newId,DATA.playerUnits);
+            run.unitHp[newId]=u?u.maxHp:100;
+          }
+        }
+        selectedSlot=null;
+        render();
+      });
+    });
+  };
+  render();
+}
+
+function showUpgradeScreen(){
+  show('upgrades');
+  renderUpgradeScreen();
+}
+$('btn-garage-done').addEventListener('click',()=>showUpgradeScreen());
+
+/* ── UPGRADES (HP/ATK only for now — Special/Ultimate upgrade slots deferred) ── */
+// Base cost per upgrade scales by which zone the player is currently progressing through —
+// Earth (zone 1) = 70G base; each further zone raises the base cost. Tier itself doesn't multiply
+// cost further yet (kept flat per-tier for this first pass) — every tier within a zone costs the same.
+const ZONE_UPGRADE_BASE_COST={earth:70,uc_space:110};
+function getUpgradeCost(){
+  const zoneId=S.run.zoneId;
+  return ZONE_UPGRADE_BASE_COST[zoneId]||70;
+}
+const UPGRADE_MAX_TIER=5;
+const HP_PERCENT_PER_TIER=0.03; // +3% max HP per tier
+const ATK_PERCENT_PER_TIER=0.03; // +3% ATK per tier, mirrors HP for this first pass
+
+function ensureUpgradeTiers(unit){
+  if(!unit.upgradeTiers) unit.upgradeTiers={hp:0,atk:0,special:0,ultimate:0};
+  return unit.upgradeTiers;
+}
+
+function renderUpgradeScreen(){
+  $('upgrades-currency').textContent=S.currency;
+  const cost=getUpgradeCost();
+  let h='';
+  S.run.playerUnitIds.forEach(id=>{
+    const u=byId(id,DATA.playerUnits);if(!u) return;
+    const tiers=ensureUpgradeTiers(u);
+    h+=`<div class="reward-card rarity-Uncommon" style="cursor:default">
+      <div class="reward-card-tile" style="min-height:50px">
+        <div>
+          <div class="reward-card-name">${u.name}</div>
+          <div class="reward-card-sub">Base HP ${u.maxHp} · Base ATK ${u.atk}</div>
+        </div>
+      </div>
+      <div class="reward-card-desc" style="display:block">
+        ${renderUpgradeRow(u,'hp','Max HP',tiers.hp,cost)}
+        ${renderUpgradeRow(u,'atk','Attack',tiers.atk,cost)}
+      </div>
+    </div>`;
+  });
+  $('upgrades-body').innerHTML=h;
+  document.querySelectorAll('.upgrade-buy-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const unitId=btn.dataset.unit;
+      const stat=btn.dataset.stat;
+      buyUpgrade(unitId,stat);
+    });
+  });
+}
+
+function renderUpgradeRow(u,stat,label,tier,cost){
+  const maxed=tier>=UPGRADE_MAX_TIER;
+  const canAfford=S.currency>=cost;
+  const pips=Array.from({length:UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
+    <div>
+      <div style="font-size:.85rem;font-weight:600">${label} <span style="color:var(--gold);font-family:var(--font-mono);font-size:.75rem">${pips}</span></div>
+      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${UPGRADE_MAX_TIER}${maxed?' (max)':''}</div>
+    </div>
+    ${maxed
+      ?`<span style="color:var(--text-dim);font-size:.78rem">MAXED</span>`
+      :`<button class="upgrade-buy-btn" data-unit="${u.id}" data-stat="${stat}" ${canAfford?'':'disabled'}
+          style="background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.35rem .7rem;font-size:.78rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
+          ⬡ ${cost}
+        </button>`
+    }
+  </div>`;
+}
+
+function buyUpgrade(unitId,stat){
+  const cost=getUpgradeCost();
+  if(S.currency<cost) return;
+  const u=byId(unitId,DATA.playerUnits);if(!u) return;
+  const tiers=ensureUpgradeTiers(u);
+  if(tiers[stat]>=UPGRADE_MAX_TIER) return;
+
+  S.currency-=cost;
+  tiers[stat]++;
+
+  if(stat==='hp'){
+    const baseMaxHp=u.baseMaxHp||(u.baseMaxHp=u.maxHp); // remember the pre-upgrade base, once
+    u.maxHp=Math.round(baseMaxHp*(1+HP_PERCENT_PER_TIER*tiers.hp));
+    // also heal the current run-tracked HP by the same absolute amount gained, so upgrading doesn't waste the run's current HP
+    if(S.run.unitHp[unitId]!=null) S.run.unitHp[unitId]=Math.min(u.maxHp,S.run.unitHp[unitId]+Math.round(baseMaxHp*HP_PERCENT_PER_TIER));
+  } else if(stat==='atk'){
+    const baseAtk=u.baseAtk||(u.baseAtk=u.atk);
+    u.atk=Math.round(baseAtk*(1+ATK_PERCENT_PER_TIER*tiers.atk));
+  }
+  renderUpgradeScreen();
+}
+$('btn-upgrades-done').addEventListener('click',()=>enterNextZone());
+
+function showShop(){
+  show('shop');
+  renderShop();
+}
+
+function renderShop(){
+  $('shop-currency').textContent=S.currency;
+  const shopStock=DATA.items.filter(it=>it.category==='consumable'); // heals + energy cells; no run_changers/heal_reward in shop
+  let h='';
+  shopStock.forEach(item=>{
+    const price=SHOP_PRICES[item.id]||100;
+    const canAfford=S.currency>=price;
+    h+=`<div class="reward-card rarity-${item.rarity}" style="cursor:default">
+      <div class="reward-card-tile" style="min-height:50px">
+        <div>
+          <div class="reward-card-name">${item.name}</div>
+          <div class="reward-card-sub">${item.rarity} · ⬡ ${price} G</div>
+        </div>
+      </div>
+      <div class="reward-card-desc" style="display:block">
+        ${item.description}
+        <button class="shop-buy-btn" data-id="${item.id}" data-price="${price}" ${canAfford?'':'disabled'}
+          style="display:block;width:100%;margin-top:.5rem;background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.4rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
+          ${canAfford?'Buy':'Not enough G'}
+        </button>
+      </div>
+    </div>`;
+  });
+  $('shop-body').innerHTML=h;
+  document.querySelectorAll('.shop-buy-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const id=btn.dataset.id;
+      const price=parseInt(btn.dataset.price);
+      if(S.currency<price) return;
+      S.currency-=price;
+      const item=DATA.items.find(it=>it.id===id);
+      if(item.stackable){
+        const existing=S.inventory.find(i=>i.id===item.id);
+        if(existing) existing.count=(existing.count||1)+1;
+        else { const stacked=clone(item);stacked.count=1;S.inventory.push(stacked); }
+      } else {
+        S.inventory.push(clone(item));
+      }
+      renderShop();
+    });
+  });
+}
+
+const SHOP_PRICES={repair_spray:80,ms_repair_kit:200,gn_condenser:150};
+
+/* ── SHOP INVENTORY / HEAL-TURN SYSTEM (mirrors combat's heal rules, but turn-based by fixed unit order) ── */
+function openShopInventory(){
+  // Reset per-visit heal-turn state fresh each time the inventory is opened from the shop
+  if(!S.shopHealState||S.shopHealState.zoneFloor!==(S.run.zoneId+':'+S.run.currentFloor)){
+    S.shopHealState={zoneFloor:S.run.zoneId+':'+S.run.currentFloor,turnIdx:0,usage:{}}; // usage keyed by unit id: {count,targetId}
+  }
+  renderShopInventory();
+}
+
+function renderShopInventory(){
+  const st=S.shopHealState;
+  const ids=S.run.playerUnitIds;
+  const allDone=st.turnIdx>=ids.length;
+
+  let h=`<div class="overlay-section"><div class="overlay-label">Currency</div><div class="overlay-value" style="color:var(--gold)">⬡ ${S.currency} G</div></div>`;
+
+  if(allDone){
+    h+=`<div class="overlay-section"><div class="overlay-value" style="color:var(--text-muted)">All units have taken their turn — healing is closed for this shop visit. Buy more items or continue.</div></div>`;
+    openOverlay('Inventory',h);
+    return;
+  }
+
+  const currentId=ids[st.turnIdx];
+  const current=byId(currentId,DATA.playerUnits);
+  const hp=S.run.unitHp[currentId];
+  h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Current turn: <strong>${current.name}</strong> (${hp}/${current.maxHp}) — heal a target, then pass to the next unit.</div></div>`;
+
+  const heals=S.inventory.filter(i=>i.category==='consumable'&&i.effect.type==='heal_one');
+  if(!heals.length){
+    h+=`<div class="overlay-section"><div class="overlay-value" style="color:var(--text-muted)">No heal items in inventory.</div></div>`;
+  }
+  heals.forEach((it)=>{
+    const idx=S.inventory.indexOf(it);
+    h+=`<div style="background:var(--bg-card);border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+        <div style="font-weight:600;font-size:.95rem">${it.name} <span style="color:var(--gold);font-family:var(--font-mono)">x${it.count||1}</span></div>
+        <button class="shop-heal-use-btn" data-idx="${idx}" style="background:var(--gold);color:var(--bg-void);border-radius:5px;padding:.3rem .7rem;font-size:.82rem;font-weight:700;cursor:pointer">Use</button>
+      </div>
+      <div style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:.2rem">${it.description}</div>
+    </div>`;
+  });
+  h+=`<div class="overlay-section"><button id="shop-pass-turn" class="btn-secondary" style="width:100%">Skip ${current.name}'s Turn</button></div>`;
+
+  openOverlay('Inventory',h);
+  document.querySelectorAll('.shop-heal-use-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const idx=parseInt(btn.dataset.idx);
+      shopShowHealTargetPicker(idx);
+    });
+  });
+  const passBtn=$('shop-pass-turn');
+  if(passBtn) passBtn.addEventListener('click',e=>{e.stopPropagation();shopAdvanceTurn();});
+}
+
+function shopShowHealTargetPicker(itemIdx){
+  const st=S.shopHealState;
+  const ids=S.run.playerUnitIds;
+  const healerId=ids[st.turnIdx];
+  const item=S.inventory[itemIdx];
+  const amount=item.effect.value;
+  const cap=2; // same base cap as combat
+  const usage=st.usage[healerId];
+  const lockedTarget=usage&&usage.count>0?usage.targetId:null;
+  const remainingCap=cap-(usage?usage.count:0);
+
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Restore ${amount} HP per use — choose a target, then how many to use.</div></div>`;
+  ids.forEach(id=>{
+    const u=byId(id,DATA.playerUnits);if(!u) return;
+    const hp=S.run.unitHp[id];
+    if(hp<=0) return; // can't target a defeated unit outside of a full revive flow
+    const lockedOut=lockedTarget&&id!==lockedTarget;
+    const col=hpColor(hp,u.maxHp);
+    h+=`<button class="shop-heal-target-btn${lockedOut?' heal-locked':''}" data-id="${id}" ${lockedOut?'disabled':''} style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-left:5px solid ${col};border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:${lockedOut?'not-allowed':'pointer'};color:var(--text-primary);opacity:${lockedOut?'.4':'1'}">
+      <span style="font-weight:600">${u.name}</span>
+      <span style="float:right;font-family:var(--font-mono);font-size:.8rem;color:${col}">${hp}/${u.maxHp}</span>
+    </button>`;
+  });
+  openOverlay('Use '+item.name,h);
+  document.querySelectorAll('.shop-heal-target-btn:not(.heal-locked)').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(remainingCap<=0){ renderShopInventory(); return; }
+      shopShowHealQuantityPicker(itemIdx,amount,btn.dataset.id,remainingCap);
+    });
+  });
+}
+
+function shopShowHealQuantityPicker(itemIdx,amount,targetId,remainingCap){
+  const item=S.inventory[itemIdx];
+  const target=byId(targetId,DATA.playerUnits);
+  const maxUses=Math.max(1,Math.min(remainingCap,item.count||1));
+  let qty=1;
+
+  const render=()=>{
+    const curHp=S.run.unitHp[targetId];
+    const after=Math.min(target.maxHp,curHp+amount*qty);
+    const h=`
+      <div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Healing <strong>${target.name}</strong> (${curHp}/${target.maxHp})</div></div>
+      <div class="overlay-section" style="display:flex;align-items:center;justify-content:center;gap:1rem;padding:.5rem 0">
+        <button id="qty-minus" class="action-btn btn-cancel" style="flex:0 0 52px;min-height:48px;font-size:1.3rem">−</button>
+        <div style="text-align:center;min-width:90px">
+          <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:bold;color:var(--gold)">x${qty}</div>
+          <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-muted)">use${qty>1?'s':''}</div>
+        </div>
+        <button id="qty-plus" class="action-btn btn-cancel" style="flex:0 0 52px;min-height:48px;font-size:1.3rem">+</button>
+      </div>
+      <div class="overlay-section"><div class="overlay-value" style="font-size:.8rem;color:var(--text-muted)">Restores ${amount*qty} HP total — ${curHp} → <span style="color:var(--green-hp)">${after}</span></div></div>
+      <div class="overlay-section"><button id="qty-confirm" class="btn-primary" style="width:100%">Use ${qty} Heal${qty>1?'s':''}</button></div>
+    `;
+    openOverlay('Use '+item.name,h);
+    $('qty-minus').disabled=qty<=1;
+    $('qty-plus').disabled=qty>=maxUses;
+    $('qty-minus').addEventListener('click',e=>{e.stopPropagation();if(qty>1){qty--;render();}});
+    $('qty-plus').addEventListener('click',e=>{e.stopPropagation();if(qty<maxUses){qty++;render();}});
+    $('qty-confirm').addEventListener('click',e=>{e.stopPropagation();shopApplyHeal(itemIdx,amount,targetId,qty);});
+  };
+  render();
+}
+
+function shopApplyHeal(itemIdx,amount,targetId,qty){
+  const st=S.shopHealState;
+  const ids=S.run.playerUnitIds;
+  const healerId=ids[st.turnIdx];
+  const item=S.inventory[itemIdx];
+  const target=byId(targetId,DATA.playerUnits);
+
+  if(!st.usage[healerId]) st.usage[healerId]={count:0,targetId:null};
+  const hu=st.usage[healerId];
+
+  const before=S.run.unitHp[targetId];
+  S.run.unitHp[targetId]=Math.min(target.maxHp,before+amount*qty);
+  hu.count+=qty;hu.targetId=targetId;
+
+  item.count=(item.count||1)-qty;
+  if(item.count<=0) S.inventory.splice(itemIdx,1);
+
+  shopAdvanceTurn();
+}
+
+function shopAdvanceTurn(){
+  S.shopHealState.turnIdx++;
+  renderShopInventory();
+}
 
 /* ── BOOT: fetch game data, then restore save, then enable the title screen ── */
 async function loadData(){
@@ -1992,6 +2607,7 @@ async function loadData(){
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     DATA=await resp.json();
     loadGame(); // merge any persisted recruited units now that DATA exists
+    updateCaptainNameDisplay();
     $('btn-new-run').disabled=false;
     $('title-status').textContent='';
   }catch(e){
