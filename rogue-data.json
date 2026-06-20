@@ -22,7 +22,8 @@
       "gruntPool": [
         "zaku_ii",
         "gouf",
-        "dom"
+        "dom",
+        "zaku_cannon"
       ],
       "acePool": [
         "chars_zaku_ii",
@@ -197,6 +198,109 @@
         "selfBuff": {
           "type": "spd_up",
           "value": 1.2,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "gundam_f91",
+      "name": "Gundam F91",
+      "series": "UC",
+      "cost": 1,
+      "category": "Mobility",
+      "hp": 155,
+      "maxHp": 155,
+      "atk": 26,
+      "def": 18,
+      "spd": 52,
+      "passive": {
+        "name": "VSBR Cooling System",
+        "description": "After using Special twice in one fight, its energy cost increases by 1 for the rest of the fight (heat buildup).",
+        "type": "heat_buildup",
+        "usesBeforeHeat": 2,
+        "costIncrease": 1
+      },
+      "basic": {
+        "name": "VSBR Quick Shot",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "F91 High Speed Assault",
+        "description": "1.85x ATK on one target + applies SPD Down for 2 turns. Costs +1 energy after 2 uses (VSBR heat buildup).",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.85,
+        "energyCost": 4,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Mirage F91",
+        "description": "2.3x ATK on one target + applies ATK Down and DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.3,
+        "effect": {
+          "type": "atk_def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "strike_gundam",
+      "name": "GAT-X105 Strike Gundam",
+      "series": "SEED",
+      "cost": 1,
+      "category": "Melee",
+      "hp": 168,
+      "maxHp": 168,
+      "atk": 27,
+      "def": 20,
+      "spd": 35,
+      "passive": {
+        "name": "Striker Pack Versatility",
+        "description": "Special Attack can target either a single enemy (1.7x ATK + DEF Down) or all enemies (0.65x ATK each + ATK Down to one random target) — same energy cost either way.",
+        "type": "flexible_special"
+      },
+      "basic": {
+        "name": "Aile Strike Beam Saber",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Strike Multi-Mode Assault",
+        "description": "Single target: 1.7x ATK + DEF Down 2t. OR all enemies: 0.65x ATK each + ATK Down to one random target 1t. Player chooses on use.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Full Striker Combination",
+        "description": "2.2x ATK on one target + applies ATK Down and DoT for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 2.2,
+        "effect": {
+          "type": "atk_down_dot",
+          "atkDownValue": 0.85,
+          "dotValue": 12,
           "duration": 2
         }
       }
@@ -377,10 +481,12 @@
       "color": "#1a1a2e",
       "passive": {
         "name": "Jet Stream Attack",
-        "description": "Spawns 2 Zaku II tokens on entry. If both tokens are alive when Special is used, damage increases by 20%.",
+        "description": "Summons 2 Zaku II tokens when Gaia's Gouf drops below 60% HP. If both tokens are alive when Special is used, damage increases by 20%.",
         "type": "token_spawn",
         "tokenId": "zaku_token",
-        "tokenCount": 2
+        "tokenCount": 2,
+        "spawnTrigger": "hp_threshold",
+        "spawnThreshold": 0.6
       },
       "basic": {
         "name": "Heat Rod Whip",
@@ -566,6 +672,40 @@
         "target": "single",
         "multiplier": 1.0
       }
+    },
+    {
+      "id": "zaku_cannon",
+      "name": "Zaku Cannon",
+      "fullName": "MS-06K Zaku Cannon",
+      "series": "UC",
+      "tier": "grunt",
+      "family": "zaku",
+      "category": "Ranged",
+      "hp": 108,
+      "maxHp": 108,
+      "atk": 25,
+      "def": 13,
+      "spd": 24,
+      "basic": {
+        "name": "180mm Cannon Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Long Range Bombardment",
+        "description": "1.6x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.6,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
     }
   ],
   "items": [
@@ -585,22 +725,24 @@
       "name": "Repair Spray",
       "category": "consumable",
       "rarity": "Common",
-      "description": "Restores 100 HP to one unit. Can be used during combat on your turn.",
+      "description": "Restores 50 HP to one unit. Can be used during combat on your turn. Stacks with other Repair Sprays.",
       "effect": {
         "type": "heal_one",
-        "value": 100
-      }
+        "value": 50
+      },
+      "stackable": true
     },
     {
       "id": "ms_repair_kit",
       "name": "MS Repair Kit",
       "category": "consumable",
       "rarity": "Uncommon",
-      "description": "Restores 250 HP to one unit. Can be used during combat on your turn.",
+      "description": "Restores 100 HP to one unit. Can be used during combat on your turn. Stacks with other MS Repair Kits.",
       "effect": {
         "type": "heal_one",
-        "value": 250
-      }
+        "value": 100
+      },
+      "stackable": true
     },
     {
       "id": "gn_condenser",
