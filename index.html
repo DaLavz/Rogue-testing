@@ -79,7 +79,23 @@ button:active{transform:scale(0.97)}
 .passive-chip .pc-dur{color:var(--text-muted);font-size:.7rem}
 
 /* COMBAT SCREEN */
-#screen-combat{background:var(--bg-void);height:100%;max-height:100%}
+
+/* Ace/Boss warning banner — full-width flash overlay, auto-dismisses */
+.combat-warning-banner{position:absolute;top:38%;left:0;right:0;z-index:60;display:flex;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s ease}
+.combat-warning-banner.show{opacity:1}
+.combat-warning-banner .cwb-text{font-family:var(--font-display);font-weight:700;font-size:1.5rem;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 1.4rem;border-radius:6px;background:rgba(10,10,15,.85);text-align:center;text-shadow:0 0 14px currentColor}
+.combat-warning-banner.ace .cwb-text{color:#d9a8ff;border:2px solid #c77dff}
+.combat-warning-banner.boss .cwb-text{color:#ff5252;border:2px solid #ff3b3b;animation:bossWarnPulse .7s ease-in-out infinite}
+@keyframes bossWarnPulse{0%,100%{box-shadow:0 0 10px rgba(255,59,59,.4)}50%{box-shadow:0 0 26px rgba(255,59,59,.8)}}
+
+/* Dialogue line popup during intro sequence */
+.combat-dialogue-line{position:absolute;bottom:0;left:0;right:0;z-index:55;display:flex;justify-content:center;padding:0 1rem;opacity:0;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease;pointer-events:none}
+.combat-dialogue-line.show{opacity:1;transform:translateY(0)}
+.combat-dialogue-line .cdl-box{background:rgba(10,10,20,.92);border:1px solid var(--border-bright);border-left:4px solid var(--gold);border-radius:6px;padding:.7rem 1rem;max-width:600px;width:100%}
+.combat-dialogue-line.tier-boss .cdl-box{border-left-color:#ff3b3b}
+.combat-dialogue-line .cdl-speaker{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.2rem}
+.combat-dialogue-line .cdl-text{font-family:var(--font-display);font-size:.95rem;color:var(--text-primary);line-height:1.4;font-style:italic}
+#screen-combat{background:var(--bg-void);height:100%;max-height:100%;position:relative}
 #screen-combat.active{display:flex;flex-direction:column}
 #screen-combat.bg-earth{background:linear-gradient(180deg,#1a3a6e 0%,#1a3a6e 30%,#2d5a27 30%,#2d5a27 100%)}
 #screen-combat.bg-space{background:radial-gradient(ellipse at 20% 30%,#1a1a3e 0%,#0a0a0f 60%)}
@@ -93,7 +109,7 @@ button:active{transform:scale(0.97)}
 
 .turn-order-strip{display:flex;gap:.25rem;padding:.3rem .5rem;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
 .turn-order-strip::-webkit-scrollbar{display:none}
-.turn-pip{min-width:48px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.68rem;color:rgba(255,255,255,.65);flex-shrink:0;overflow:hidden;padding:0 4px;transition:all .2s ease}
+.turn-pip{min-width:58px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.66rem;color:rgba(255,255,255,.65);flex-shrink:0;overflow:hidden;padding:0 4px;transition:all .2s ease}
 .turn-pip.current{min-width:64px;height:30px;border-color:#fff;border-width:2px;background:rgba(255,255,255,.18);color:#fff;font-weight:bold;font-size:.78rem;box-shadow:0 0 8px rgba(255,255,255,.3);transform:translateY(-2px)}
 .turn-pip.player-pip{border-color:rgba(74,158,255,.45);color:#8dc8ff}
 .turn-pip.enemy-pip{border-color:rgba(204,41,54,.45);color:#ff8d8d}
@@ -118,6 +134,8 @@ button:active{transform:scale(0.97)}
 @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 
 .unit-name-label{font-family:var(--font-mono);font-size:.78rem;color:rgba(255,255,255,.95);text-align:center;padding:0 3px;line-height:1.2;word-break:break-word;max-width:100%}
+.unit-name-label.tier-ace{color:#d9a8ff;font-weight:bold;text-shadow:0 0 6px rgba(199,125,255,.5)}
+.unit-name-label.tier-boss{color:#ff6b6b;font-weight:bold;text-shadow:0 0 6px rgba(255,59,59,.5)}
 .unit-category-label{font-family:var(--font-mono);font-size:.66rem;color:rgba(255,255,255,.55);text-align:center;margin-top:2px}
 
 .unit-hp-bar-wrap{position:absolute;bottom:-22px;left:2px;right:2px}
@@ -154,6 +172,8 @@ button:active{transform:scale(0.97)}
 .log-line .log-unit{cursor:pointer;text-decoration:underline dotted}
 .log-line .log-unit.friendly{color:var(--blue)}
 .log-line .log-unit.enemy{color:#ff6b6b}
+.log-line .log-unit.enemy.tier-ace{color:#c77dff;font-weight:bold}
+.log-line .log-unit.enemy.tier-boss{color:#ff3b3b;font-weight:bold}
 .log-line .log-skill{color:var(--gold);cursor:pointer;text-decoration:underline dotted}
 .log-line .log-status{color:#ff9933;cursor:pointer;text-decoration:underline dotted}
 .log-line .log-damage{color:var(--red);font-weight:bold}
@@ -248,25 +268,25 @@ button:active{transform:scale(0.97)}
 
 /* DESKTOP */
 @media(min-width:640px){
-  html,body{font-size:18px}
-  #screen-combat.active{display:grid;grid-template-rows:auto auto auto auto auto 1fr auto auto;grid-template-columns:1fr 320px}
-  .top-bar{grid-column:1/-1}
-  .boss-hp-bar-wrap{grid-column:1/-1}
-  .turn-order-strip{grid-column:1;grid-row:3}
-  .active-passives{grid-column:1;grid-row:4}
-  .enemy-field{grid-column:1;grid-row:5}
-  .player-field{grid-column:1;grid-row:6}
-  .resource-bars{grid-column:1;grid-row:7}
-  .action-bar{grid-column:1;grid-row:8}
-  .combat-log-wrap{grid-column:2;grid-row:2/9;margin:.5rem .6rem .5rem 0;border-radius:var(--radius-md)}
-  .enemy-field{padding:.6rem .9rem .4rem}
-  .enemy-units-row{gap:.7rem;min-height:130px;padding-top:24px}
-  .player-field{padding:1.8rem .9rem 1.8rem}
-  .player-units-row{gap:.8rem;min-height:140px;padding-top:28px}
-  .unit-rect.enemy-unit{width:110px;height:100px}
-  .unit-rect.player-unit{width:120px;height:108px}
-  .unit-rect.token-unit{width:80px;height:72px}
-  .action-bar{padding:.5rem .9rem .7rem;gap:.45rem}
+  html,body{font-size:17px}
+  #screen-combat.active{display:flex;flex-direction:column;max-width:760px;margin:0 auto;width:100%}
+  .top-bar{flex-shrink:0}
+  .boss-hp-bar-wrap{flex-shrink:0}
+  .turn-order-strip{flex-shrink:0;padding:.3rem .9rem}
+  .active-passives{flex-shrink:0;padding:0 .9rem .25rem}
+  .enemy-field{flex-shrink:0;padding:.5rem .9rem .2rem}
+  .enemy-units-row{gap:.6rem;min-height:108px;padding-top:22px}
+  .combat-log-wrap{flex:1;min-height:120px;max-height:220px;margin:.3rem .9rem;border-radius:var(--radius-md)}
+  .player-field{flex-shrink:0;padding:.8rem .9rem 1.7rem}
+  .player-units-row{gap:.7rem;min-height:108px;padding-top:22px}
+  .resource-bars{flex-shrink:0;padding:.35rem .9rem}
+  .action-bar{flex-shrink:0;padding:.5rem .9rem .7rem;gap:.4rem}
+  .combat-warning-banner,.combat-dialogue-line{position:absolute;left:0;right:0;z-index:60;pointer-events:none}
+  .unit-rect.enemy-unit{width:96px;height:86px}
+  .unit-rect.player-unit{width:100px;height:90px}
+  .unit-rect.token-unit{width:70px;height:62px}
+  .action-btn{padding:.65rem .4rem;font-size:.95rem;min-height:54px;gap:.1rem}
+  .action-btn .btn-cost{font-size:.68rem}
   .action-btn{padding:.75rem .4rem;font-size:1rem;min-height:62px;gap:.12rem}
   .action-btn .btn-cost{font-size:.72rem}
   .combat-log{font-size:.92rem;padding:.7rem .8rem;line-height:1.65}
@@ -315,6 +335,8 @@ button:active{transform:scale(0.97)}
 
 <!-- COMBAT -->
 <div id="screen-combat" class="screen bg-earth">
+  <div class="combat-warning-banner" id="combat-warning"><div class="cwb-text" id="combat-warning-text">WARNING</div></div>
+  <div class="combat-dialogue-line" id="combat-dialogue"><div class="cdl-box"><div class="cdl-speaker" id="cdl-speaker">PILOT</div><div class="cdl-text" id="cdl-text">"..."</div></div></div>
   <div class="top-bar">
     <div class="top-bar-zone"><span class="series" id="tb-series">UC</span> · <span id="tb-zone">Side 7 — Earth Front</span></div>
     <div class="top-bar-floor" id="tb-floor">Stage 1/10</div>
@@ -451,8 +473,25 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const byId=(id,arr)=>arr.find(u=>u.id===id)||null;
 const catLabel=(cat)=>({Melee:'M',Ranged:'R',Mobility:'A'}[cat]||cat?.[0]||'?');
 const catDisplayName=(cat)=>({Melee:'Melee',Ranged:'Ranged',Mobility:'Agility'}[cat]||cat);
-const catColor=(cat)=>({Melee:'#2d8a3e',Ranged:'#3a7bd5',Mobility:'#e08a2e'}[cat]||'#5a5a7a');
+const catColor=(cat)=>({Melee:'#1f6e30',Ranged:'#3a7bd5',Mobility:'#e08a2e'}[cat]||'#5a5a7a');
 const hpColor=(cur,max)=>{ const pct=max>0?cur/max*100:0; return pct>50?'var(--green-hp)':pct>25?'var(--yellow-hp)':'var(--red-hp)'; };
+// Picks the most distinctive word of a unit's name for compact UI labels (turn strip etc).
+// Skips generic/boilerplate prefixes (Gundam, model numbers, possessive pilot names) in favor
+// of the actual distinguishing word — e.g. "AGE-1 Spallow" -> "Spallow", "Gundam Dynames" -> "Dynames".
+const SHORTNAME_SKIP=new Set(['gundam',"gundam's",'ms','rx-78-2','rx-78','age-1','age-2','age-3','mobile','suit',"char's","gaia's","m'quve's",'gouf','zaku','ii','iii','custom']);
+function shortName(fullName){
+  const words=fullName.split(' ').filter(w=>w.length>0);
+  for(let i=words.length-1;i>=0;i--){
+    const clean=words[i].replace(/[^a-zA-Z0-9'-]/g,'');
+    if(clean.length>=3 && !SHORTNAME_SKIP.has(clean.toLowerCase())) return clean.substring(0,7);
+  }
+  // nothing distinctive found (e.g. "Zaku II") — fall back to the first non-skip word, or the whole first word
+  for(const w of words){
+    const clean=w.replace(/[^a-zA-Z0-9'-]/g,'');
+    if(clean.length>=3) return clean.substring(0,7);
+  }
+  return (words[0]||fullName).substring(0,7);
+}
 const $=id=>document.getElementById(id);
 
 /* ── SCREENS ── */
@@ -592,7 +631,10 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy){
     else C.enemyUlt=0;
   }
 
-  const nm=(u,enemySide)=>`<span class="log-unit ${enemySide?'enemy':'friendly'}" data-id="${u.id}" data-enemy="${enemySide}">${u.name}</span>`;
+  const nm=(u,enemySide)=>{
+    const tierCls=enemySide&&u.tier==='ace'?' tier-ace':enemySide&&(u.tier==='boss'||u.isBoss)?' tier-boss':'';
+    return `<span class="log-unit ${enemySide?'enemy':'friendly'}${tierCls}" data-id="${u.id}" data-enemy="${enemySide}">${u.name}</span>`;
+  };
 
   log(`${nm(attacker,isEnemy)} uses <span class="log-skill" data-id="${attacker.id}" data-ab="${abilityKey}">${ab.name}</span>`);
 
@@ -847,6 +889,11 @@ function startFloor(run){
     waitingForPlayer:false,activeUnit:null,currentOrder:[],pendingAction:null};
   S.combat=C;
   initCombatUI(C,zone);
+  startRoundAfterIntro(C);
+}
+
+async function startRoundAfterIntro(C){
+  await playIntroSequence(C);
   runRound(C);
 }
 
@@ -910,6 +957,48 @@ function initCombatUI(C,zone){
   lockActionBar();
 }
 
+/* ── ACE/BOSS INTRO SEQUENCE (warning banner + dialogue lines, locks input) ── */
+function delayMs(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function playIntroSequence(C){
+  const featured=C.enemyUnits.find(e=>e.tier==='ace'||e.tier==='boss'||e.isBoss);
+  if(!featured) return; // grunt-only floor, no intro needed
+
+  const isBoss=featured.tier==='boss'||featured.isBoss;
+  lockActionBar();
+
+  // Warning banner
+  const banner=$('combat-warning');
+  const bannerText=$('combat-warning-text');
+  banner.className='combat-warning-banner '+(isBoss?'boss':'ace');
+  bannerText.textContent=isBoss?'⚠ Warning: boss unit attacking':'⚠ Warning: ace pilot ahead';
+  await delayMs(80);
+  banner.classList.add('show');
+  await delayMs(1500);
+  banner.classList.remove('show');
+  await delayMs(350);
+
+  // Dialogue lines (if defined for this unit)
+  const lines=featured.introLines;
+  if(lines&&lines.length){
+    const dlg=$('combat-dialogue');
+    const speakerEl=$('cdl-speaker');
+    const textEl=$('cdl-text');
+    dlg.className='combat-dialogue-line'+(isBoss?' tier-boss':'');
+    speakerEl.textContent=featured.name;
+    for(const line of lines){
+      textEl.textContent=line;
+      dlg.classList.add('show');
+      await delayMs(2200);
+      dlg.classList.remove('show');
+      await delayMs(450);
+    }
+  }
+
+  // Don't unlock here — runRound() (called right after) will set the correct
+  // locked/unlocked state itself based on whose turn actually goes first.
+}
+
 function renderPassives(){
   const el=$('active-passives');if(!el) return;
   el.innerHTML='';
@@ -970,7 +1059,9 @@ function buildUnitEl(u,isEnemy,C){
   const si=document.createElement('div');si.className='unit-status-icons';
   div.appendChild(si);
 
-  const nl=document.createElement('div');nl.className='unit-name-label';
+  const nl=document.createElement('div');
+  const tierCls=isEnemy&&u.tier==='ace'?' tier-ace':isEnemy&&(u.tier==='boss'||u.isBoss)?' tier-boss':'';
+  nl.className='unit-name-label'+tierCls;
   nl.textContent=u.name.replace('Gundam ','').substring(0,14);div.appendChild(nl);
   const cl=document.createElement('div');cl.className='unit-category-label';
   cl.textContent=catLabel(u.category);div.appendChild(cl);
@@ -1066,7 +1157,7 @@ function renderTurnStrip(C){
     p.className='turn-pip '+(isP?'player-pip':'enemy-pip');
     p.dataset.uid=id;
     if(id===C.activeUnit?.id) p.classList.add('current');
-    p.textContent=u.name.split(' ')[0].substring(0,5);
+    p.textContent=shortName(u.name);
     strip.appendChild(p);
   });
 }
