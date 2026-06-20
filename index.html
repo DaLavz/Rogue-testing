@@ -666,17 +666,18 @@ function aiAction(enemy,C){
 
   if(tier==='grunt'||tier==='token'){
     target=players[0];
-    // Grunts now use Special whenever they can afford it and it's off cooldown-equivalent — much
-    // more aggressive than before (was 50%), since waiting on a free Basic with energy banked felt passive.
-    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<.8) ability='special';
+    // Grunts use Special often when they can afford it, but not unconditionally — scaled back
+    // from an earlier 80% pass that felt too relentless, while staying well above the original
+    // 50% baseline that felt too passive.
+    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<.65) ability='special';
   } else if(tier==='ace'){
     const adv=players.find(p=>rps(enemy.category,p.category)>1);
     target=adv||players[0];
-    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<.65)) ability='special';
-    // Aces now fire their Ultimate aggressively once banked — previously held back too cautiously
-    // (30% baseline chance) which let players stall them out for free. Still slightly more eager
-    // at low HP, but the floor is much higher now.
-    if(enemy.ultimate&&C.enemyUlt>=100&&(enemy.hp/enemy.maxHp<.3||Math.random()<.75)) ability='ultimate';
+    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<.5)) ability='special';
+    // Aces fire their Ultimate reliably once banked, but not near-automatically — pulled back from
+    // a 75% pass that left almost no window to react, while staying above the original 30% floor
+    // that let players stall them out for free.
+    if(enemy.ultimate&&C.enemyUlt>=100&&(enemy.hp/enemy.maxHp<.3||Math.random()<.55)) ability='ultimate';
   } else if(tier==='boss'){
     const hpPct=enemy.hp/enemy.maxHp;
     const phase2=enemy.phases&&hpPct<enemy.phases[0]?.threshold;
@@ -686,11 +687,12 @@ function aiAction(enemy,C){
       target=players.reduce((b,p)=>p.atk*(p.atkMod||1)>b.atk*(b.atkMod||1)?p:b,players[0]);
     } else {
       target=players.reduce((b,p)=>p.spd*(p.spdMod||1)>b.spd*(b.spdMod||1)?p:b,players[0]);
-      // Boss phase 1: noticeably more willing to use Special even without an RPS edge (was 35%, now 60%)
-      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<.6)) ability='special';
-      // Boss ultimate fires as soon as it's banked and the boss is below 70% HP, not just <50% —
-      // bosses were sitting on a full gauge too long before using it.
-      if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<.7) ability='ultimate';
+      // Boss phase 1: moderately willing to use Special without an RPS edge — between the original
+      // 35% and the overtuned 60%.
+      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<.45)) ability='special';
+      // Boss ultimate fires once banked and below 60% HP — a middle point between the original
+      // <50% gate and the overly eager <70% gate.
+      if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<.6) ability='ultimate';
     }
   }
   return {ability,target};
@@ -1047,8 +1049,11 @@ function buildEncounter(zone,floor,isBoss,isAce){
   let ids=[];
   if(isBoss){ids=[zone.bossId];}
   else if(isAce){
+    // Aces always fight solo at encounter start. Any escorts come exclusively from that ace's
+    // own intentional kit mechanic (e.g. Gaia's Gouf summoning Zaku tokens below 60% HP) — never
+    // from a generic random grunt roll, which used to let an unrelated grunt show up alongside
+    // any ace for no thematic reason.
     const aceId=pick(zone.acePool);ids=[aceId];
-    if(Math.random()<.35) ids.push(pick(zone.gruntPool));
   } else {
     const cnt=Math.random()<.33?3:2;
     for(let i=0;i<cnt;i++) ids.push(pick(zone.gruntPool));
