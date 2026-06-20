@@ -8,7 +8,7 @@
       "id": "earth",
       "name": "Earth Front",
       "seriesName": "UC",
-      "flavorName": "Side 7 — Earth Front",
+      "flavorName": "Earth Front — Jaburo Sector",
       "totalFloors": 10,
       "background": "earth",
       "trait": {
@@ -355,7 +355,11 @@
           "value": 0.85,
           "duration": 2
         }
-      }
+      },
+      "introLines": [
+        "\"Aren't you ace pilots making this too easy? Newtype... or just talented...\"",
+        "\"I am Char Aznable! This is the price of your arrogance!\""
+      ]
     },
     {
       "id": "gaias_gouf",
@@ -409,7 +413,11 @@
           "value": 0.85,
           "duration": 2
         }
-      }
+      },
+      "introLines": [
+        "\"Heh heh heh... let's see what the Black Tri-Stars can really do!\"",
+        "\"Ortega! Mash! Formation positions, now!\""
+      ]
     },
     {
       "id": "mquve_gyan",
@@ -462,7 +470,11 @@
           "value": 0.85,
           "duration": 2
         }
-      }
+      },
+      "introLines": [
+        "\"Hmph. Sending children to fight is the Federation's specialty.\"",
+        "\"I didn't come this far to lose to the likes of you!\""
+      ]
     },
     {
       "id": "ramba_ral_gouf_custom",
@@ -526,6 +538,10 @@
           "targetMode": "highest_atk",
           "description": "Ramba Ral's composure cracks — he fights now with desperate conviction."
         }
+      ],
+      "introLines": [
+        "\"A real soldier... fights to the very end.\"",
+        "\"Let me show you the difference experience makes, boy!\""
       ]
     },
     {
