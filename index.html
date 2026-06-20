@@ -690,6 +690,21 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   for(const t of tlist){
     if(t.hp<=0&&!t.defeated){t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);}
   }
+
+  // Guncannon-style "ally_special_followup" passive: when an ALLY (not itself) uses Special,
+  // any unit with this passive fires a free Basic Attack on the same primary target — no energy
+  // cost, no turn used. Skipped for enemy-side actions and for the follow-up's own trigger to avoid recursion.
+  if(!isEnemy&&abilityKey==='special'&&!attacker._isFollowup){
+    const primaryTarget=tlist[0];
+    const followers=C.playerUnits.filter(p=>p.id!==attacker.id&&p.hp>0&&!p.defeated&&p.passive?.type==='ally_special_followup');
+    for(const f of followers){
+      if(!primaryTarget||primaryTarget.hp<=0) continue;
+      log(`<span class="log-system">${f.passive.name} — ${f.name} fires a free follow-up shot!</span>`);
+      f._isFollowup=true;
+      execAbility(f,'basic',[primaryTarget],C,false);
+      delete f._isFollowup;
+    }
+  }
 }
 
 /* ── ZONE TRAIT ── */
