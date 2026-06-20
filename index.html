@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Rogue Gundam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -245,6 +248,11 @@ button:active{transform:scale(0.97)}
   .upgrade-buy-btn,.team-upgrade-buy-btn{padding:.3rem .55rem!important;font-size:.72rem!important}
 }
 .reward-card-desc{display:none;font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);padding:.6rem .75rem .75rem;line-height:1.5;background:var(--bg-panel);border-top:1px solid rgba(255,255,255,.1)}
+@keyframes upgradeRowFlash{
+  0%{background:rgba(200,168,75,.9);transform:scale(1.015)}
+  100%{background:rgba(200,168,75,.08);transform:scale(1)}
+}
+.upgrade-row-flash{animation:upgradeRowFlash .6s ease-out}
 .reward-card.selected .reward-card-desc{display:block}
 /* Rarity tile colors */
 .rarity-Common    .reward-card-tile{background:#6b6b6b}
@@ -456,7 +464,7 @@ button:active{transform:scale(0.97)}
 <div id="screen-upgrades" class="screen">
   <div class="reward-header">
     <h2>Upgrades</h2>
-    <p>⬡ <span id="upgrades-currency">0</span> G available</p>
+    <p class="currency-flash-target">⬡ <span id="upgrades-currency">0</span> G available</p>
   </div>
   <div class="reward-cards" id="upgrades-body" style="overflow-y:auto;flex:1"></div>
   <div class="reward-confirm-bar">
@@ -2700,7 +2708,7 @@ $('btn-garage-done').addEventListener('click',()=>showUpgradeScreen());
 // doubles each tier: 18 / 36 / 72 / 144 / 288. Cheap individually since this is per-unit and you'll
 // buy it up to 3 times (once per active unit) — by the time you max one unit's stat you've spent
 // the full 558G total across its 5 tiers.
-const PER_UNIT_UPGRADE_COSTS=[18,36,72,144,288];
+const PER_UNIT_UPGRADE_COSTS=[25,50,100,200,400];
 function getUpgradeCost(tier){
   // tier = the tier ABOUT TO BE PURCHASED (1-indexed) — cost to go from tier-1 to tier
   return PER_UNIT_UPGRADE_COSTS[Math.min(tier-1,PER_UNIT_UPGRADE_COSTS.length-1)];
@@ -2712,7 +2720,7 @@ const HP_PERCENT_PER_TIER=0.03; // +3% max HP per tier
 // buffs the WHOLE active squad at once rather than a single chosen unit. 4 tiers, exact escalating
 // cost sequence (not a clean multiplier — these are the literal specified values): 100/200/400/600.
 const TEAM_UPGRADE_MAX_TIER=4;
-const TEAM_UPGRADE_COSTS=[100,200,400,600];
+const TEAM_UPGRADE_COSTS=[125,250,500,750];
 function getTeamUpgradeCost(tier){
   // tier = the tier ABOUT TO BE PURCHASED (1-indexed)
   return TEAM_UPGRADE_COSTS[Math.min(tier-1,TEAM_UPGRADE_COSTS.length-1)];
@@ -2728,7 +2736,9 @@ function renderUpgradeScreen(){
   $('upgrades-currency').textContent=S.currency;
   let h='';
 
-  // Team-wide section — one button each for DMG and DEF, buffs the whole active squad at once.
+  // Team-wide section — compact rows now. Tap a row to open a detail popup with the full tier
+  // progress and a dedicated Buy button, rather than cramming all of that into the row itself —
+  // this is what was making the screen feel oversized/unreadable on narrow phones.
   const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
   h+=`<div class="reward-card rarity-Rare" style="cursor:default">
     <div class="reward-card-tile" style="min-height:50px">
@@ -2738,8 +2748,8 @@ function renderUpgradeScreen(){
       </div>
     </div>
     <div class="reward-card-desc" style="display:block">
-      ${renderTeamUpgradeRow('dmg','Team Damage',teamTiers.dmg)}
-      ${renderTeamUpgradeRow('def','Team Defense',teamTiers.def)}
+      ${renderUpgradeSummaryRow('team','dmg','Team Damage',teamTiers.dmg,TEAM_UPGRADE_MAX_TIER)}
+      ${renderUpgradeSummaryRow('team','def','Team Defense',teamTiers.def,TEAM_UPGRADE_MAX_TIER)}
     </div>
   </div>`;
 
@@ -2754,41 +2764,97 @@ function renderUpgradeScreen(){
         </div>
       </div>
       <div class="reward-card-desc" style="display:block">
-        ${renderUpgradeRow(u,'hp','Max HP',tiers.hp)}
+        ${renderUpgradeSummaryRow('unit','hp','Max HP',tiers.hp,UPGRADE_MAX_TIER,u.id)}
       </div>
     </div>`;
   });
   $('upgrades-body').innerHTML=h;
-  document.querySelectorAll('.upgrade-row-buyable').forEach(row=>{
+  document.querySelectorAll('.upgrade-summary-row').forEach(row=>{
     row.addEventListener('click',()=>{
-      const unitId=row.dataset.unit;
+      const kind=row.dataset.kind;
       const stat=row.dataset.stat;
-      buyUpgrade(unitId,stat);
-    });
-  });
-  document.querySelectorAll('.team-upgrade-row-buyable').forEach(row=>{
-    row.addEventListener('click',()=>{
-      buyTeamUpgrade(row.dataset.stat);
+      const unitId=row.dataset.unit||null;
+      if(kind==='team') openTeamUpgradeDetail(stat);
+      else openUnitUpgradeDetail(unitId,stat);
     });
   });
 }
 
-function renderUpgradeRow(u,stat,label,tier){
+// Compact summary row — name, current tier as a short fraction, and nothing else. Designed to
+// stay short and readable on narrow phones; tapping it opens the detail popup for the actual
+// purchase interaction.
+function renderUpgradeSummaryRow(kind,stat,label,tier,maxTier,unitId){
+  const maxed=tier>=maxTier;
+  return `<div class="upgrade-summary-row" data-kind="${kind}" data-stat="${stat}"${unitId?` data-unit="${unitId}"`:''} style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.6rem .5rem;border-bottom:1px solid var(--border);border-radius:5px;cursor:pointer;background:rgba(200,168,75,.08)">
+    <div style="font-size:.85rem;font-weight:600">${label}</div>
+    <div style="font-family:var(--font-mono);font-size:.78rem;color:${maxed?'var(--text-dim)':'var(--gold)'}">${maxed?'MAX':'Tier '+tier+'/'+maxTier+' ›'}</div>
+  </div>`;
+}
+
+function openUnitUpgradeDetail(unitId,stat){
+  const u=byId(unitId,DATA.playerUnits);if(!u) return;
+  renderUnitUpgradeDetailBody(unitId,stat);
+}
+
+function renderUnitUpgradeDetailBody(unitId,stat){
+  const u=byId(unitId,DATA.playerUnits);if(!u) return;
+  const tiers=ensureUpgradeTiers(u);
+  const tier=tiers[stat];
   const maxed=tier>=UPGRADE_MAX_TIER;
-  const cost=maxed?0:getUpgradeCost(tier+1); // cost to buy the NEXT tier (tier is 0-indexed count owned)
+  const cost=maxed?0:getUpgradeCost(tier+1);
   const canAfford=S.currency>=cost;
   const pips=Array.from({length:UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
-  const clickable=!maxed&&canAfford;
-  // The ENTIRE ROW is the tappable target now (not a small nested button) — this fixes a real
-  // mobile bug where the buy button could get clipped/unreachable inside the card's fixed-height
-  // box on narrow screens, with no way to scroll down to it.
-  return `<div class="upgrade-row${clickable?' upgrade-row-buyable':''}" data-unit="${u.id}" data-stat="${stat}" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.5rem .4rem;border-bottom:1px solid var(--border);border-radius:5px;cursor:${clickable?'pointer':'default'};background:${clickable?'rgba(200,168,75,.08)':'transparent'}">
-    <div>
-      <div style="font-size:.85rem;font-weight:600">${label} <span style="color:var(--gold);font-family:var(--font-mono);font-size:.75rem">${pips}</span></div>
-      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${UPGRADE_MAX_TIER}${maxed?' (max)':''}${maxed?'':canAfford?' · Tap to upgrade':' · Not enough G'}</div>
-    </div>
-    <span style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${maxed?'var(--text-dim)':canAfford?'var(--gold)':'var(--text-dim)'}">${maxed?'MAXED':'⬡ '+cost}</span>
-  </div>`;
+  const pctSoFar=Math.round(tier*HP_PERCENT_PER_TIER*100);
+  const label=stat==='hp'?'Max HP':stat;
+  const h=`
+    <div class="overlay-section"><div class="overlay-value" style="font-size:.9rem"><strong>${u.name}</strong> — ${label}</div></div>
+    <div class="overlay-section" style="text-align:center"><div id="detail-pips" class="currency-flash-target" style="font-family:var(--font-mono);font-size:1.3rem;color:var(--gold);letter-spacing:.2rem">${pips}</div></div>
+    <div class="overlay-section"><div class="overlay-value" style="font-size:.8rem;color:var(--text-muted)">Tier ${tier}/${UPGRADE_MAX_TIER}${maxed?' (maxed)':''} · +${pctSoFar}% so far</div></div>
+    <div class="overlay-section">
+      ${maxed
+        ?`<div style="text-align:center;color:var(--text-dim);font-weight:700;padding:.6rem">MAXED OUT</div>`
+        :`<button id="detail-buy-btn" class="btn-primary" style="width:100%" ${canAfford?'':'disabled'}>${canAfford?'Buy — ⬡ '+cost:'Need ⬡ '+cost+' (Not Enough)'}</button>`
+      }
+    </div>`;
+  openOverlay('Upgrade',h);
+  const buyBtn=$('detail-buy-btn');
+  if(buyBtn) buyBtn.addEventListener('click',()=>{
+    buyUpgrade(unitId,stat);
+    renderUnitUpgradeDetailBody(unitId,stat); // refresh the popup in place so it shows the new tier immediately
+    flashCurrency(); // fires AFTER the re-render above, so it targets the freshly-created pip element
+  });
+}
+
+function openTeamUpgradeDetail(stat){
+  renderTeamUpgradeDetailBody(stat);
+}
+
+function renderTeamUpgradeDetailBody(stat){
+  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
+  const tier=teamTiers[stat];
+  const maxed=tier>=TEAM_UPGRADE_MAX_TIER;
+  const cost=maxed?0:getTeamUpgradeCost(tier+1);
+  const canAfford=S.currency>=cost;
+  const pips=Array.from({length:TEAM_UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
+  const pctSoFar=Math.round(tier*TEAM_UPGRADE_PERCENT_PER_TIER*100);
+  const label=stat==='dmg'?'Team Damage':'Team Defense';
+  const h=`
+    <div class="overlay-section"><div class="overlay-value" style="font-size:.9rem"><strong>${label}</strong> — affects all 3 equipped units</div></div>
+    <div class="overlay-section" style="text-align:center"><div id="detail-pips" class="currency-flash-target" style="font-family:var(--font-mono);font-size:1.3rem;color:var(--gold);letter-spacing:.2rem">${pips}</div></div>
+    <div class="overlay-section"><div class="overlay-value" style="font-size:.8rem;color:var(--text-muted)">Tier ${tier}/${TEAM_UPGRADE_MAX_TIER}${maxed?' (maxed)':''} · +${pctSoFar}% so far</div></div>
+    <div class="overlay-section">
+      ${maxed
+        ?`<div style="text-align:center;color:var(--text-dim);font-weight:700;padding:.6rem">MAXED OUT</div>`
+        :`<button id="detail-buy-btn" class="btn-primary" style="width:100%" ${canAfford?'':'disabled'}>${canAfford?'Buy — ⬡ '+cost:'Need ⬡ '+cost+' (Not Enough)'}</button>`
+      }
+    </div>`;
+  openOverlay('Upgrade',h);
+  const buyBtn=$('detail-buy-btn');
+  if(buyBtn) buyBtn.addEventListener('click',()=>{
+    buyTeamUpgrade(stat);
+    renderTeamUpgradeDetailBody(stat); // refresh the popup in place
+    flashCurrency();
+  });
 }
 
 function buyUpgrade(unitId,stat){
@@ -2807,23 +2873,7 @@ function buyUpgrade(unitId,stat){
     // also heal the current run-tracked HP by the same absolute amount gained, so upgrading doesn't waste the run's current HP
     if(S.run.unitHp[unitId]!=null) S.run.unitHp[unitId]=Math.min(u.maxHp,S.run.unitHp[unitId]+Math.round(baseMaxHp*HP_PERCENT_PER_TIER));
   }
-  renderUpgradeScreen();
-}
-
-function renderTeamUpgradeRow(stat,label,tier){
-  const maxed=tier>=TEAM_UPGRADE_MAX_TIER;
-  const cost=maxed?0:getTeamUpgradeCost(tier+1);
-  const canAfford=S.currency>=cost;
-  const pips=Array.from({length:TEAM_UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
-  const pctSoFar=Math.round(tier*TEAM_UPGRADE_PERCENT_PER_TIER*100);
-  const clickable=!maxed&&canAfford;
-  return `<div class="team-upgrade-row${clickable?' team-upgrade-row-buyable':''}" data-stat="${stat}" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.5rem .4rem;border-bottom:1px solid var(--border);border-radius:5px;cursor:${clickable?'pointer':'default'};background:${clickable?'rgba(200,168,75,.08)':'transparent'}">
-    <div>
-      <div style="font-size:.85rem;font-weight:600">${label} <span style="color:var(--gold);font-family:var(--font-mono);font-size:.75rem">${pips}</span></div>
-      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${TEAM_UPGRADE_MAX_TIER}${maxed?' (max)':''} · +${pctSoFar}% so far${maxed?'':canAfford?' · Tap to upgrade':' · Not enough G'}</div>
-    </div>
-    <span style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${maxed?'var(--text-dim)':canAfford?'var(--gold)':'var(--text-dim)'}">${maxed?'MAXED':'⬡ '+cost}</span>
-  </div>`;
+  renderUpgradeScreen(); // refresh the screen behind the popup too, so the summary row's tier updates
 }
 
 function buyTeamUpgrade(stat){
@@ -2834,6 +2884,18 @@ function buyTeamUpgrade(stat){
   S.currency-=cost;
   teamTiers[stat]++;
   renderUpgradeScreen();
+}
+
+// Small, screen-agnostic purchase feedback: briefly pulses the currency readout on whichever
+// screen is currently active, so any successful buy (per-unit, team, or future ones) gets a
+// visible confirmation without needing a flash effect baked into each individual row's markup.
+function flashCurrency(){
+  document.querySelectorAll('.currency-flash-target').forEach(el=>{
+    el.classList.remove('upgrade-row-flash');
+    void el.offsetWidth; // restart the animation even if it's already mid-flash
+    el.classList.add('upgrade-row-flash');
+    setTimeout(()=>el.classList.remove('upgrade-row-flash'),650);
+  });
 }
 $('btn-upgrades-done').addEventListener('click',()=>enterNextZone());
 
@@ -2887,7 +2949,7 @@ function renderShop(){
   });
 }
 
-const SHOP_PRICES={repair_spray:80,ms_repair_kit:200,gn_condenser:150};
+const SHOP_PRICES={repair_spray:25,ms_repair_kit:75,gn_condenser:150};
 
 /* ── SHOP INVENTORY / HEAL-TURN SYSTEM (mirrors combat's heal rules, but turn-based by fixed unit order) ── */
 function openShopInventory(){
