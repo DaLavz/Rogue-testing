@@ -2759,18 +2759,16 @@ function renderUpgradeScreen(){
     </div>`;
   });
   $('upgrades-body').innerHTML=h;
-  document.querySelectorAll('.upgrade-buy-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      const unitId=btn.dataset.unit;
-      const stat=btn.dataset.stat;
+  document.querySelectorAll('.upgrade-row-buyable').forEach(row=>{
+    row.addEventListener('click',()=>{
+      const unitId=row.dataset.unit;
+      const stat=row.dataset.stat;
       buyUpgrade(unitId,stat);
     });
   });
-  document.querySelectorAll('.team-upgrade-buy-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      buyTeamUpgrade(btn.dataset.stat);
+  document.querySelectorAll('.team-upgrade-row-buyable').forEach(row=>{
+    row.addEventListener('click',()=>{
+      buyTeamUpgrade(row.dataset.stat);
     });
   });
 }
@@ -2780,18 +2778,16 @@ function renderUpgradeRow(u,stat,label,tier){
   const cost=maxed?0:getUpgradeCost(tier+1); // cost to buy the NEXT tier (tier is 0-indexed count owned)
   const canAfford=S.currency>=cost;
   const pips=Array.from({length:UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
-  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
+  const clickable=!maxed&&canAfford;
+  // The ENTIRE ROW is the tappable target now (not a small nested button) — this fixes a real
+  // mobile bug where the buy button could get clipped/unreachable inside the card's fixed-height
+  // box on narrow screens, with no way to scroll down to it.
+  return `<div class="upgrade-row${clickable?' upgrade-row-buyable':''}" data-unit="${u.id}" data-stat="${stat}" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.5rem .4rem;border-bottom:1px solid var(--border);border-radius:5px;cursor:${clickable?'pointer':'default'};background:${clickable?'rgba(200,168,75,.08)':'transparent'}">
     <div>
       <div style="font-size:.85rem;font-weight:600">${label} <span style="color:var(--gold);font-family:var(--font-mono);font-size:.75rem">${pips}</span></div>
-      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${UPGRADE_MAX_TIER}${maxed?' (max)':''}</div>
+      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${UPGRADE_MAX_TIER}${maxed?' (max)':''}${maxed?'':canAfford?' · Tap to upgrade':' · Not enough G'}</div>
     </div>
-    ${maxed
-      ?`<span style="color:var(--text-dim);font-size:.78rem">MAXED</span>`
-      :`<button class="upgrade-buy-btn" data-unit="${u.id}" data-stat="${stat}" ${canAfford?'':'disabled'}
-          style="background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.35rem .7rem;font-size:.78rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
-          ⬡ ${cost}
-        </button>`
-    }
+    <span style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${maxed?'var(--text-dim)':canAfford?'var(--gold)':'var(--text-dim)'}">${maxed?'MAXED':'⬡ '+cost}</span>
   </div>`;
 }
 
@@ -2820,18 +2816,13 @@ function renderTeamUpgradeRow(stat,label,tier){
   const canAfford=S.currency>=cost;
   const pips=Array.from({length:TEAM_UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
   const pctSoFar=Math.round(tier*TEAM_UPGRADE_PERCENT_PER_TIER*100);
-  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
+  const clickable=!maxed&&canAfford;
+  return `<div class="team-upgrade-row${clickable?' team-upgrade-row-buyable':''}" data-stat="${stat}" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.5rem .4rem;border-bottom:1px solid var(--border);border-radius:5px;cursor:${clickable?'pointer':'default'};background:${clickable?'rgba(200,168,75,.08)':'transparent'}">
     <div>
       <div style="font-size:.85rem;font-weight:600">${label} <span style="color:var(--gold);font-family:var(--font-mono);font-size:.75rem">${pips}</span></div>
-      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${TEAM_UPGRADE_MAX_TIER}${maxed?' (max)':''} · +${pctSoFar}% so far</div>
+      <div style="font-size:.7rem;color:var(--text-muted)">Tier ${tier}/${TEAM_UPGRADE_MAX_TIER}${maxed?' (max)':''} · +${pctSoFar}% so far${maxed?'':canAfford?' · Tap to upgrade':' · Not enough G'}</div>
     </div>
-    ${maxed
-      ?`<span style="color:var(--text-dim);font-size:.78rem">MAXED</span>`
-      :`<button class="team-upgrade-buy-btn" data-stat="${stat}" ${canAfford?'':'disabled'}
-          style="background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.35rem .7rem;font-size:.78rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
-          ⬡ ${cost}
-        </button>`
-    }
+    <span style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:${maxed?'var(--text-dim)':canAfford?'var(--gold)':'var(--text-dim)'}">${maxed?'MAXED':'⬡ '+cost}</span>
   </div>`;
 }
 
@@ -2862,28 +2853,25 @@ function renderShop(){
   shopStock.forEach(item=>{
     const price=Math.round((SHOP_PRICES[item.id]||100)*shopZoneMultiplier);
     const canAfford=S.currency>=price;
-    h+=`<div class="reward-card rarity-${item.rarity}" style="cursor:default">
+    // Tapping the card itself buys it — no separate buy button. This avoids the small fixed-height
+    // card clipping a button at the bottom on narrow phone screens, which was unreachable/unusable.
+    h+=`<div class="reward-card shop-item-card rarity-${item.rarity}" data-id="${item.id}" data-price="${price}" style="cursor:${canAfford?'pointer':'not-allowed'};opacity:${canAfford?'1':'.55'}">
       <div class="reward-card-tile" style="min-height:50px">
         <div>
           <div class="reward-card-name">${item.name}</div>
-          <div class="reward-card-sub">${item.rarity} · ⬡ ${price} G</div>
+          <div class="reward-card-sub">${item.rarity} · ⬡ ${price} G${canAfford?' · Tap to buy':' · Not enough G'}</div>
         </div>
       </div>
       <div class="reward-card-desc" style="display:block">
         ${item.description}
-        <button class="shop-buy-btn" data-id="${item.id}" data-price="${price}" ${canAfford?'':'disabled'}
-          style="display:block;width:100%;margin-top:.5rem;background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.4rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
-          ${canAfford?'Buy':'Not enough G'}
-        </button>
       </div>
     </div>`;
   });
   $('shop-body').innerHTML=h;
-  document.querySelectorAll('.shop-buy-btn').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      const id=btn.dataset.id;
-      const price=parseInt(btn.dataset.price);
+  document.querySelectorAll('.shop-item-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const id=card.dataset.id;
+      const price=parseInt(card.dataset.price);
       if(S.currency<price) return;
       S.currency-=price;
       const item=DATA.items.find(it=>it.id===id);
