@@ -84,10 +84,7 @@
         "zeta_gundam",
         "gundam_ground_type",
         "gm_command"
-      ],
-      "fixedEvents": {
-        "8": "station"
-      }
+      ]
     }
   ],
   "playerUnits": [
@@ -655,7 +652,6 @@
       "atk": 38,
       "def": 22,
       "spd": 40,
-      "recruitCost": 2,
       "isBoss": true,
       "passive": {
         "name": "This is no Zaku, boy",
@@ -775,9 +771,9 @@
       "tier": "grunt",
       "family": "gelgoog",
       "category": "Ranged",
-      "hp": 115,
-      "maxHp": 115,
-      "atk": 26,
+      "hp": 132,
+      "maxHp": 132,
+      "atk": 29,
       "def": 14,
       "spd": 32,
       "basic": {
@@ -805,9 +801,9 @@
       "tier": "grunt",
       "family": "hizack",
       "category": "Ranged",
-      "hp": 120,
-      "maxHp": 120,
-      "atk": 23,
+      "hp": 138,
+      "maxHp": 138,
+      "atk": 26,
       "def": 15,
       "spd": 35,
       "basic": {
@@ -839,9 +835,9 @@
       "tier": "grunt",
       "family": "gaza",
       "category": "Mobility",
-      "hp": 105,
-      "maxHp": 105,
-      "atk": 24,
+      "hp": 121,
+      "maxHp": 121,
+      "atk": 27,
       "def": 12,
       "spd": 42,
       "basic": {
@@ -872,21 +868,21 @@
       "series": "UC",
       "tier": "grunt",
       "family": "geara_doga",
-      "category": "Melee",
-      "hp": 140,
-      "maxHp": 140,
-      "atk": 24,
+      "category": "Ranged",
+      "hp": 161,
+      "maxHp": 161,
+      "atk": 27,
       "def": 19,
       "spd": 30,
       "basic": {
-        "name": "Beam Assault Rifle Shot",
-        "description": "Standard hit on a single target.",
+        "name": "Beam Rifle Burst",
+        "description": "Standard ranged hit on a single target.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
       },
       "special": {
-        "name": "Sturm Faust Launch",
+        "name": "Sturm Faust Volley",
         "description": "1.8x ATK on one target, heavy single-target damage.",
         "type": "damage",
         "target": "single",
@@ -901,15 +897,15 @@
       "series": "UC",
       "tier": "grunt",
       "family": "jagd_doga",
-      "category": "Mobility",
-      "hp": 130,
-      "maxHp": 130,
-      "atk": 27,
+      "category": "Ranged",
+      "hp": 150,
+      "maxHp": 150,
+      "atk": 30,
       "def": 15,
       "spd": 45,
       "basic": {
-        "name": "Funnel Probe",
-        "description": "Standard mobility hit on a single target.",
+        "name": "Funnel Beam Barrage",
+        "description": "Standard ranged hit on a single target.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -936,9 +932,9 @@
       "tier": "grunt",
       "family": "dom",
       "category": "Ranged",
-      "hp": 128,
-      "maxHp": 128,
-      "atk": 25,
+      "hp": 147,
+      "maxHp": 147,
+      "atk": 28,
       "def": 17,
       "spd": 28,
       "basic": {
@@ -1125,13 +1121,12 @@
       "series": "UC",
       "tier": "boss",
       "family": "sazabi",
-      "category": "Mobility",
+      "category": "Melee",
       "hp": 460,
       "maxHp": 460,
       "atk": 52,
       "def": 28,
       "spd": 58,
-      "recruitCost": 4,
       "isBoss": true,
       "passive": {
         "name": "Revenge of Char",
@@ -1139,8 +1134,8 @@
         "type": "special_hit_debuff_block"
       },
       "basic": {
-        "name": "Beam Shot Rifle",
-        "description": "Standard hit on a single target.",
+        "name": "Heat Tomahawk Slash",
+        "description": "Standard melee hit on a single target.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -1343,7 +1338,7 @@
     "energyMax": 8,
     "energyPerBasic": 2,
     "ultGaugeMax": 100,
-    "ultGaugePerTurn": 10,
+    "ultGaugePerTurn": 5,
     "ultGaugePerCrit": 25,
     "critMultiplier": 1.5,
     "defMultiplier": 0.5,
