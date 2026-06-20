@@ -633,7 +633,7 @@
       "name": "Luna Titanium Coating",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +10% DEF for 5 floors.",
+      "description": "Team +10% DEF for 5 stages.",
       "effect": {
         "type": "team_def_up",
         "value": 1.1,
@@ -645,7 +645,7 @@
       "name": "Weapon Calibration",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +10% ATK for 5 floors.",
+      "description": "Team +10% ATK for 5 stages.",
       "effect": {
         "type": "team_atk_up",
         "value": 1.1,
@@ -657,7 +657,7 @@
       "name": "Thruster Overclocking",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +10% SPD for 5 floors.",
+      "description": "Team +10% SPD for 5 stages.",
       "effect": {
         "type": "team_spd_up",
         "value": 1.1,
