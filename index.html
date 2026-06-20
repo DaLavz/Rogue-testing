@@ -687,6 +687,8 @@ function applyStatus(target,eff){
   else if(t==='atk_def_down'){applyStatus(target,{type:'atk_down',value:eff.value,duration:eff.duration});applyStatus(target,{type:'def_down',value:eff.value,duration:eff.duration});}
   else if(t==='atk_spd_down'){applyStatus(target,{type:'atk_down',value:eff.value,duration:eff.duration});applyStatus(target,{type:'spd_down',value:eff.value,duration:eff.duration});}
   else if(t==='atk_down_dot'){applyStatus(target,{type:'atk_down',value:eff.atkDownValue,duration:eff.duration});applyStatus(target,{type:'dot',value:eff.dotValue,duration:eff.duration});}
+  else if(t==='atk_def_up'){applyStatus(target,{type:'atk_up',value:eff.value,duration:eff.duration});applyStatus(target,{type:'def_up',value:eff.value,duration:eff.duration});}
+  else if(t==='atk_spd_up'){applyStatus(target,{type:'atk_up',value:eff.value,duration:eff.duration});applyStatus(target,{type:'spd_up',value:eff.value,duration:eff.duration});}
   rebuildMods(target);
 }
 
@@ -844,10 +846,14 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       }
     }
   }
-  // self buff (fires once regardless of target count — including target:"self" ultimates with no damage targets)
-  if(!isEnemy&&abilityKey==='ultimate'&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
-  // team buff (whole active party, not just the caster) — e.g. Mk-II's Super Gundam Formation, Guntank's Fortress Mode
-  if(!isEnemy&&abilityKey==='ultimate'&&ab.teamBuff){
+  // self buff (fires once regardless of target count — including target:"self" abilities with no
+  // damage targets). Was Ultimate-only; now also works on Specials, for support units whose core
+  // kit action is a buff rather than damage.
+  if(!isEnemy&&(abilityKey==='ultimate'||abilityKey==='special')&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
+  // team buff (whole active party, not just the caster) — e.g. Mk-II's Super Gundam Formation,
+  // Guntank's Fortress Mode. Was Ultimate-only; now also works on Specials, since some support
+  // units' signature ability (not their Ult) is meant to be a no-damage, team-wide buff.
+  if(!isEnemy&&(abilityKey==='ultimate'||abilityKey==='special')&&ab.teamBuff){
     for(const ally of C.playerUnits){
       if(ally.hp<=0||ally.defeated) continue;
       applyStatus(ally,ab.teamBuff);
@@ -1087,17 +1093,18 @@ function startFloor(run){
     return;
   }
 
-  // Non-Earth zones: every non-ace, non-boss stage rolls a 40% chance to become a roaming
-  // recruitment encounter instead of a fight. Once that triggers, it's a 50/50 coin flip between
-  // the two encounter types: the dice-check (one unit, roll a stat check) or the station (3 units,
-  // pick one outright, no roll). Only one recruitment encounter of EITHER type is allowed per
-  // zone; stationDone covers both, since they're really the same "one recruitment opportunity per
-  // zone" slot wearing different faces.
+  // Non-Earth zones: every non-ace, non-boss stage rolls a 30% chance to become a roaming
+  // recruitment encounter instead of a fight. Once that triggers, it's an 80/20 split toward the
+  // dice-check (one unit, roll a stat check) over the station (3 units, pick one outright, no
+  // roll) — the station is rarer specifically because it's strictly easier (guaranteed pick, no
+  // roll involved). Only one recruitment encounter of EITHER type is allowed per zone;
+  // stationDone covers both, since they're really the same "one recruitment opportunity per zone"
+  // slot wearing different faces.
   const isFixedFloorType=f===zone.bossFloor||getEffectiveAceFloors(run,zone).includes(f);
   if(!fixedEvent&&!isFixedFloorType&&!run.stationDone&&zone.id!=='earth'){
-    if(Math.random()<0.40){
+    if(Math.random()<0.30){
       run.stationDone=true;
-      if(Math.random()<0.7) showDiceCheckEncounter(run,zone);
+      if(Math.random()<0.8) showDiceCheckEncounter(run,zone);
       else showStation(run,zone);
       return;
     }
@@ -1530,6 +1537,14 @@ function enterTarget(action,C){
   const u=C.activeUnit;
   const ab=u?.[action];
   if(ab?.target==='all'){selectTarget(null,C,action);return;}
+  if(ab?.target==='self'){
+    // Buff-only ability (no damage, no enemy needed) — resolve immediately, same as a no-target Ultimate.
+    exitTarget(C);
+    execAbility(u,action,[],C,false);
+    renderField(C);playPendingFx(C);renderRes(C);
+    resumeRound(C); // unlike a free-action Ultimate, a Special still costs the normal turn
+    return;
+  }
   C.pendingAction=action;
   document.querySelectorAll('.enemy-unit').forEach(el=>{
     const eu=C.enemyUnits.find(e=>e.id===el.dataset.uid);
@@ -1733,8 +1748,8 @@ function log(html){
 }
 
 /* ── STATUS LABELS ── */
-function statusLabel(t){return({atk_down:'ATK Down',def_down:'DEF Down',spd_down:'SPD Down',atk_up:'ATK Up',def_up:'DEF Up',spd_up:'SPD Up',dot:'Burn',atk_def_down:'ATK+DEF Down',atk_spd_down:'ATK+SPD Down',atk_down_dot:'ATK Down + Burn'}[t]||t);}
-function statusDesc(t){return({atk_down:'Reduces ATK — all outgoing damage is lowered.',def_down:'Reduces DEF — incoming damage is increased.',spd_down:'Reduces SPD — unit may act later in turn order.',atk_up:'Increases ATK — all outgoing damage is raised.',def_up:'Increases DEF — incoming damage is reduced.',spd_up:'Increases SPD — unit acts sooner.',dot:'Burn — deals damage at the start of this unit\'s turn.'}[t]||'Status effect.');}
+function statusLabel(t){return({atk_down:'ATK Down',def_down:'DEF Down',spd_down:'SPD Down',atk_up:'ATK Up',def_up:'DEF Up',spd_up:'SPD Up',dot:'Burn',atk_def_down:'ATK+DEF Down',atk_spd_down:'ATK+SPD Down',atk_down_dot:'ATK Down + Burn',atk_def_up:'ATK+DEF Up',atk_spd_up:'ATK+SPD Up'}[t]||t);}
+function statusDesc(t){return({atk_down:'Reduces ATK — all outgoing damage is lowered.',def_down:'Reduces DEF — incoming damage is increased.',spd_down:'Reduces SPD — unit may act later in turn order.',atk_up:'Increases ATK — all outgoing damage is raised.',def_up:'Increases DEF — incoming damage is reduced.',spd_up:'Increases SPD — unit acts sooner.',dot:'Burn — deals damage at the start of this unit\'s turn.',atk_def_up:'Increases both ATK and DEF.',atk_spd_up:'Increases both ATK and SPD.'}[t]||'Status effect.');}
 
 /* ── REWARD ── */
 // Relative spawn weight per rarity tier — higher = more common. Legendary is deliberately very rare.
@@ -1748,6 +1763,77 @@ function zoneRarityMultiplier(rarity,zoneIndex){
 function currentZoneIndex(){
   if(!S.run) return 0;
   return DATA.zones.findIndex(z=>z.id===S.run.zoneId);
+}
+
+// GLOBAL RECRUITMENT POOL SYSTEM — replaces the old per-zone fixed stationPool lists. Every unit
+// in DATA.recruitablePool is now eligible to appear in ANY zone's station or dice-check encounter;
+// what changes per zone is only the RELATIVE LIKELIHOOD of each cost tier showing up. This is the
+// whole point of the redesign: once more zones/series are added, nothing needs new pool-curation
+// work — every unit automatically slots into the right rarity-by-zone feel just by having a cost.
+//
+// Weights are relative (not pre-normalized to %) and keyed by 1-based "zone number" (zone 1 =
+// Earth, the player's very first zone, regardless of which array index that ends up at in
+// DATA.zones). Cost tiers not listed for a zone are treated as weight 0 (impossible there).
+const ZONE_COST_WEIGHTS={
+  1:{1:55,2:42,3:3},
+  2:{1:35,2:50,3:15},
+  3:{1:35,2:50,3:15},
+  4:{1:30,2:48,3:22},
+  5:{1:12,2:50,3:33,4:5},
+  6:{1:12,2:50,3:33,4:5},
+  7:{2:12,3:60,4:28},
+  8:{2:8,3:50,4:42},
+  9:{2:8,3:45,4:47}
+};
+// 1-based zone number for the CURRENT run zone — Earth is always zone 1; every zone visited after
+// it counts up from there using how many zones the player has actually cleared this run, NOT the
+// zone's fixed position in DATA.zones (since zones 2+ are meant to be randomized/shuffled once
+// more exist). Falls back to the last defined tier if the run somehow goes past zone 9 for now.
+function currentZoneNumber(run){
+  const idx=(run||S.run).visitedZones.length; // 1 while on the 1st zone, 2 on the 2nd, etc.
+  return Math.min(idx,9);
+}
+
+function pickUnitFromGlobalPoolByZone(run){
+  const zoneNum=currentZoneNumber(run);
+  const weights=ZONE_COST_WEIGHTS[zoneNum]||ZONE_COST_WEIGHTS[9];
+  const costs=Object.keys(weights).map(Number).sort((a,b)=>a-b);
+  const totalWeight=costs.reduce((s,c)=>s+weights[c],0);
+  let roll=Math.random()*totalWeight;
+  let chosenCost=costs[costs.length-1];
+  for(const c of costs){
+    roll-=weights[c];
+    if(roll<=0){chosenCost=c;break;}
+  }
+  // Graceful fallback: if the rolled cost tier has no real units in it YET (e.g. cost-4 content
+  // hasn't been added for this zone tier as of this build), step DOWN to the next cheaper tier
+  // that actually has candidates, rather than wasting the whole encounter on an empty roll. This
+  // naturally stops mattering once every cost tier has real units — it's a safety net for
+  // in-progress content, not a permanent behavior change.
+  let candidates=(DATA.recruitablePool||[]).filter(u=>u.cost===chosenCost);
+  const sortedCosts=costs.slice().sort((a,b)=>b-a); // highest first, to step down from chosenCost
+  let fallbackIdx=sortedCosts.indexOf(chosenCost);
+  while(!candidates.length&&fallbackIdx<sortedCosts.length-1){
+    fallbackIdx++;
+    candidates=(DATA.recruitablePool||[]).filter(u=>u.cost===sortedCosts[fallbackIdx]);
+  }
+  if(!candidates.length) return null; // truly nothing recruitable exists anywhere — caller handles this
+  return pick(candidates);
+}
+
+// Draws `count` DISTINCT units (no duplicate ids within this one draw) from the global pool,
+// respecting the zone's cost weighting for each individual pick. Retries a bounded number of
+// times if the pool is too thin to fill every slot uniquely.
+function drawDistinctUnitsFromGlobalPool(run,count){
+  const picks=[];const used=new Set();
+  let guard=0;
+  while(picks.length<count&&guard<300){
+    guard++;
+    const cand=pickUnitFromGlobalPoolByZone(run);
+    if(!cand||used.has(cand.id)) continue;
+    used.add(cand.id);picks.push(cand);
+  }
+  return picks;
 }
 
 // Boss recruit cost ladder by zone index (0=Earth): zone 1->2, zones 2-3->3, zones 4+->4,
@@ -1947,41 +2033,15 @@ function showStation(run,zone){
   const cards=$('station-cards');cards.innerHTML='';
   $('station-bar').style.display='none';
 
-  // Offer from THIS zone's dedicated recruitable pool (zone.stationPool, resolved against the
-  // shared recruitablePool) — NEVER from DATA.playerUnits, since that's the starter roster the player
-  // already had access to in the draft. Already-unlocked units stay in the pool and can be recruited
-  // again — duplicates are intentionally allowed, so finishing a pool once doesn't permanently empty
-  // that zone's station for the rest of the game.
-  //
-  // Cross-zone blending: every zone past the first has a small, decreasing chance of pulling from
-  // the PREVIOUS zone actually visited this run, instead of its own pool — 40% for zone 2 (looking
-  // back at zone 1), 35% for zone 3 (looking back at zone 2), and so on, dropping 5 points per step
-  // further into the run. Zone 1 (Earth) has nothing before it, so it always uses its own pool.
-  const visitedIdx=run.visitedZones.indexOf(zone.id);
-  const prevZoneId=visitedIdx>0?run.visitedZones[visitedIdx-1]:null;
-  const prevZone=prevZoneId?DATA.zones.find(z=>z.id===prevZoneId):null;
-  const crossZoneChance=Math.max(0,0.40-0.05*(visitedIdx-1));
-  const usePrevZonePool=prevZone&&visitedIdx>0&&Math.random()<crossZoneChance;
-  const effectiveZone=usePrevZonePool?prevZone:zone;
-
-  const zonePoolIds=effectiveZone.stationPool||[];
-  const pool=zonePoolIds.map(id=>byId(id,DATA.recruitablePool||[])).filter(Boolean);
-
-  if(usePrevZonePool){
-    cards.innerHTML+=`<div class="overlay-section" style="padding:.5rem 1rem 0"><div class="overlay-value" style="font-size:.78rem;color:var(--gold)">⚡ A familiar unit from before has found its way here...</div></div>`;
-  }
-
+  // Draws from the GLOBAL recruitable pool now, not a per-zone fixed list — every unit is
+  // eligible everywhere, weighted by cost according to which zone the player is currently in
+  // (see ZONE_COST_WEIGHTS). Duplicates of already-recruited units are still allowed.
+  const picks=drawDistinctUnitsFromGlobalPool(run,3);
   let selectedUnit=null;
 
-  if(pool.length===0){
-    cards.innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">You've already recruited every unit available at this station. Skip ahead for a currency reward instead.</div></div>`;
+  if(picks.length===0){
+    cards.innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No units are available to recruit right now. Skip ahead for a currency reward instead.</div></div>`;
   } else {
-    const picks=[];const used=new Set();
-    while(picks.length<3&&picks.length<pool.length){
-      const cand=pick(pool);
-      if(used.has(cand.id)) continue;
-      used.add(cand.id);picks.push(cand);
-    }
     picks.forEach(u=>{
       const card=document.createElement('div');
       card.className='reward-card rarity-Uncommon';
@@ -2064,12 +2124,11 @@ const STAT_LABELS={hp:'HP',atk:'Attack',def:'Defense',spd:'Speed'};
 
 function showDiceCheckEncounter(run,zone){
   show('dicecheck');
-  // The encountered "pilot" is flavor text only — the actual recruitable unit comes from this
-  // zone's stationPool, matching how all other recruitment in this zone works.
-  const zonePoolIds=zone.stationPool||[];
-  const candidates=zonePoolIds.map(id=>byId(id,DATA.recruitablePool||[])).filter(Boolean);
-  if(!candidates.length){
-    // No recruitable content defined for this zone yet — fail safe into a currency-only outcome
+  // Draws from the GLOBAL recruitable pool now, weighted by cost per the current zone — same
+  // system as the station above, just picking a single candidate instead of three.
+  const candidate=pickUnitFromGlobalPoolByZone(run);
+  if(!candidate){
+    // No recruitable content defined at the rolled cost tier yet — fail safe into a currency-only outcome
     $('dc-body').innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No one answers your call this time.</div></div>`;
     $('dc-bar').style.display='block';
     $('btn-dc-roll').style.display='none';
@@ -2077,7 +2136,6 @@ function showDiceCheckEncounter(run,zone){
     $('btn-dc-skip').onclick=()=>advanceAfterReward();
     return;
   }
-  const candidate=pick(candidates);
   const stat=pick(['hp','atk','def','spd']);
   const dc=getDiceCheckDC(run);
 
@@ -2399,19 +2457,29 @@ function getHealCap(unit){
   return unit?.passive?.type==='heal_cap_boost'?unit.passive.cap:2;
 }
 
+// Units with this passive never get locked onto a single target after their first heal use this
+// fight — their remaining cap can be spent on a SECOND, DIFFERENT unit instead of being forced
+// onto whoever they healed first. Doesn't change the total number of uses, just where they can go.
+function hasSplitHeal(unit){
+  return unit?.passive?.type==='split_heal';
+}
+
 function showHealPicker(itemIdx,amount){
   const C=S.combat;
   const item=S.inventory[itemIdx];
   const healer=C.activeUnit;
   const cap=getHealCap(healer);
   const usage=C.healUsage[healer.id];
-  const lockedTarget=usage&&usage.count>0?usage.targetId:null;
+  const splitHeal=hasSplitHeal(healer);
+  const lockedTarget=(!splitHeal&&usage&&usage.count>0)?usage.targetId:null;
   const remainingCap=cap-(usage?usage.count:0);
 
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Restore ${amount} HP per use — choose a target, then how many to use.</div></div>`;
   if(lockedTarget){
     const lt=C.playerUnits.find(u=>u.id===lockedTarget);
     h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.75rem;color:var(--text-muted)">${healer.name} already healed ${lt?lt.name:'?'} this fight — must continue healing the same target.</div></div>`;
+  } else if(splitHeal&&usage&&usage.count>0){
+    h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.75rem;color:var(--gold)">${healer.name}'s split-heal passive lets this go to a different unit.</div></div>`;
   }
 
   C.playerUnits.forEach((u,i)=>{
@@ -2747,7 +2815,7 @@ function renderUpgradeScreen(){
         <div class="reward-card-sub">Affects all 3 equipped units at once</div>
       </div>
     </div>
-    <div class="reward-card-desc" style="display:block">
+    <div class="reward-card-desc" style="display:block;max-height:160px;overflow-y:auto">
       ${renderUpgradeSummaryRow('team','dmg','Team Damage',teamTiers.dmg,TEAM_UPGRADE_MAX_TIER)}
       ${renderUpgradeSummaryRow('team','def','Team Defense',teamTiers.def,TEAM_UPGRADE_MAX_TIER)}
     </div>
@@ -3010,11 +3078,13 @@ function shopShowHealTargetPicker(itemIdx){
   const st=S.shopHealState;
   const ids=S.run.playerUnitIds;
   const healerId=ids[st.turnIdx];
+  const healerUnit=byId(healerId,DATA.playerUnits);
   const item=S.inventory[itemIdx];
   const amount=item.effect.value;
-  const cap=2; // same base cap as combat
+  const cap=getHealCap(healerUnit); // respects heal_cap_boost (e.g. 3 instead of 2)
   const usage=st.usage[healerId];
-  const lockedTarget=usage&&usage.count>0?usage.targetId:null;
+  const splitHeal=hasSplitHeal(healerUnit);
+  const lockedTarget=(!splitHeal&&usage&&usage.count>0)?usage.targetId:null;
   const remainingCap=cap-(usage?usage.count:0);
 
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Restore ${amount} HP per use — choose a target, then how many to use.</div></div>`;
