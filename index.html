@@ -236,6 +236,14 @@ button:active{transform:scale(0.97)}
 .reward-card-tile{display:flex;align-items:center;justify-content:center;padding:1.1rem .75rem;min-height:70px;position:relative}
 .reward-card-name{font-size:1rem;font-weight:700;color:#fff;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.6);letter-spacing:.04em;line-height:1.2}
 .reward-card-sub{font-size:.65rem;color:rgba(255,255,255,.7);font-family:var(--font-mono);letter-spacing:.08em;text-align:center;margin-top:.2rem}
+
+/* NARROW PHONES — extra safety margin on top of the normal mobile-first sizing above */
+@media(max-width:400px){
+  .reward-card-name{font-size:.88rem}
+  .reward-card-sub{font-size:.6rem}
+  .reward-card-desc{padding:.5rem .55rem .6rem}
+  .upgrade-buy-btn,.team-upgrade-buy-btn{padding:.3rem .55rem!important;font-size:.72rem!important}
+}
 .reward-card-desc{display:none;font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);padding:.6rem .75rem .75rem;line-height:1.5;background:var(--bg-panel);border-top:1px solid rgba(255,255,255,.1)}
 .reward-card.selected .reward-card-desc{display:block}
 /* Rarity tile colors */
@@ -310,7 +318,7 @@ button:active{transform:scale(0.97)}
 <!-- TITLE -->
 <div id="screen-title" class="screen active">
   <div class="title-main">Rogue<br>Gundam</div>
-  <div class="title-sub">— PHASE 1 PROTOTYPE —</div>
+  <div class="title-sub">— PHASE 2 —</div>
   <div id="title-captain-row" style="text-align:center;margin:.3rem 0 .6rem;display:none">
     <span style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-muted)">Captain <span id="title-captain-name" style="color:var(--gold);font-weight:700"></span></span>
     <button id="btn-rename-captain" style="background:none;border:none;color:var(--blue);font-size:.72rem;text-decoration:underline;cursor:pointer;margin-left:.5rem">change</button>
@@ -708,26 +716,37 @@ function buildOrder(cb){
 }
 
 /* ── ENEMY AI ── */
+// AI gets gradually more aggressive with each zone past Earth — enemies in zone 2 use their
+// Special/Ultimate noticeably more often than zone 1, zone 3 more than zone 2, and so on. This
+// scales the BASE probability rolls below by a small per-zone bonus, capped so it can never reach
+// a guaranteed 100% (always leaves the player some window), and never reduces a roll below its
+// zone-1 baseline either.
+function aiAggressionBonus(){
+  const zIdx=currentZoneIndex(); // 0 = Earth
+  return Math.min(0.25,zIdx*0.08); // +8% per zone past Earth, capped at +25% total
+}
+
 function aiAction(enemy,C){
   const players=C.playerUnits.filter(p=>p.hp>0);
   if(!players.length) return null;
   let target=players[0],ability='basic';
   const tier=enemy.tier;
+  const aggro=aiAggressionBonus();
 
   if(tier==='grunt'||tier==='token'){
     target=players[0];
     // Grunts use Special often when they can afford it, but not unconditionally — scaled back
     // from an earlier 80% pass that felt too relentless, while staying well above the original
     // 50% baseline that felt too passive.
-    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<.65) ability='special';
+    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<Math.min(.92,.65+aggro)) ability='special';
   } else if(tier==='ace'){
     const adv=players.find(p=>rps(enemy.category,p.category)>1);
     target=adv||players[0];
-    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<.5)) ability='special';
+    if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<Math.min(.85,.5+aggro))) ability='special';
     // Aces fire their Ultimate reliably once banked, but not near-automatically — pulled back from
     // a 75% pass that left almost no window to react, while staying above the original 30% floor
     // that let players stall them out for free.
-    if(enemy.ultimate&&C.enemyUlt>=100&&(enemy.hp/enemy.maxHp<.3||Math.random()<.55)) ability='ultimate';
+    if(enemy.ultimate&&C.enemyUlt>=100&&(enemy.hp/enemy.maxHp<.3||Math.random()<Math.min(.9,.55+aggro))) ability='ultimate';
   } else if(tier==='boss'){
     const hpPct=enemy.hp/enemy.maxHp;
     const phase2=enemy.phases&&hpPct<enemy.phases[0]?.threshold;
@@ -739,10 +758,11 @@ function aiAction(enemy,C){
       target=players.reduce((b,p)=>p.spd*(p.spdMod||1)>b.spd*(b.spdMod||1)?p:b,players[0]);
       // Boss phase 1: moderately willing to use Special without an RPS edge — between the original
       // 35% and the overtuned 60%.
-      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<.45)) ability='special';
+      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<Math.min(.75,.45+aggro))) ability='special';
       // Boss ultimate fires once banked and below 60% HP — a middle point between the original
-      // <50% gate and the overly eager <70% gate.
-      if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<.6) ability='ultimate';
+      // <50% gate and the overly eager <70% gate. The zone-based aggression bonus extends the HP
+      // window itself here, rather than the chance, since boss ult-on-bank is otherwise unconditional.
+      if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<Math.min(.85,.6+aggro)) ability='ultimate';
     }
   }
   return {ability,target};
@@ -1003,7 +1023,10 @@ function onWin(C){
     setTimeout(()=>{
       // Duplicates are allowed now — every successful Talk creates a fresh recruit, even if you've
       // recruited this exact boss before in a past run (or even earlier this run).
-      const recruitCost=recruited.recruitCost!=null?recruited.recruitCost:2;
+      // Boss recruit cost follows a zone-index rule rather than needing to be hand-set on every
+      // boss: zone 1 (Earth) = 2, zones 2-3 = 3, zones 4+ = 4, the Final Zone's boss = 5. A boss's
+      // own recruitCost field (if explicitly set) still overrides this rule when present.
+      const recruitCost=recruited.recruitCost!=null?recruited.recruitCost:getBossRecruitCostByZone(recruited);
       const asPlayer={
         id:'recruit_'+recruited.baseId+'_'+Math.random().toString(36).substr(2,5),
         recruitedFrom:recruited.baseId,
@@ -1066,7 +1089,7 @@ function startFloor(run){
   if(!fixedEvent&&!isFixedFloorType&&!run.stationDone&&zone.id!=='earth'){
     if(Math.random()<0.40){
       run.stationDone=true;
-      if(Math.random()<0.5) showDiceCheckEncounter(run,zone);
+      if(Math.random()<0.7) showDiceCheckEncounter(run,zone);
       else showStation(run,zone);
       return;
     }
@@ -1207,7 +1230,7 @@ async function playIntroSequence(C){
   const banner=$('combat-warning');
   const bannerText=$('combat-warning-text');
   banner.className='combat-warning-banner '+(isBoss?'boss':'ace');
-  bannerText.textContent=(isBoss?'⚠ Warning: boss unit attacking':'⚠ Warning: ace pilot ahead')+' — Stage '+C.floor;
+  bannerText.textContent=isBoss?'⚠ Warning: boss unit attacking':'⚠ Warning: ace pilot ahead';
   await delayMs(80);
   banner.classList.add('show');
   await delayMs(1500);
@@ -1221,7 +1244,7 @@ async function playIntroSequence(C){
     const speakerEl=$('cdl-speaker');
     const textEl=$('cdl-text');
     dlg.className='combat-dialogue-line'+(isBoss?' tier-boss':'');
-    speakerEl.textContent=featured.name+' — Stage '+C.floor;
+    speakerEl.textContent=featured.name;
     for(const line of lines){
       textEl.textContent=line;
       dlg.classList.add('show');
@@ -1718,6 +1741,21 @@ function currentZoneIndex(){
   if(!S.run) return 0;
   return DATA.zones.findIndex(z=>z.id===S.run.zoneId);
 }
+
+// Boss recruit cost ladder by zone index (0=Earth): zone 1->2, zones 2-3->3, zones 4+->4,
+// the Final Zone specifically (PFF-X7II Re:RISE) ->5. Looked up by which zone the boss BELONGS
+// TO (its family/id's home zone), not by whatever zone the player happens to currently be in —
+// matters once cross-zone station blending or future content lets an earlier boss's recruit
+// flow get triggered while visiting a later zone.
+function getBossRecruitCostByZone(bossUnit){
+  const homeZone=DATA.zones.find(z=>z.bossId===bossUnit.id);
+  if(!homeZone) return 4; // unknown boss, fall back to the common mid-tier cost
+  if(homeZone.id==='final') return 5;
+  const idx=DATA.zones.indexOf(homeZone); // 0-based: Earth=0
+  if(idx<=0) return 2;
+  if(idx<=2) return 3; // zones 2 and 3 (index 1 and 2)
+  return 4; // zone 4 onward
+}
 // Per-item multiplier on top of its rarity tier's base weight — lets one specific item's drop
 // rate be tuned without affecting every other item that happens to share the same rarity.
 // Newtype Gene is boosted here specifically because it's the only Legendary the player actually
@@ -1951,8 +1989,8 @@ function showStation(run,zone){
         cards.querySelectorAll('.reward-card').forEach(c=>c.classList.remove('selected'));
         card.classList.add('selected');
         selectedUnit=u;
-        $('station-bar').style.display='flex';
-        $('btn-station-ok').style.display='inline-block';
+        $('btn-station-ok').disabled=false;
+        $('btn-station-ok').style.opacity='1';
       });
       cards.appendChild(card);
     });
@@ -1975,7 +2013,9 @@ function showStation(run,zone){
   cards.appendChild(skipCard);
 
   $('station-bar').style.display='flex';
-  $('btn-station-ok').style.display=selectedUnit?'inline-block':'none';
+  $('btn-station-ok').style.display='inline-block';
+  $('btn-station-ok').disabled=!selectedUnit;
+  $('btn-station-ok').style.opacity=selectedUnit?'1':'.4';
   $('btn-station-ok').textContent='Confirm Recruit';
   $('btn-station-ok').onclick=()=>{
     if(!selectedUnit) return;
@@ -2131,15 +2171,25 @@ function showSwapPicker(run,newUnit){
   if(run.recruitedThisRun&&!alreadyTracked){
     run.recruitedThisRun.push(instance.id);
   }
-  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">Recruit <strong>${instance.name}</strong> in place of which active unit?</div></div>`;
+  if(run.unitHp&&run.unitHp[instance.id]==null){
+    run.unitHp[instance.id]=instance.maxHp;
+  }
+
+  // Recruiting no longer forces an active-slot swap — the new unit goes straight to one of the
+  // 4 storage slots automatically (it's already tracked in recruitedThisRun above). Swapping them
+  // into the active 3 is now purely optional, offered here but skippable, and can always be done
+  // later from the Garage screen anyway.
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem"><strong>${instance.name}</strong> has joined your crew and is waiting in storage.</div></div>`;
+  h+=`<div class="overlay-section"><div class="overlay-label">Swap into your active squad now? (optional — you can do this later from the Garage)</div></div>`;
   run.playerUnitIds.forEach((id,i)=>{
     const u=byId(id,DATA.playerUnits);if(!u) return;
     h+=`<button class="swap-pick-btn" data-i="${i}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary)">
-      <span style="font-weight:600">${u.name}</span>
+      <span style="font-weight:600">Swap in for ${u.name}</span>
       <span style="float:right;font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)">Cost ${u.cost}</span>
     </button>`;
   });
-  openOverlay('Swap Unit',h);
+  h+=`<div class="overlay-section"><button id="swap-skip-btn" class="btn-secondary" style="width:100%">Keep Current Squad — Just Store Them</button></div>`;
+  openOverlay('New Recruit',h,()=>advanceAfterReward());
   document.querySelectorAll('.swap-pick-btn').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
@@ -2148,9 +2198,17 @@ function showSwapPicker(run,newUnit){
       run.playerUnitIds[i]=instance.id;
       // carry over fresh full HP for the new recruit, drop old unit's tracked HP
       if(run.unitHp){ delete run.unitHp[oldId]; run.unitHp[instance.id]=instance.maxHp; }
+      S._overlayOnClose=null; // already advancing explicitly below — don't let the X-close fallback double-fire
       closeOverlay();
       advanceAfterReward();
     });
+  });
+  const skipBtn=$('swap-skip-btn');
+  if(skipBtn) skipBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    S._overlayOnClose=null; // same reasoning as above
+    closeOverlay();
+    advanceAfterReward();
   });
 }
 
@@ -2165,12 +2223,13 @@ function showStorageReleasePicker(run,newUnit){
     </button>`;
   });
   h+=`<div class="overlay-section"><button id="storage-skip-btn" class="btn-secondary" style="width:100%">Skip — Don't Recruit</button></div>`;
-  openOverlay('Storage Full',h);
+  openOverlay('Storage Full',h,()=>advanceAfterReward());
   document.querySelectorAll('.storage-release-btn').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
       const releaseId=btn.dataset.id;
       run.recruitedThisRun=run.recruitedThisRun.filter(id=>id!==releaseId);
+      S._overlayOnClose=null; // continuing into showSwapPicker below, not advancing directly — don't let the fallback fire
       closeOverlay();
       showSwapPicker(run,newUnit);
     });
@@ -2178,6 +2237,7 @@ function showStorageReleasePicker(run,newUnit){
   const skipBtn=$('storage-skip-btn');
   if(skipBtn) skipBtn.addEventListener('click',e=>{
     e.stopPropagation();
+    S._overlayOnClose=null;
     closeOverlay();
     advanceAfterReward();
   });
@@ -2233,8 +2293,13 @@ function applyReward(item){
 }
 
 /* ── OVERLAYS ── */
-function openOverlay(title,body){$('ov-title').textContent=title;$('ov-body').innerHTML=body;$('overlay-bg').classList.add('open');}
-function closeOverlay(){$('overlay-bg').classList.remove('open');}
+function openOverlay(title,body,onClose){$('ov-title').textContent=title;$('ov-body').innerHTML=body;$('overlay-bg').classList.add('open');S._overlayOnClose=onClose||null;}
+function closeOverlay(){
+  $('overlay-bg').classList.remove('open');
+  const cb=S._overlayOnClose;
+  S._overlayOnClose=null; // always clear first so the fallback can never fire twice or linger into the next, unrelated overlay
+  if(cb) cb();
+}
 $('overlay-x').addEventListener('click',closeOverlay);
 $('overlay-bg').addEventListener('click',e=>{if(e.target===$('overlay-bg')) closeOverlay();});
 
@@ -2555,12 +2620,13 @@ function showGarage(){
 
 function renderGarage(){
   const run=S.run;
-  // Available pool: current 3 active + anything recruited THIS run not currently active.
-  // Deliberately excludes the full meta-progression locker (S.unlockedUnits) — only this run's gains count.
-  const availableIds=[...new Set([...run.playerUnitIds,...(run.recruitedThisRun||[])])];
   let selectedSlot=null;
 
   const render=()=>{
+    // Recomputed fresh every render — NEVER cache this across renders. recruitedThisRun can change
+    // between garage re-renders (e.g. a storage release happening elsewhere), and a stale snapshot
+    // here previously could show (or let you pick) a unit that's no longer actually available.
+    const availableIds=[...new Set([...run.playerUnitIds,...(run.recruitedThisRun||[])])];
     const storageCount=(run.recruitedThisRun||[]).filter(id=>!run.playerUnitIds.includes(id)).length;
     let h=`<div class="overlay-section"><div class="overlay-label">Active Squad (tap a slot, then tap a replacement)</div></div>`;
     h+=`<div class="overlay-section" style="padding-top:0"><div class="overlay-value" style="font-size:.78rem;color:var(--text-muted)">Storage: ${storageCount}/${MAX_STORAGE_UNITS} units held off-field this run</div></div>`;
@@ -2629,24 +2695,28 @@ function showUpgradeScreen(){
 }
 $('btn-garage-done').addEventListener('click',()=>showUpgradeScreen());
 
-/* ── UPGRADES (HP/ATK only for now — Special/Ultimate upgrade slots deferred) ── */
-// Base cost per upgrade scales by which zone the player is currently progressing through —
-// Earth (zone 1) = 70G base; each further zone raises the base cost. Tier itself doesn't multiply
-// cost further yet (kept flat per-tier for this first pass) — every tier within a zone costs the same.
-const ZONE_UPGRADE_BASE_COST={earth:70,uc_space:110};
-function getUpgradeCost(){
-  const zoneId=S.run.zoneId;
-  return ZONE_UPGRADE_BASE_COST[zoneId]||70;
+/* ── UPGRADES (HP/ATK per-unit, DMG/DEF team-wide) ── */
+// Per-unit (HP, ATK) upgrade costs escalate per tier bought — NOT by zone anymore. Starts at 18G,
+// doubles each tier: 18 / 36 / 72 / 144 / 288. Cheap individually since this is per-unit and you'll
+// buy it up to 3 times (once per active unit) — by the time you max one unit's stat you've spent
+// the full 558G total across its 5 tiers.
+const PER_UNIT_UPGRADE_COSTS=[18,36,72,144,288];
+function getUpgradeCost(tier){
+  // tier = the tier ABOUT TO BE PURCHASED (1-indexed) — cost to go from tier-1 to tier
+  return PER_UNIT_UPGRADE_COSTS[Math.min(tier-1,PER_UNIT_UPGRADE_COSTS.length-1)];
 }
 const UPGRADE_MAX_TIER=5;
 const HP_PERCENT_PER_TIER=0.03; // +3% max HP per tier
-const ATK_PERCENT_PER_TIER=0.03; // +3% ATK per tier, mirrors HP for this first pass
 
 // Team-wide DMG/DEF upgrades — separate from the per-unit HP/ATK upgrades above. One button each,
-// buffs the WHOLE active squad at once rather than a single chosen unit. 4 tiers, flat 100G per
-// tier (no zone scaling, unlike the per-unit ones), +5% per tier (so +20% at max tier 4).
+// buffs the WHOLE active squad at once rather than a single chosen unit. 4 tiers, exact escalating
+// cost sequence (not a clean multiplier — these are the literal specified values): 100/200/400/600.
 const TEAM_UPGRADE_MAX_TIER=4;
-const TEAM_UPGRADE_COST=100;
+const TEAM_UPGRADE_COSTS=[100,200,400,600];
+function getTeamUpgradeCost(tier){
+  // tier = the tier ABOUT TO BE PURCHASED (1-indexed)
+  return TEAM_UPGRADE_COSTS[Math.min(tier-1,TEAM_UPGRADE_COSTS.length-1)];
+}
 const TEAM_UPGRADE_PERCENT_PER_TIER=0.05;
 
 function ensureUpgradeTiers(unit){
@@ -2656,7 +2726,6 @@ function ensureUpgradeTiers(unit){
 
 function renderUpgradeScreen(){
   $('upgrades-currency').textContent=S.currency;
-  const cost=getUpgradeCost();
   let h='';
 
   // Team-wide section — one button each for DMG and DEF, buffs the whole active squad at once.
@@ -2685,8 +2754,7 @@ function renderUpgradeScreen(){
         </div>
       </div>
       <div class="reward-card-desc" style="display:block">
-        ${renderUpgradeRow(u,'hp','Max HP',tiers.hp,cost)}
-        ${renderUpgradeRow(u,'atk','Attack',tiers.atk,cost)}
+        ${renderUpgradeRow(u,'hp','Max HP',tiers.hp)}
       </div>
     </div>`;
   });
@@ -2707,8 +2775,9 @@ function renderUpgradeScreen(){
   });
 }
 
-function renderUpgradeRow(u,stat,label,tier,cost){
+function renderUpgradeRow(u,stat,label,tier){
   const maxed=tier>=UPGRADE_MAX_TIER;
+  const cost=maxed?0:getUpgradeCost(tier+1); // cost to buy the NEXT tier (tier is 0-indexed count owned)
   const canAfford=S.currency>=cost;
   const pips=Array.from({length:UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
@@ -2727,11 +2796,11 @@ function renderUpgradeRow(u,stat,label,tier,cost){
 }
 
 function buyUpgrade(unitId,stat){
-  const cost=getUpgradeCost();
-  if(S.currency<cost) return;
   const u=byId(unitId,DATA.playerUnits);if(!u) return;
   const tiers=ensureUpgradeTiers(u);
   if(tiers[stat]>=UPGRADE_MAX_TIER) return;
+  const cost=getUpgradeCost(tiers[stat]+1); // cost of the tier about to be bought
+  if(S.currency<cost) return;
 
   S.currency-=cost;
   tiers[stat]++;
@@ -2741,16 +2810,14 @@ function buyUpgrade(unitId,stat){
     u.maxHp=Math.round(baseMaxHp*(1+HP_PERCENT_PER_TIER*tiers.hp));
     // also heal the current run-tracked HP by the same absolute amount gained, so upgrading doesn't waste the run's current HP
     if(S.run.unitHp[unitId]!=null) S.run.unitHp[unitId]=Math.min(u.maxHp,S.run.unitHp[unitId]+Math.round(baseMaxHp*HP_PERCENT_PER_TIER));
-  } else if(stat==='atk'){
-    const baseAtk=u.baseAtk||(u.baseAtk=u.atk);
-    u.atk=Math.round(baseAtk*(1+ATK_PERCENT_PER_TIER*tiers.atk));
   }
   renderUpgradeScreen();
 }
 
 function renderTeamUpgradeRow(stat,label,tier){
   const maxed=tier>=TEAM_UPGRADE_MAX_TIER;
-  const canAfford=S.currency>=TEAM_UPGRADE_COST;
+  const cost=maxed?0:getTeamUpgradeCost(tier+1);
+  const canAfford=S.currency>=cost;
   const pips=Array.from({length:TEAM_UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
   const pctSoFar=Math.round(tier*TEAM_UPGRADE_PERCENT_PER_TIER*100);
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
@@ -2762,17 +2829,18 @@ function renderTeamUpgradeRow(stat,label,tier){
       ?`<span style="color:var(--text-dim);font-size:.78rem">MAXED</span>`
       :`<button class="team-upgrade-buy-btn" data-stat="${stat}" ${canAfford?'':'disabled'}
           style="background:${canAfford?'var(--gold)':'var(--bg-card)'};color:${canAfford?'var(--bg-void)':'var(--text-dim)'};border-radius:5px;padding:.35rem .7rem;font-size:.78rem;font-weight:700;cursor:${canAfford?'pointer':'not-allowed'}">
-          ⬡ ${TEAM_UPGRADE_COST}
+          ⬡ ${cost}
         </button>`
     }
   </div>`;
 }
 
 function buyTeamUpgrade(stat){
-  if(S.currency<TEAM_UPGRADE_COST) return;
   const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
   if(teamTiers[stat]>=TEAM_UPGRADE_MAX_TIER) return;
-  S.currency-=TEAM_UPGRADE_COST;
+  const cost=getTeamUpgradeCost(teamTiers[stat]+1);
+  if(S.currency<cost) return;
+  S.currency-=cost;
   teamTiers[stat]++;
   renderUpgradeScreen();
 }
@@ -2786,9 +2854,13 @@ function showShop(){
 function renderShop(){
   $('shop-currency').textContent=S.currency;
   const shopStock=DATA.items.filter(it=>it.category==='consumable'); // heals + energy cells; no run_changers/heal_reward in shop
+  // Shop prices scale up modestly per zone — this is intentionally separate from the upgrade
+  // system above, which instead escalates by HOW MANY TIERS YOU'VE BOUGHT, not by zone at all.
+  const zoneIdx=currentZoneIndex();
+  const shopZoneMultiplier=1+Math.max(0,zoneIdx)*0.25;
   let h='';
   shopStock.forEach(item=>{
-    const price=SHOP_PRICES[item.id]||100;
+    const price=Math.round((SHOP_PRICES[item.id]||100)*shopZoneMultiplier);
     const canAfford=S.currency>=price;
     h+=`<div class="reward-card rarity-${item.rarity}" style="cursor:default">
       <div class="reward-card-tile" style="min-height:50px">
