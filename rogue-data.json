@@ -8,7 +8,7 @@
       "id": "earth",
       "name": "Earth Front",
       "seriesName": "UC",
-      "flavorName": "Earth Front — Jaburo Sector",
+      "flavorName": "Earth Front",
       "totalFloors": 10,
       "background": "earth",
       "trait": {
@@ -43,7 +43,7 @@
       "id": "uc_space",
       "name": "UC Space",
       "seriesName": "UC",
-      "flavorName": "A Baoa Qu — The Graveyard",
+      "flavorName": "A Baoa Qu",
       "totalFloors": 10,
       "background": "space",
       "trait": {
@@ -77,7 +77,7 @@
       "id": "age",
       "name": "AGE",
       "seriesName": "AGE",
-      "flavorName": "Second Moon — Vagan Front",
+      "flavorName": "Second Moon",
       "totalFloors": 10,
       "background": "space",
       "trait": {
