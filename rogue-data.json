@@ -1326,7 +1326,7 @@
     "energyPerBasic": 2,
     "ultGaugeMax": 100,
     "ultGaugePerTurn": 5,
-    "ultGaugePerCrit": 25,
+    "ultGaugePerCrit": 15,
     "critMultiplier": 1.5,
     "defMultiplier": 0.5,
     "damageFloorPercent": 0.1,
@@ -2080,25 +2080,20 @@
         "threshold": 0.25
       },
       "basic": {
-        "name": "Fin Funnel Shot",
-        "description": "Standard ranged hit on a single target.",
+        "name": "Fin Funnel Spread",
+        "description": "0.9x ATK on all enemies.",
         "type": "damage",
-        "target": "single",
-        "multiplier": 1.0,
+        "target": "all",
+        "multiplier": 0.9,
         "energyGain": 2
       },
       "special": {
-        "name": "Funnel Barrage",
-        "description": "0.85x ATK on all enemies + applies ATK Down to all for 2 turns.",
-        "type": "damage_debuff",
+        "name": "Fin Funnel Barrage",
+        "description": "1.5x ATK on all enemies.",
+        "type": "damage",
         "target": "all",
-        "multiplier": 0.85,
-        "energyCost": 5,
-        "effect": {
-          "type": "atk_down",
-          "value": 0.85,
-          "duration": 2
-        }
+        "multiplier": 1.5,
+        "energyCost": 5
       },
       "ultimate": {
         "name": "Fin Funnel Full Spread",
@@ -2207,6 +2202,197 @@
         "teamBuff": {
           "type": "def_up",
           "value": 1.18,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "zz_gundam",
+      "name": "ZZ Gundam",
+      "series": "UC",
+      "cost": 3,
+      "category": "Ranged",
+      "hp": 260,
+      "maxHp": 260,
+      "atk": 37,
+      "def": 27,
+      "spd": 30,
+      "passive": {
+        "name": "Hyper Mega Pre-Charge",
+        "description": "The first Special used each fight deals 2.5x ATK instead of the normal 1.9x.",
+        "type": "first_special_precharge",
+        "boostedMultiplier": 2.5
+      },
+      "basic": {
+        "name": "Mega Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Hyper Mega Cannon",
+        "description": "1.9x ATK on one target (2.5x on the first use each fight) + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Double Beam Rifle Barrage",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "crossbone_x1",
+      "name": "Crossbone Gundam X1",
+      "series": "UC",
+      "cost": 3,
+      "category": "Melee",
+      "hp": 235,
+      "maxHp": 235,
+      "atk": 35,
+      "def": 24,
+      "spd": 38,
+      "passive": {
+        "name": "Anti-Beam Skirmisher",
+        "description": "20% chance to fully negate any incoming Ranged-category damage (the I-Field deflects beam weapons).",
+        "type": "negate_damage_chance",
+        "chance": 0.2,
+        "vsCategory": "Ranged"
+      },
+      "basic": {
+        "name": "Beam Zanber Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Beam Zanber Twin Cut",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Skull Heat Dagger Rush",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "penelope",
+      "name": "Penelope",
+      "series": "UC",
+      "cost": 3,
+      "category": "Ranged",
+      "hp": 240,
+      "maxHp": 240,
+      "atk": 33,
+      "def": 30,
+      "spd": 28,
+      "passive": {
+        "name": "Theoretical Mobile Suit Transform",
+        "description": "Once per fight, permanently transforms below 40% HP: -15% DEF, but +25% SPD and +15% ATK for the rest of the fight.",
+        "type": "hp_threshold_transform",
+        "threshold": 0.4,
+        "transformMods": {
+          "atkMod": 1.15,
+          "defMod": 0.85,
+          "spdMod": 1.25
+        }
+      },
+      "basic": {
+        "name": "Mega Beam Cannon Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Doll Bit Funnel Spread",
+        "description": "0.75x ATK on all enemies.",
+        "type": "damage",
+        "target": "all",
+        "multiplier": 0.75,
+        "energyCost": 4
+      },
+      "ultimate": {
+        "name": "Full Funnel Saturation",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "v2_gundam",
+      "name": "V2 Gundam",
+      "series": "UC",
+      "cost": 4,
+      "category": "Mobility",
+      "hp": 275,
+      "maxHp": 275,
+      "atk": 36,
+      "def": 26,
+      "spd": 50,
+      "passive": {
+        "name": "Minovsky Craft Aura",
+        "description": "Grants the whole team +8% ATK at the start of every round, stacking each round it's alive (no cap within a fight).",
+        "type": "stacking_team_aura_per_round",
+        "stat": "atk",
+        "valuePerStack": 0.08
+      },
+      "basic": {
+        "name": "Beam Saber Rifle Shot",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Twin Beam Saber Slash",
+        "description": "1.8x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Wings of Light Barrage",
+        "description": "1.0x ATK on all enemies + applies DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
           "duration": 2
         }
       }
