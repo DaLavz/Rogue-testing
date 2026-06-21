@@ -232,7 +232,7 @@ button:active{transform:scale(0.97)}
 .reward-header{padding:1rem 1rem .5rem;flex-shrink:0}
 .reward-header h2{font-size:1.3rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em}
 .reward-header p{font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:.2rem}
-.reward-cards{display:flex;flex-direction:column;gap:.6rem;padding:.5rem 1rem;flex:1}
+.reward-cards{display:flex;flex-direction:column;gap:.6rem;padding:.5rem 1rem;flex:1;min-height:0;overflow-y:auto}
 .reward-card{border-radius:var(--radius-md);cursor:pointer;transition:transform .12s,box-shadow .12s;overflow:hidden;border:3px solid transparent}
 .reward-card:hover{transform:scale(1.01)}
 .reward-card.selected{border-color:#fff;box-shadow:0 0 16px rgba(255,255,255,.2)}
@@ -628,9 +628,33 @@ const SQUARE_DISPLAY_NAME_OVERRIDE={
   "Char Aznable's Sazabi":'Sazabi',
   "Ramba Ral's Gouf Custom":'Gouf Custom'
 };
+// STANDING RULE: the in-combat unit square and the turn-order strip should ALWAYS show just the
+// core machine name — never a pilot's possessive name, never the literal word "Gundam" cluttering
+// space it doesn't need to, and never a name truncated mid-word. This applies to every unit, not
+// just specific overrides — those are reserved for names so different from their machine that no
+// generic rule could produce a sane result (e.g. "Char Aznable's Sazabi" -> "Sazabi").
 function squareDisplayName(fullName){
   if(SQUARE_DISPLAY_NAME_OVERRIDE[fullName]) return SQUARE_DISPLAY_NAME_OVERRIDE[fullName];
-  return fullName.replace('Gundam ','').substring(0,14);
+  // Strip the word "Gundam" wherever it appears (prefix, suffix, or mid-string), not just as a
+  // literal leading "Gundam " — this is what let "RX-78-2 Gundam" and "Calamity Gundam" keep or
+  // mangle the word before, since the old check only matched it at the very start of the string.
+  let cleaned=fullName.replace(/\bGundam\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  if(!cleaned) cleaned=fullName; // degenerate case: name was ONLY the word "Gundam" — keep original
+  if(cleaned.length<=14) return cleaned;
+  // Still too long — if it STARTS with a model-number-style token (GAT-X105, RX-78-2, AGE-1, etc.,
+  // matching the same pattern recognized elsewhere as non-distinctive), drop that token first and
+  // re-check, since the real machine name is virtually always the word(s) AFTER the model code,
+  // not the code itself (e.g. "GAT-X105 Strike" should show "Strike", not "GAT-X105").
+  const words=cleaned.split(' ');
+  if(words.length>1&&/^[A-Z]{1,4}-?[A-Z0-9]{1,4}(-\d+)?$/.test(words[0])){
+    const withoutPrefix=words.slice(1).join(' ');
+    if(withoutPrefix.length<=14) return withoutPrefix;
+    cleaned=withoutPrefix; // still too long, fall through to the generic word-boundary truncation below
+  }
+  // Truncate on a WORD boundary, never mid-word — find the last space within the 14-char budget.
+  const cut=cleaned.substring(0,14);
+  const lastSpace=cut.lastIndexOf(' ');
+  return lastSpace>3?cut.substring(0,lastSpace):cut; // keep at least a few chars even if no good break point
 }
 
 // Picks the most distinctive word of a unit's name for compact UI labels (turn strip etc).
@@ -642,12 +666,16 @@ function shortName(fullName){
   const words=fullName.split(' ').filter(w=>w.length>0);
   for(let i=words.length-1;i>=0;i--){
     const clean=words[i].replace(/[^a-zA-Z0-9'-]/g,'');
-    if(clean.length>=3 && !SHORTNAME_SKIP.has(clean.toLowerCase())) return clean.substring(0,7);
+    // Minimum length dropped from 3 to 1 — several real machine designations are genuinely short
+    // (Nu, Xi, X, V2, ZZ) and were previously failing this check, falling through to the literal
+    // word "Gundam" as a fallback, which is exactly the opposite of "always show the machine name".
+    // The skip set still correctly filters out non-distinctive short fragments (Roman numerals, etc).
+    if(clean.length>=1 && !SHORTNAME_SKIP.has(clean.toLowerCase())) return clean.substring(0,7);
   }
   // nothing distinctive found (e.g. "Zaku II") — fall back to the first non-skip word, or the whole first word
   for(const w of words){
     const clean=w.replace(/[^a-zA-Z0-9'-]/g,'');
-    if(clean.length>=3) return clean.substring(0,7);
+    if(clean.length>=1) return clean.substring(0,7);
   }
   return (words[0]||fullName).substring(0,7);
 }
@@ -808,7 +836,7 @@ function aiAction(enemy,C){
 
 /* ── EXECUTE ABILITY ── */
 function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
-  const baseAb=attacker[abilityKey];
+  const baseAb=(abilityKey==='basic'&&attacker.burstModeActive&&attacker.passive?.burstBasic)?attacker.passive.burstBasic:attacker[abilityKey];
   if(!baseAb) return;
   // Flexible specials (e.g. Strike Gundam): swap in the AoE variant's target/multiplier/effect
   // while keeping the original name/description/energyCost intact.
@@ -855,15 +883,37 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(isEnemy&&t.passive?.type==='dodge'&&Math.random()<t.passive.value){log(`→ ${nm(t,!isEnemy)} <em>dodges!</em>`);continue;}
     // special negate
     if(abilityKey==='special'&&t.passive?.type==='special_negate'&&Math.random()<t.passive.chance){log(`→ ${nm(t,!isEnemy)} <em>negates the special!</em>`);continue;}
+    // Pacifist Protocol (e.g. AGE-3) — on Basic Attack only, a chance to apply a random debuff to
+    // the target INSTEAD of dealing any damage at all this hit.
+    if(abilityKey==='basic'&&attacker.passive?.type==='basic_debuff_chance_kill_team_buff'&&Math.random()<attacker.passive.debuffChance){
+      const randomDebuff=pick(['atk_down','def_down','spd_down']);
+      applyStatus(t,{type:randomDebuff,value:0.85,duration:2});
+      log(`→ ${nm(attacker,isEnemy)} restrains instead of striking — <span class="log-status">${statusLabel(randomDebuff)}</span> → ${nm(t,!isEnemy)}`);
+      continue;
+    }
     // crit
     const isCrit=Math.random()<critChance(attacker);
-    const {damage,rpsMult,negated}=calcDmg(attacker,t,ab.multiplier,ab.defPierce||0,isCrit);
+    // Ambush bonus (e.g. AGE-2 Dark Hound) — extra damage if NO ONE targeted this attacker during
+    // the previous round. Checked against the round-transition snapshot, not the live in-progress set.
+    let effMult=ab.multiplier;
+    if(attacker.passive?.type==='untargeted_last_round_dmg_bonus'){
+      const wasTargeted=C.targetedLastRound&&C.targetedLastRound.has(attacker.id);
+      if(!wasTargeted) effMult=effMult*attacker.passive.value;
+    }
+    const {damage,rpsMult,negated}=calcDmg(attacker,t,effMult,ab.defPierce||0,isCrit);
     if(negated){
       log(`→ ${nm(t,!isEnemy)} <em>deflects the beam attack entirely!</em>`);
       continue;
     }
     const prev=t.hp;
     t.hp=Math.max(0,t.hp-damage);
+    if(C.targetedThisRound) C.targetedThisRound.add(t.id);
+    // AGE-2-style "crit grants a SPD buff" passive — fires only when this attacker's own crit
+    // actually landed, applying a temporary SPD Up to the attacker (not the target).
+    if(isCrit&&attacker.passive?.type==='crit_reliable_spd_bonus'){
+      applyStatus(attacker,{type:'spd_up',value:attacker.passive.spdBonusValue,duration:attacker.passive.spdBonusDuration});
+      log(`→ <span class="log-status">${nm(attacker,isEnemy)}'s targeting computer reacts — SPD Up!</span>`);
+    }
     // ult gain (the ultimate itself doesn't refill the gauge it just spent)
     if(abilityKey!=='ultimate'){
       const ug=isCrit?cfg.ultGaugePerCrit:cfg.ultGaugePerTurn;
@@ -905,7 +955,18 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
 
   // defeats
   for(const t of tlist){
-    if(t.hp<=0&&!t.defeated){t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);}
+    if(t.hp<=0&&!t.defeated){
+      t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);
+      // Pacifist Protocol's kill bonus (e.g. AGE-3) — landing the killing blow grants the whole
+      // team a temporary ATK buff, a small reward for an otherwise restraint-focused kit.
+      if(!isEnemy&&attacker.passive?.type==='basic_debuff_chance_kill_team_buff'&&attacker.passive.killTeamBuff){
+        for(const ally of C.playerUnits){
+          if(ally.hp<=0||ally.defeated) continue;
+          applyStatus(ally,attacker.passive.killTeamBuff);
+        }
+        log(`→ <span class="log-status">${attacker.name}'s restraint earns the team's respect — ATK Up to whole party!</span>`);
+      }
+    }
   }
 
   // Guncannon-style "ally_special_followup" passive: when an ALLY (not itself) uses Special,
@@ -998,13 +1059,27 @@ function checkHpThresholdTransform(unit,C){
   rebuildMods(unit);
 }
 
+// Counts down AGE-FX-style player-activated Burst Mode at the start of each of the unit's own
+// turns. Once the duration runs out, Basic reverts to normal and the unit pays the one-time HP cost.
+function tickBurstMode(unit,C){
+  if(!unit.burstModeActive) return;
+  unit.burstModeTurnsLeft--;
+  if(unit.burstModeTurnsLeft<=0){
+    unit.burstModeActive=false;
+    const cost=Math.round(unit.maxHp*(unit.passive.hpCostOnEnd||0));
+    unit.hp=Math.max(1,unit.hp-cost);
+    log(`<span class="log-phase">${unit.name}'s Burst Mode ends — <span class="log-damage">-${cost} HP</span> backlash.</span>`);
+    if(C.activeUnit&&C.activeUnit.id===unit.id) updateActionBar(unit,C);
+  }
+}
+
 // Stacking team-wide aura (e.g. V2 Gundam's Minovsky Craft Aura) — grows by a flat amount every
 // round the source unit is alive, with no cap within a single fight. Uses the same base*Mod layer
 // as the HP-threshold transform above, so it's never silently erased by a later rebuildMods call
 // from an unrelated status application/expiry elsewhere in the same round.
 function applyStackingAuras(C){
-  const sources=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='stacking_team_aura_per_round');
-  for(const src of sources){
+  const teamSources=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='stacking_team_aura_per_round');
+  for(const src of teamSources){
     src.auraStacks=(src.auraStacks||0)+1;
     const team=C.playerUnits.includes(src)?C.playerUnits:C.enemyUnits;
     const totalBonus=1+src.passive.valuePerStack*src.auraStacks;
@@ -1015,6 +1090,16 @@ function applyStackingAuras(C){
       rebuildMods(ally);
     }
   }
+  // Self-only variant (e.g. AGE-1's "AGE System Learning") — same growing-stack math, but only
+  // ever applied to the unit itself, never the whole team.
+  const selfSources=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='stacking_self_aura_per_round');
+  for(const src of selfSources){
+    src.auraStacks=(src.auraStacks||0)+1;
+    const totalBonus=1+src.passive.valuePerStack*src.auraStacks;
+    const statKey=src.passive.stat==='atk'?'baseAtkMod':src.passive.stat==='def'?'baseDefMod':'baseSpdMod';
+    src[statKey]=totalBonus;
+    rebuildMods(src);
+  }
 }
 
 async function runRound(C){
@@ -1023,6 +1108,10 @@ async function runRound(C){
   clearTrait(C);
   applyTrait(C);
   applyStackingAuras(C);
+  // "Untargeted last round" tracking (e.g. AGE-2 Dark Hound's Ambush Specialist) — shift this
+  // round's hit-set into "last round" before clearing it for the round about to start.
+  C.targetedLastRound=C.targetedThisRound||new Set();
+  C.targetedThisRound=new Set();
   const all=[...C.playerUnits,...C.enemyUnits].filter(u=>u.hp>0&&!u.defeated);
   C.currentOrder=buildOrder(all);
   renderTurnStrip(C);
@@ -1038,7 +1127,7 @@ async function runRound(C){
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
-      checkHpThresholdTransform(unit,C);
+      checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -1081,7 +1170,7 @@ async function resumeRound(C){
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
-      checkHpThresholdTransform(unit,C);
+      checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -1568,6 +1657,26 @@ function updateActionBar(u,C){
     tb.addEventListener('click',()=>doTalk(C));
     $('row-main').appendChild(tb);
   } else if(!hasTalk&&tb) tb.remove();
+
+  // Burst Mode button (e.g. AGE-FX) — player-activated once per fight, shows only while the active
+  // unit actually has the passive and hasn't used it yet this fight.
+  const canBurst=u.passive?.type==='player_activated_burst_mode'&&!u.burstModeUsed&&!u.burstModeActive;
+  let bb=$('btn-burst');
+  if(canBurst&&!bb){
+    bb=document.createElement('button');bb.id='btn-burst';bb.className='action-btn btn-talk';
+    bb.innerHTML='Burst Mode<span class="btn-cost">3 turns</span>';
+    bb.addEventListener('click',()=>activateBurstMode(u,C));
+    $('row-main').appendChild(bb);
+  } else if(!canBurst&&bb) bb.remove();
+}
+
+function activateBurstMode(u,C){
+  if(u.burstModeUsed||u.burstModeActive) return;
+  u.burstModeUsed=true;
+  u.burstModeActive=true;
+  u.burstModeTurnsLeft=u.passive.duration||3;
+  log(`<span class="log-phase">⚡ ${u.name} activates Burst Mode!</span>`);
+  updateActionBar(u,C);
 }
 
 function refreshUltButtons(C){
@@ -1680,7 +1789,11 @@ function selectTarget(uid,C,overrideAction){
 $('btn-basic').addEventListener('click',()=>{
   const C=S.combat;if(!C?.waitingForPlayer) return;
   const u=C.activeUnit;if(!u) return;
-  if(u.basic?.target==='all'){execAbility(u,'basic',C.enemyUnits.filter(e=>e.hp>0&&!e.defeated),C,false);resumeRound(C);}
+  // Burst Mode (e.g. AGE-FX) swaps Basic to an AoE ability while active — check the EFFECTIVE
+  // ability here too, not just the unit's normal Basic field, or the button would incorrectly
+  // fall through to single-target picking even though the actual resolved ability is AoE.
+  const effectiveBasic=(u.burstModeActive&&u.passive?.burstBasic)?u.passive.burstBasic:u.basic;
+  if(effectiveBasic?.target==='all'){execAbility(u,'basic',C.enemyUnits.filter(e=>e.hp>0&&!e.defeated),C,false);resumeRound(C);}
   else enterTarget('basic',C);
 });
 $('btn-special').addEventListener('click',()=>{
