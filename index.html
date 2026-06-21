@@ -102,7 +102,7 @@ button:active{transform:scale(0.97)}
 .combat-dialogue-line.tier-boss .cdl-box{border-left-color:#ff3b3b}
 .combat-dialogue-line .cdl-speaker{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.2rem}
 .combat-dialogue-line .cdl-text{font-family:var(--font-display);font-size:.95rem;color:var(--text-primary);line-height:1.4;font-style:italic}
-#screen-combat{background:var(--bg-void);height:100%;max-height:100%;position:relative;overflow-y:auto}
+#screen-combat{background:var(--bg-void);height:100%;max-height:100%;position:relative;overflow-y:auto;overflow-x:hidden}
 #screen-upgrades,#screen-garage,#screen-shop,#screen-transition,#screen-station{overflow-y:auto}
 #screen-combat.active{display:flex;flex-direction:column}
 #screen-combat.bg-earth{background:linear-gradient(180deg,#1a3a6e 0%,#1a3a6e 30%,#2d5a27 30%,#2d5a27 100%)}
@@ -115,7 +115,7 @@ button:active{transform:scale(0.97)}
 .boss-hp-track{height:16px;background:var(--bg-card);border-radius:5px;border:1px solid var(--red-dark);overflow:hidden}
 .boss-hp-fill{height:100%;background:linear-gradient(90deg,var(--red-dark),var(--red));border-radius:5px;transition:width .4s ease}
 
-.turn-order-strip{display:flex;gap:.25rem;padding:.3rem .5rem;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.turn-order-strip{display:flex;gap:.25rem;padding:.3rem .5rem;flex-shrink:1;min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:none}
 .turn-order-strip::-webkit-scrollbar{display:none}
 .turn-pip{min-width:58px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.66rem;color:rgba(255,255,255,.65);flex-shrink:0;overflow:hidden;padding:0 4px;transition:all .2s ease}
 .turn-pip.current{min-width:64px;height:30px;border-color:#fff;border-width:2px;background:rgba(255,255,255,.18);color:#fff;font-weight:bold;font-size:.78rem;box-shadow:0 0 8px rgba(255,255,255,.3);transform:translateY(-2px)}
@@ -233,6 +233,12 @@ button:active{transform:scale(0.97)}
 .reward-header h2{font-size:1.3rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em}
 .reward-header p{font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:.2rem}
 .reward-cards{display:flex;flex-direction:column;gap:.6rem;padding:.5rem 1rem;flex:1;min-height:0;overflow-y:auto}
+.item-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:.5rem 1rem;flex:1;min-height:0;overflow-y:auto;align-content:start}
+.item-square{aspect-ratio:1;border-radius:8px;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.4rem;cursor:pointer;overflow:hidden}
+.item-square .sq-name{font-size:.72rem;font-weight:700;color:#fff;line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.item-square .sq-price{font-size:.66rem;font-family:var(--font-mono);color:rgba(255,255,255,.85);margin-top:.2rem}
+.item-square.unaffordable{opacity:.45}
+.item-square.owned{border-color:#fff;box-shadow:0 0 10px rgba(255,255,255,.25)}
 .reward-card{border-radius:var(--radius-md);cursor:pointer;transition:transform .12s,box-shadow .12s;overflow:hidden;border:3px solid transparent}
 .reward-card:hover{transform:scale(1.01)}
 .reward-card.selected{border-color:#fff;box-shadow:0 0 16px rgba(255,255,255,.2)}
@@ -257,7 +263,7 @@ button:active{transform:scale(0.97)}
 /* Rarity tile colors */
 .rarity-Common    .reward-card-tile{background:#6b6b6b}
 .rarity-Uncommon  .reward-card-tile{background:#1a7a1a}
-.rarity-Rare      .reward-card-tile{background:#0057b3}
+.rarity-Rare      .reward-card-tile{background:#6b21a8}
 .rarity-Epic      .reward-card-tile{background:#7a22cc}
 .rarity-Legendary .reward-card-tile{background:#b35c00}
 .reward-confirm-bar{padding:.6rem 1rem;flex-shrink:0;border-top:1px solid var(--border)}
@@ -295,7 +301,7 @@ button:active{transform:scale(0.97)}
   .top-bar{flex-shrink:0;padding:.55rem 1.4rem;min-height:46px}
   .top-bar-zone{font-size:.92rem}
   .boss-hp-bar-wrap{flex-shrink:0;padding:.5rem 1.4rem .25rem}
-  .turn-order-strip{flex-shrink:0;padding:.3rem 1.4rem}
+  .turn-order-strip{flex-shrink:1;min-width:0;max-width:100%;padding:.3rem 1.4rem}
   .active-passives{flex-shrink:0;padding:0 1.4rem .25rem}
 
   .enemy-field{flex-shrink:0;padding:.5rem 1.4rem .25rem}
@@ -382,7 +388,7 @@ button:active{transform:scale(0.97)}
   <div class="top-bar">
     <div class="top-bar-zone"><span class="series" id="tb-series">UC</span> · <span id="tb-zone">Side 7 — Earth Front</span></div>
     <div class="top-bar-floor" id="tb-floor">Stage 1/10</div>
-    <div class="top-bar-right"><button class="top-bar-btn" id="btn-rps-info">RPS</button></div>
+    <div class="top-bar-right"><button class="top-bar-btn" id="btn-actives-info">Actives</button><button class="top-bar-btn" id="btn-rps-info">RPS</button></div>
   </div>
   <div class="boss-hp-bar-wrap" id="boss-wrap">
     <div class="boss-hp-label"><span id="boss-name">BOSS</span><span id="boss-hp-txt">300/300</span></div>
@@ -859,7 +865,7 @@ function aiAggressionBonus(){
   // position) — Earth is always 1, so subtract 1 to get the same "0 = no boost yet" baseline this
   // function always intended.
   const seqIdx=currentZoneNumber()-1; // 0 = Earth (always 1st), 1 = the 2nd zone visited, etc.
-  return Math.min(0.25,seqIdx*0.10); // +10% per zone past Earth, capped at +25% total
+  return Math.min(0.25,seqIdx*0.07); // +7% per zone past Earth, capped at +25% total
 }
 
 function aiAction(enemy,C){
@@ -926,6 +932,20 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   if(ab.target==='single') tlist=[targets[0]];
   else if(ab.target==='self') tlist=[]; // no damage targets — self/team buff-only ultimate (e.g. Guntank's Fortress Mode)
   else tlist=isEnemy?C.playerUnits.filter(p=>p.hp>0):C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+
+  // Reckless Command (Iok Kujan's Reginlaze Custom) — comic-relief passive: 20% chance any
+  // single-target attack accidentally redirects onto one of HIS OWN living ally grunts instead of
+  // the intended player target. Only redirects if there's actually another enemy alive to hit —
+  // no ally available just means the attack proceeds normally against its real target.
+  if(isEnemy&&ab.target==='single'&&tlist[0]&&attacker.passive?.type==='friendly_fire_chance'&&Math.random()<attacker.passive.chance){
+    const allyOptions=C.enemyUnits.filter(e=>e.id!==attacker.id&&e.hp>0&&!e.defeated);
+    if(allyOptions.length){
+      tlist=[pick(allyOptions)];
+      // NOTE: nm() isn't available yet at this point in execAbility (it's declared further down
+      // in the function, and const declarations aren't hoisted) — use the plain unit name instead.
+      log(`<span class="log-system">⚠ ${attacker.name} panics and fires on his own ally!</span>`);
+    }
+  }
 
   // DRAGOON Calibration (Combat Modifier) — owned permanently for the rest of the run once picked
   // up. Only ever applies to the PLAYER's own single-target hits (matches the doc's framing of it
@@ -1054,7 +1074,19 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     }
     // ult gain (the ultimate itself doesn't refill the gauge it just spent)
     if(abilityKey!=='ultimate'){
-      const ug=isCrit?cfg.ultGaugePerCrit:cfg.ultGaugePerTurn;
+      let ug=isCrit?cfg.ultGaugePerCrit:cfg.ultGaugePerTurn;
+      // Ahab Wave Interference (IBO zone trait) — player's own Ult charge rate is reduced 30%,
+      // EXCEPT once only 1 living enemy remains (drops to no penalty), and fully negated if the
+      // player holds the "Innovator Awakening" legendary (checked generically by item id, so this
+      // works correctly the moment that item is eventually added — no second edit needed then).
+      if(!isEnemy){
+        const zone=DATA.zones.find(z=>z.id===C.zoneId);
+        const hasCounterItem=S.inventory&&S.inventory.some(i=>i.id==='innovator_awakening');
+        const enemiesAlive=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated).length;
+        if(zone?.trait?.id==='ahab_wave_interference'&&!hasCounterItem&&enemiesAlive>1){
+          ug=ug*0.7;
+        }
+      }
       if(!isEnemy) C.playerUlt=Math.min(100,C.playerUlt+ug);
       else C.enemyUlt=Math.min(100,C.enemyUlt+ug);
     }
@@ -1121,6 +1153,23 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
         continue; // skip the defeat entirely for this unit
       }
       t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);
+      // Pluma Swarm (Hashmal) — a Phase-1 Pluma token that dies gets exactly ONE replacement
+      // spawned in its place, tracked via a per-token flag so it can never respawn a second time.
+      // Phase-2 tokens (marked isPhase2Token by checkPhase above) are explicitly excluded — once
+      // those die, they're gone for good, per the design doc.
+      if(t.baseId==='pluma_token'&&!t.isPhase2Token&&!t.alreadyRespawnedOnce){
+        const sourceBoss=C.enemyUnits.find(e=>e.passive?.type==='token_spawn'&&e.passive.phase1RespawnOnceIfKilled&&!e.defeated&&e.hp>0);
+        if(sourceBoss){
+          const tb=byId('pluma_token',DATA.enemyUnits);
+          const replacement=clone(tb);
+          replacement.instanceId='pluma_token_respawn_'+Math.random().toString(36).substr(2,5);
+          replacement.id=replacement.instanceId;replacement.baseId=tb.id;
+          replacement.atkMod=1;replacement.defMod=1;replacement.spdMod=1;replacement.statuses=[];replacement.defeated=false;
+          replacement.alreadyRespawnedOnce=true; // this replacement itself can never respawn again
+          C.enemyUnits.push(replacement);
+          log(`<span class="log-phase">A fresh Pluma takes its place.</span>`);
+        }
+      }
       // Exam System (Combat Modifier) — when an ACTIVE PLAYER ALLY is defeated, the other two
       // surviving active units get a temporary ATK buff, turning a loss into a comeback window
       // rather than just a straight loss of board presence.
@@ -1180,6 +1229,23 @@ function checkPhase(enemy,C){
   if(hpPct<ph.threshold&&!enemy.phaseTriggered){
     enemy.phaseTriggered=true;
     log(`<span class="log-phase">⚠ ${ph.description}</span>`);
+    // Pluma Swarm (Hashmal) — a fresh set of tokens spawns the moment Phase 2 begins, separate
+    // from whatever Phase-1 tokens are still alive or already dead. These Phase-2 tokens do NOT
+    // get the Phase-1 "respawn once if killed" courtesy — once they're gone, they're gone for good.
+    if(enemy.passive?.type==='token_spawn'&&enemy.passive.phase2Respawn){
+      const tb=byId(enemy.passive.tokenId,DATA.enemyUnits);
+      if(tb){
+        for(let t=0;t<(enemy.passive.tokenCount||1);t++){
+          const tok=clone(tb);
+          tok.instanceId=tb.id+'_p2_'+t+'_'+Math.random().toString(36).substr(2,4);
+          tok.id=tok.instanceId;tok.baseId=tb.id;
+          tok.atkMod=1;tok.defMod=1;tok.spdMod=1;tok.statuses=[];tok.defeated=false;
+          tok.isPhase2Token=true; // marks it as ineligible for the Phase-1 one-time-respawn courtesy
+          C.enemyUnits.push(tok);
+        }
+        log(`<span class="log-phase">⚡ A fresh swarm of Pluma surges forth!</span>`);
+      }
+    }
   }
 }
 
@@ -1496,7 +1562,7 @@ function startRun(ids){
     if(u.baseMaxHp!=null){ u.maxHp=u.baseMaxHp; delete u.baseMaxHp; }
     if(u.upgradeTiers) delete u.upgradeTiers;
   });
-  S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{},visitedZones:['earth'],recruitedThisRun:[],doubleAceZone:false,teamUpgrades:{dmg:0,def:0}};
+  S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{},visitedZones:['earth'],recruitedThisRun:[],doubleAceZone:false,teamUpgrades:{dmg:0,def:0,dmgBonus:0,defBonus:0}};
   // init HP tracking to full
   ids.forEach(id=>{const base=byId(id,DATA.playerUnits);if(base) S.run.unitHp[id]=base.maxHp;});
   S.inventory=[];S.currency=0;S.activePassives=[];
@@ -1524,6 +1590,17 @@ function startFloor(run){
   // slot wearing different faces.
   const isFixedFloorType=f===zone.bossFloor||getEffectiveAceFloors(run,zone).includes(f);
   if(!fixedEvent&&!isFixedFloorType&&!run.stationDone&&zone.id!=='earth'){
+    // Fleet Recon Directive (Legendary) — bypasses the normal 30% roll entirely and forces a
+    // dice-check encounter on THIS floor, constrained to the category/cost the player chose when
+    // they used the item. One-time per run: the flag is consumed the instant this fires, whether
+    // the resulting dice-check is actually won or not.
+    if(run.fleetReconPending){
+      run.stationDone=true;
+      const constraint={category:run.fleetReconPending.category,cost:run.fleetReconPending.cost};
+      run.fleetReconPending=null;
+      showDiceCheckEncounter(run,zone,constraint);
+      return;
+    }
     if(Math.random()<0.30){
       run.stationDone=true;
       if(Math.random()<0.8) showDiceCheckEncounter(run,zone);
@@ -1556,10 +1633,14 @@ function startFloor(run){
       }
     }
     // apply permanent team-wide DMG/DEF upgrades bought this run (separate from the temporary
-    // passive-boost items above — these never expire, they last the whole run)
+    // passive-boost items above — these never expire, they last the whole run). Tracked as the
+    // actual SUM of bonus each purchased tier was worth (teamUpgrades.dmgBonus/defBonus), not just
+    // a tier count times a constant — this is what lets Jupiter Fleet Manifest correctly double
+    // the bonus for tiers bought specifically while it was active, without retroactively changing
+    // tiers bought before/after it.
     if(run.teamUpgrades){
-      if(run.teamUpgrades.dmg) u.atk=Math.round(u.atk*(1+TEAM_UPGRADE_PERCENT_PER_TIER*run.teamUpgrades.dmg));
-      if(run.teamUpgrades.def) u.def=Math.round(u.def*(1+TEAM_UPGRADE_PERCENT_PER_TIER*run.teamUpgrades.def));
+      if(run.teamUpgrades.dmgBonus) u.atk=Math.round(u.atk*(1+run.teamUpgrades.dmgBonus));
+      if(run.teamUpgrades.defBonus) u.def=Math.round(u.def*(1+run.teamUpgrades.defBonus));
     }
     // AGE Systeme — +5% ATK/DEF per ACTIVE unit (so 3 active units = +15% at 1 stack), multiplied
     // further by however many zone transitions have passed since picking it up. Recalculated fresh
@@ -1704,9 +1785,9 @@ async function playIntroSequence(C){
     for(const line of lines){
       textEl.textContent=line;
       dlg.classList.add('show');
-      await delayMs(2200);
+      await delayMs(1700);
       dlg.classList.remove('show');
-      await delayMs(450);
+      await delayMs(300);
     }
   }
 
@@ -1754,11 +1835,16 @@ function renderUnits(units,container,isEnemy,C){
     return;
   }
 
-  // same units — update each in place so animation classes (shake/flash) survive
+  // same units — update each in place so animation classes (shake/flash) survive, but ALSO
+  // reorder the DOM nodes to match the current array order. Without this, swapping two units'
+  // positions (e.g. in the Garage) would correctly update the underlying logic (which reads
+  // C.playerUnits in array order for targeting/turns) while the visual squares stayed frozen in
+  // their old left/right positions — exactly the "logic moved but visuals didn't" bug this fixes.
   for(const u of units){
     let div=container.querySelector(`[data-uid="${u.id}"]`);
     if(!div){ div=buildUnitEl(u,isEnemy,C); container.appendChild(div); continue; }
     updateUnitEl(div,u,C);
+    container.appendChild(div); // moves it to the end, in the current unit's place in iteration order
   }
 }
 
@@ -1909,7 +1995,10 @@ function updateActionBar(u,C){
   // per-unit ultimate buttons need re-evaluating any time the action bar refreshes (turn change, etc.)
   refreshUltButtons(C);
   // talk button — Talk is always available on a boss fight (regardless of past recruits; duplicates are fine)
-  const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss;
+  // EXCEPT for a boss with noPilot set (e.g. Hashmal) — there's no pilot to talk down, so the
+  // option must never appear here regardless of Newtype Gene ownership, per the design doc.
+  const liveBoss=C.isBoss?C.enemyUnits.find(e=>!e.defeated&&e.hp>0):null;
+  const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss&&!(liveBoss&&liveBoss.noPilot);
   let tb=$('btn-talk');
   if(hasTalk&&!tb){
     tb=document.createElement('button');tb.id='btn-talk';tb.className='action-btn btn-talk';
@@ -2075,6 +2164,80 @@ $('btn-cancel').addEventListener('click',()=>{
 });
 $('btn-item').addEventListener('click',showInventory);
 $('btn-rps-info').addEventListener('click',showRpsInfo);
+$('btn-actives-info').addEventListener('click',showActivesInfo);
+
+function showActivesInfo(){
+  const C=S.combat;
+  const sections=[];
+
+  // Run-changer items sitting in inventory (e.g. Newtype Gene) — always-on once owned, never
+  // consumed, but previously had NO visual indicator anywhere that they were actually active.
+  const ownedRunChangers=(S.inventory||[]).filter(i=>{
+    const def=DATA.items.find(it=>it.id===i.id);
+    return def&&def.category==='run_changer'&&def.effect?.type!=='seed_mode_assign';
+  });
+  ownedRunChangers.forEach(i=>{
+    const def=DATA.items.find(it=>it.id===i.id);
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${def.name}</div><div class="overlay-value" style="font-size:.85rem">${def.description}</div></div>`);
+  });
+
+  // AGE System — shown with its LIVE stack count and current effective bonus, not just "you have it"
+  if(S.run.combatModifiers&&S.run.combatModifiers.includes('age_systeme')){
+    const ageItem=DATA.items.find(it=>it.id==='age_systeme');
+    const perUnit=ageItem?.effect?.percentPerUnit||0.05;
+    const activeCount=(S.run.playerUnitIds||[]).length;
+    const stacks=S.run.ageSystemeStacks||1;
+    const bonusPct=Math.round(perUnit*activeCount*stacks*100);
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${ageItem.name}</div><div class="overlay-value" style="font-size:.85rem">${ageItem.description}<br><strong style="color:var(--gold)">Currently: +${bonusPct}% ATK/DEF (${stacks} stack${stacks>1?'s':''} × ${activeCount} active units)</strong></div></div>`);
+  }
+
+  // SEED Mode — shown with the actual assigned unit's name, and whether the revive is still available
+  if(S.run.seedModeUnitId){
+    const seedItem=DATA.items.find(it=>it.id==='seed_mode');
+    const unit=byId(S.run.seedModeUnitId,DATA.playerUnits);
+    const statusText=S.run.seedModeUsed?'<span style="color:var(--text-muted)">Already used this run</span>':`<strong style="color:var(--gold)">Ready — assigned to ${unit?unit.name:'?'}</strong>`;
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${seedItem.name}</div><div class="overlay-value" style="font-size:.85rem">${seedItem.description}<br>${statusText}</div></div>`);
+  }
+
+  // Trans-Am — only shown here while genuinely active, with its CURRENT phase and remaining
+  // duration. It also still shows on the normal on-screen passive-chip row alongside the stage-
+  // limited zone buffs (left untouched, as requested) — this is a more detailed second home for
+  // it specifically, since "burst vs hangover" and the exact stacking rules aren't visible there.
+  const transAmEntry=(S.activePassives||[]).find(p=>p.effect?.type==='trans_am_phase');
+  if(transAmEntry){
+    const transAmItem=DATA.items.find(it=>it.id==='trans_am');
+    const phaseLabel=transAmEntry.phase==='burst'?`<strong style="color:var(--gold)">BURST — x${transAmEntry.burstMult} all stats, ${transAmEntry.floorsLeft} stage${transAmEntry.floorsLeft>1?'s':''} left</strong>`:`<strong style="color:#ff8a8a">HANGOVER — x${transAmEntry.hangoverMult} all stats, ${transAmEntry.floorsLeft} stage${transAmEntry.floorsLeft>1?'s':''} left</strong>`;
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${transAmItem?transAmItem.name:'Trans-Am'}</div><div class="overlay-value" style="font-size:.85rem">${transAmItem?transAmItem.description:''}<br>${phaseLabel}</div></div>`);
+  }
+
+  // Jupiter Fleet Manifest — shown only while the doubled-bonus flag for the NEXT upgrade shop
+  // is genuinely pending, since it's a one-shop-visit effect, not a permanent modifier.
+  if(S.run.jupiterFleetActive){
+    const jfItem=DATA.items.find(it=>it.id==='jupiter_fleet_manifest');
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${jfItem.name}</div><div class="overlay-value" style="font-size:.85rem">${jfItem.description}<br><strong style="color:var(--gold)">Active — your next Upgrade shop visit will have all bonuses doubled.</strong></div></div>`);
+  }
+
+  // Fleet Recon Directive — shown only while a guaranteed encounter is genuinely pending, with
+  // the exact category/cost the player chose, since it's consumed the moment that floor's
+  // encounter actually fires (not a permanent modifier either).
+  if(S.run.fleetReconPending){
+    const frItem=DATA.items.find(it=>it.id==='fleet_recon_directive');
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${frItem.name}</div><div class="overlay-value" style="font-size:.85rem">${frItem.description}<br><strong style="color:var(--gold)">Pending — your next encounter will be a ${S.run.fleetReconPending.category} unit, Cost ${S.run.fleetReconPending.cost}.</strong></div></div>`);
+  }
+
+  // Every other Combat Modifier (DRAGOON Calibration, Fang Barrage, Full Cloth Armoring, Exam System)
+  (S.run.combatModifiers||[]).filter(id=>id!=='age_systeme').forEach(id=>{
+    const def=DATA.items.find(it=>it.id===id);
+    if(!def) return;
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${def.name}</div><div class="overlay-value" style="font-size:.85rem">${def.description}</div></div>`);
+  });
+
+  if(!sections.length){
+    sections.push(`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem;color:var(--text-muted)">No permanent or run-long effects active yet. Legendary and Combat Modifier items you pick up will show here.</div></div>`);
+  }
+
+  openOverlay('Active Effects',sections.join(''));
+}
 
 function showRpsInfo(){
   openOverlay('Category Matchups',`
@@ -2218,12 +2381,33 @@ function statusDesc(t){return({atk_down:'Reduces ATK — all outgoing damage is 
 
 /* ── REWARD ── */
 // Relative spawn weight per rarity tier — higher = more common. Legendary is deliberately very rare.
-const RARITY_WEIGHT={Common:100,Uncommon:58,Rare:18,Epic:8,Legendary:5};
-// Each zone past the first nudges higher-rarity odds up slightly (not a big jump) — zone index 0 = Earth (no bonus).
-function zoneRarityMultiplier(rarity,zoneIndex){
-  if(zoneIndex<=0) return 1;
-  const bumpPerZone={Common:0,Uncommon:0.08,Rare:0.12,Epic:0.15,Legendary:0.18};
-  return 1+(bumpPerZone[rarity]||0)*zoneIndex;
+const RARITY_WEIGHT={Common:100,Uncommon:58,Rare:5,Epic:8,Legendary:5};
+// Replaces the old smooth zoneRarityMultiplier curve with EXPLICIT per-band weight tables,
+// matching 4 distinct rule sets rather than one continuous formula trying to approximate all of
+// them at once:
+//   Zone 1 (tutorial): no Legendary at all except Newtype Gene specifically (handled as a special
+//     case in weightedPick below, NOT via this table — Legendary sits at weight 0 here).
+//   Zones 2-4: more Uncommon, a real but modest Rare presence, every Legendary CAN appear but
+//     capped at 1 per reward screen (enforced in generateRewardPool, not here).
+//   Zones 5-7: Rare becomes a strong presence, Uncommon still shows up, Common fully removed,
+//     Legendary gets a real non-trivial chance (capped at 2 per reward screen).
+//   Zones 8-9: high Rare AND Legendary chance, Uncommon shrinks further, Common stays removed.
+const RARITY_BAND_WEIGHTS={
+  1:{Common:100,Uncommon:35,Rare:0,Epic:0,Legendary:0},
+  2:{Common:55,Uncommon:60,Rare:25,Epic:12,Legendary:10},
+  3:{Common:55,Uncommon:60,Rare:25,Epic:12,Legendary:10},
+  4:{Common:55,Uncommon:60,Rare:25,Epic:12,Legendary:10},
+  5:{Common:0,Uncommon:45,Rare:55,Epic:22,Legendary:22},
+  6:{Common:0,Uncommon:45,Rare:55,Epic:22,Legendary:22},
+  7:{Common:0,Uncommon:45,Rare:55,Epic:22,Legendary:22},
+  8:{Common:0,Uncommon:18,Rare:55,Epic:28,Legendary:35},
+  9:{Common:0,Uncommon:18,Rare:55,Epic:28,Legendary:35}
+};
+// How many Legendary items are allowed in a SINGLE reward screen, by zone band. Zone 1 effectively
+// has none anyway (Newtype Gene aside, handled separately), 2-4 caps at 1, 5+ allows up to 2.
+function legendaryCapForZone(zoneNum){
+  if(zoneNum<=4) return 1;
+  return 2;
 }
 // WARNING: this returns a zone's FIXED position in the static DATA.zones array (Earth=0,
 // UC Space=1, AGE=2, ALWAYS) — it has nothing to do with which slot that zone occupies in the
@@ -2283,30 +2467,45 @@ function currentZoneNumber(run){
   return Math.min(idx,9);
 }
 
-function pickUnitFromGlobalPoolByZone(run){
-  const zoneNum=currentZoneNumber(run);
-  const weights=ZONE_COST_WEIGHTS[zoneNum]||ZONE_COST_WEIGHTS[9];
-  const costs=Object.keys(weights).map(Number).sort((a,b)=>a-b);
-  const totalWeight=costs.reduce((s,c)=>s+weights[c],0);
-  let roll=Math.random()*totalWeight;
-  let chosenCost=costs[costs.length-1];
-  for(const c of costs){
-    roll-=weights[c];
-    if(roll<=0){chosenCost=c;break;}
+function pickUnitFromGlobalPoolByZone(run,forcedConstraint){
+  let chosenCost;
+  if(forcedConstraint?.cost){
+    chosenCost=forcedConstraint.cost;
+  } else {
+    const zoneNum=currentZoneNumber(run);
+    const weights=ZONE_COST_WEIGHTS[zoneNum]||ZONE_COST_WEIGHTS[9];
+    const costs=Object.keys(weights).map(Number).sort((a,b)=>a-b);
+    const totalWeight=costs.reduce((s,c)=>s+weights[c],0);
+    let roll=Math.random()*totalWeight;
+    chosenCost=costs[costs.length-1];
+    for(const c of costs){
+      roll-=weights[c];
+      if(roll<=0){chosenCost=c;break;}
+    }
   }
-  // Graceful fallback: if the rolled cost tier has no real units in it YET (e.g. cost-4 content
-  // hasn't been added for this zone tier as of this build), step DOWN to the next cheaper tier
-  // that actually has candidates, rather than wasting the whole encounter on an empty roll. This
-  // naturally stops mattering once every cost tier has real units — it's a safety net for
-  // in-progress content, not a permanent behavior change.
-  let candidates=(DATA.recruitablePool||[]).filter(u=>u.cost===chosenCost);
-  const sortedCosts=costs.slice().sort((a,b)=>b-a); // highest first, to step down from chosenCost
-  let fallbackIdx=sortedCosts.indexOf(chosenCost);
-  while(!candidates.length&&fallbackIdx<sortedCosts.length-1){
-    fallbackIdx++;
-    candidates=(DATA.recruitablePool||[]).filter(u=>u.cost===sortedCosts[fallbackIdx]);
+  const allCosts=[1,2,3,4];
+  // Graceful fallback: if the rolled (or forced) cost tier has no real units in it YET (e.g.
+  // cost-4 content hasn't been added for this zone tier as of this build), step DOWN to the next
+  // cheaper tier that actually has candidates, rather than wasting the whole encounter on an empty
+  // roll. This naturally stops mattering once every cost tier has real units — it's a safety net
+  // for in-progress content, not a permanent behavior change.
+  let candidates=(DATA.recruitablePool||[]).filter(u=>u.cost===chosenCost&&(!forcedConstraint?.category||u.category===forcedConstraint.category));
+  if(!candidates.length){
+    // Try every other cost tier, closest to the originally chosen one first, searching BOTH
+    // directions — not just stepping down. This matters specifically for FORCED constraints
+    // (Fleet Recon Directive), where the player explicitly chose a cost that might genuinely have
+    // zero units in that category; they deserve the closest available substitute, not nothing.
+    const byDistance=allCosts.filter(c=>c!==chosenCost).sort((a,b)=>Math.abs(a-chosenCost)-Math.abs(b-chosenCost));
+    for(const c of byDistance){
+      candidates=(DATA.recruitablePool||[]).filter(u=>u.cost===c&&(!forcedConstraint?.category||u.category===forcedConstraint.category));
+      if(candidates.length) break;
+    }
   }
   if(!candidates.length) return null; // truly nothing recruitable exists anywhere — caller handles this
+  // Forced constraint already fully resolved the pool above (correct category+cost) — return
+  // straight from it, skipping the normal series-bias logic below, which is irrelevant here since
+  // the player already made an explicit, deliberate choice rather than rolling for series.
+  if(forcedConstraint) return pick(candidates);
 
   // Series bias — within whichever cost tier was actually settled on above, units whose series
   // matches the CURRENT zone's own series get a STRICT 70/30 split: 70% chance to pick from
@@ -2363,18 +2562,42 @@ function getBossRecruitCostByZone(bossUnit){
 // Newtype Gene is boosted here specifically because it's the only Legendary the player actually
 // interacts with often; any future Legendary item should default to 1 (no override) unless tuned.
 const ITEM_WEIGHT_OVERRIDE={newtype_gene:2.6};
+// Heal items get their own protected weight curve, separate from the generic rarity bands above —
+// per explicit design intent, heals don't need to always appear, but Uncommon-rarity heals
+// specifically should stay reasonably likely even in the higher zone bands where every OTHER
+// Uncommon item's relative share is shrinking. Keyed by item id, multiplies on top of whatever the
+// zone-band table already gives that item's raw rarity.
+const HEAL_ZONE_WEIGHT_OVERRIDE={
+  field_technician:{1:1,2:1,3:1,4:1,5:1.6,6:1.6,7:1.8,8:2.2,9:2.2},
+  ms_repair_kit:{1:1,2:1,3:1,4:1,5:1.6,6:1.6,7:1.8,8:2.2,9:2.2}
+};
 
 function weightedPick(items){
-  // BUGFIX: same currentZoneIndex() identity bug as aiAggressionBonus — was scaling rarity odds
-  // by a zone's fixed array position rather than its real position in this run's sequence.
-  const zIdx=currentZoneNumber()-1;
+  const zoneNum=currentZoneNumber();
+  const bandWeights=RARITY_BAND_WEIGHTS[zoneNum]||RARITY_BAND_WEIGHTS[9];
   // Extra one-time boost after a genuinely tougher fight (ace or boss) — set by showReward right
   // before calling generateRewardPool, cleared immediately after. Stacks multiplicatively on top
-  // of zoneRarityMultiplier below, by design — a boss clear early in the run can roll better loot
+  // of the zone-band weight below, by design — a boss clear early in the run can roll better loot
   // than a normal stage much later on, since what's being rewarded is the fight's difficulty, not
   // just how far into the run you are.
   const bonusBoost=S._rewardBonusBoost||{};
-  const weights=items.map(it=>(RARITY_WEIGHT[it.rarity]||10)*zoneRarityMultiplier(it.rarity,zIdx)*(1+(bonusBoost[it.rarity]||0))*(ITEM_WEIGHT_OVERRIDE[it.id]||1));
+  const weights=items.map(it=>{
+    // Zone 1 special case: every Legendary is hard-zeroed EXCEPT Newtype Gene specifically, which
+    // still gets its normal (boosted) weight even on the tutorial zone, per explicit design intent.
+    // Zone 1 special case: every Legendary is hard-zeroed EXCEPT Newtype Gene specifically, which
+    // still gets a real, positive weight even on the tutorial zone (boosted further by
+    // ITEM_WEIGHT_OVERRIDE below), per explicit design intent. Newtype Gene must NOT simply fall
+    // through to bandWeights.Legendary here — that's 0 at zone 1 for everyone, including it, so
+    // without this explicit override it would silently never appear despite being "exempted".
+    if(zoneNum===1&&it.rarity==='Legendary'){
+      if(it.id!=='newtype_gene') return 0;
+      const healOverride=1;
+      return (RARITY_WEIGHT.Legendary||5)*(1+(bonusBoost.Legendary||0))*(ITEM_WEIGHT_OVERRIDE[it.id]||1)*healOverride;
+    }
+    const base=bandWeights[it.rarity]!=null?bandWeights[it.rarity]:(RARITY_WEIGHT[it.rarity]||10);
+    const healOverride=HEAL_ZONE_WEIGHT_OVERRIDE[it.id]?(HEAL_ZONE_WEIGHT_OVERRIDE[it.id][zoneNum]||1):1;
+    return base*(1+(bonusBoost[it.rarity]||0))*(ITEM_WEIGHT_OVERRIDE[it.id]||1)*healOverride;
+  });
   const total=weights.reduce((s,w)=>s+w,0);
   let roll=Math.random()*total;
   for(let i=0;i<items.length;i++){
@@ -2399,6 +2622,22 @@ function weightedPick(items){
 function isItemEligibleForRewardPool(item){
   if(item.id==='seed_mode'){
     return !(S.run.seedModeUnitId&&!S.run.seedModeUsed);
+  }
+  // Haro Support Unit — never offered again while one is already sitting unused in inventory.
+  // A second copy wouldn't stack into anything meaningful (it would just re-set the same
+  // nextUpgradeDiscount flag the first one already grants), so it's excluded entirely rather
+  // than let the player pick up a redundant duplicate.
+  if(item.id==='haro_support_unit'){
+    return !S.inventory.some(i=>i.id==='haro_support_unit');
+  }
+  // Fleet Recon Directive — only ever appears as a reward after an ACE or BOSS clear (checked via
+  // the combat object passed in below), and only once per run total. Since it's a fully-consumed
+  // consumable (removed from inventory the moment it's used, not a standing flag like the
+  // run-changers above), "already used" is tracked via its own dedicated run-level flag instead of
+  // checking inventory — inventory alone couldn't distinguish "never picked up" from "used and gone".
+  if(item.id==='fleet_recon_directive'){
+    const isAceOrBoss=S.combat&&(S.combat.isAce||S.combat.isBoss);
+    return !!isAceOrBoss&&!S.run.fleetReconUsedThisRun;
   }
   // AGE Systeme is data-categorized as run_changer (a Legendary, one-per-run unique) but is
   // actually STORED in S.run.combatModifiers, not S.inventory — checked explicitly here rather
@@ -2427,16 +2666,23 @@ function generateRewardPool(){
   if(includeCurrency){
     picked.push(clone(weightedPick(currencyItems)));
   }
-  // Fill remaining slots from non-currency, rarity-weighted, no duplicates
+  // Fill remaining slots from non-currency, rarity-weighted, no duplicates. Legendary items are
+  // additionally capped per screen by zone band (legendaryCapForZone) — once that many have been
+  // picked, any further Legendary candidate this loop rolls is rejected and re-rolled instead.
   const used=new Set(picked.map(p=>p.id));
+  const zoneNum=currentZoneNumber();
+  const legendaryCap=legendaryCapForZone(zoneNum);
+  let legendaryCount=picked.filter(p=>p.rarity==='Legendary').length;
   let guard=0;
   while(picked.length<3&&guard<200){
     guard++;
     const cand=weightedPick(nonCurrency);
     if(!cand) break;
     if(used.has(cand.id)) continue;
+    if(cand.rarity==='Legendary'&&legendaryCount>=legendaryCap) continue;
     used.add(cand.id);
     picked.push(clone(cand));
+    if(cand.rarity==='Legendary') legendaryCount++;
   }
   return picked;
 }
@@ -2697,11 +2943,13 @@ function getDiceCheckDC(run){
 
 const STAT_LABELS={hp:'HP',atk:'Attack',def:'Defense',spd:'Speed'};
 
-function showDiceCheckEncounter(run,zone){
+function showDiceCheckEncounter(run,zone,forcedConstraint){
   show('dicecheck');
   // Draws from the GLOBAL recruitable pool now, weighted by cost per the current zone — same
-  // system as the station above, just picking a single candidate instead of three.
-  const candidate=pickUnitFromGlobalPoolByZone(run);
+  // system as the station above, just picking a single candidate instead of three. If
+  // forcedConstraint is set (Fleet Recon Directive), the category/cost the player chose
+  // overrides the normal weighted roll entirely.
+  const candidate=pickUnitFromGlobalPoolByZone(run,forcedConstraint);
   if(!candidate){
     // No recruitable content defined at the rolled cost tier yet — fail safe into a currency-only outcome
     $('dc-body').innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:var(--text-muted)">No one answers your call this time.</div></div>`;
@@ -2939,6 +3187,50 @@ function showSeedModePicker(item,onDone){
   });
 }
 
+// Fleet Recon Directive — two-step picker (category, then cost) shown when the item is used.
+// Neither the item nor the player's turn is consumed until BOTH choices are confirmed via the
+// final step's button — backing out by closing the overlay leaves the item untouched in inventory.
+function showFleetReconPicker(idx){
+  const categories=['Melee','Ranged','Mobility'];
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Choose the TYPE of unit your next encounter this zone will be. The encounter is still a real dice-check — this only decides who shows up, not whether you win them.</div></div>`;
+  categories.forEach(cat=>{
+    h+=`<button class="fleetrecon-cat-btn" data-cat="${cat}" style="display:block;width:100%;text-align:left;background:${catColor(cat)};border:none;border-radius:6px;padding:.65rem .7rem;margin-bottom:.45rem;cursor:pointer;color:#fff;font-weight:700">
+      ${catDisplayName(cat)}
+    </button>`;
+  });
+  openOverlay('Fleet Recon Directive',h);
+  document.querySelectorAll('.fleetrecon-cat-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      showFleetReconCostPicker(idx,btn.dataset.cat);
+    });
+  });
+}
+
+function showFleetReconCostPicker(idx,category){
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Choose the COST tier — higher costs are rarer, stronger units.</div></div>`;
+  [1,2,3,4].forEach(cost=>{
+    h+=`<button class="fleetrecon-cost-btn" data-cost="${cost}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary);font-weight:600">
+      Cost ${cost}
+    </button>`;
+  });
+  openOverlay('Fleet Recon Directive',h);
+  document.querySelectorAll('.fleetrecon-cost-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const cost=parseInt(btn.dataset.cost);
+      const C=S.combat;
+      const item=S.inventory[idx];
+      S.run.fleetReconPending={category,cost};
+      S.run.fleetReconUsedThisRun=true;
+      log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — the next encounter this zone will be a ${category} unit, Cost ${cost}.</span>`);
+      S.inventory.splice(idx,1);
+      closeOverlay();
+      resumeRound(C);
+    });
+  });
+}
+
 
 function applyReward(item){
   if(item.effect.type==='currency'){S.currency+=item.effect.value;return;}
@@ -3118,6 +3410,24 @@ function useConsumable(idx){
     S.inventory.splice(idx,1);
     closeOverlay();
     resumeRound(C);
+    return;
+  }
+  if(eff.type==='jupiter_fleet_manifest'){
+    // Doubles the % bonus of EVERY upgrade tier purchased at the next upgrade shop specifically —
+    // same one-shop-visit lifecycle as Haro Support Unit's discount, cleared on leaving that screen.
+    S.run.jupiterFleetActive=true;
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — next upgrade shop's bonuses are doubled!</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    resumeRound(C);
+    return;
+  }
+  if(eff.type==='fleet_recon_directive'){
+    // Doesn't consume the item or the turn immediately — opens the category/cost picker first,
+    // THAT picker's confirm button is what actually spends the item and the turn. One-time per
+    // run: applyReward/showFleetReconPicker is responsible for never letting this be picked again
+    // once used (see isItemEligibleForRewardPool).
+    showFleetReconPicker(idx);
     return;
   }
   if(eff.type==='extra_team_turn'){
@@ -3493,6 +3803,14 @@ function renderUpgradeScreen(){
   $('upgrades-currency').textContent=S.currency;
   let h='';
 
+  // Jupiter Fleet Manifest — clear, visible banner while active, so it's obvious BEFORE buying
+  // anything that this specific shop visit's upgrade bonuses are doubled.
+  if(S.run.jupiterFleetActive){
+    h+=`<div class="overlay-section" style="padding:.5rem 1rem;background:rgba(200,168,75,.15);border:1px solid var(--gold);border-radius:6px;margin-bottom:.5rem">
+      <div style="color:var(--gold);font-weight:700;font-size:.85rem">⚡ Jupiter Fleet Manifest active — every upgrade bought here gives DOUBLE its normal bonus!</div>
+    </div>`;
+  }
+
   // Team-wide section — compact rows now. Tap a row to open a detail popup with the full tier
   // progress and a dedicated Buy button, rather than cramming all of that into the row itself —
   // this is what was making the screen feel oversized/unreadable on narrow phones.
@@ -3509,23 +3827,27 @@ function renderUpgradeScreen(){
       ${renderUpgradeSummaryRow('team','def','Team Defense',teamTiers.def,TEAM_UPGRADE_MAX_TIER)}
     </div>
   </div>`;
+  $('upgrades-body').innerHTML=h;
 
+  // Per-unit HP upgrades as a grid of small squares — tapping a square opens the same detail
+  // popup the old long-strip cards used, just reached via a square instead of a full-width row,
+  // matching the explicit request for a tappable-square layout instead of unreadable strips.
+  let gridHtml='';
   S.run.playerUnitIds.forEach(id=>{
     const u=byId(id,DATA.playerUnits);if(!u) return;
     const tiers=ensureUpgradeTiers(u);
-    h+=`<div class="reward-card rarity-Uncommon" style="cursor:default">
-      <div class="reward-card-tile" style="min-height:50px">
-        <div>
-          <div class="reward-card-name">${u.name}</div>
-          <div class="reward-card-sub">Base HP ${u.maxHp} · Base ATK ${u.atk}</div>
-        </div>
-      </div>
-      <div class="reward-card-desc" style="display:block">
-        ${renderUpgradeSummaryRow('unit','hp','Max HP',tiers.hp,UPGRADE_MAX_TIER,u.id)}
-      </div>
+    const maxed=tiers.hp>=UPGRADE_MAX_TIER;
+    gridHtml+=`<div class="item-square${maxed?' owned':''}" data-unit="${id}" style="background:${catColor(u.category)}">
+      <div class="sq-name">${u.name}</div>
+      <div class="sq-price">${maxed?'MAX':'Tier '+tiers.hp+'/'+UPGRADE_MAX_TIER}</div>
     </div>`;
   });
-  $('upgrades-body').innerHTML=h;
+  const gridDiv=document.createElement('div');
+  gridDiv.className='item-grid';
+  gridDiv.style.flex='0 0 auto';
+  gridDiv.innerHTML=gridHtml;
+  $('upgrades-body').appendChild(gridDiv);
+
   document.querySelectorAll('.upgrade-summary-row').forEach(row=>{
     row.addEventListener('click',()=>{
       const kind=row.dataset.kind;
@@ -3534,6 +3856,9 @@ function renderUpgradeScreen(){
       if(kind==='team') openTeamUpgradeDetail(stat);
       else openUnitUpgradeDetail(unitId,stat);
     });
+  });
+  document.querySelectorAll('#upgrades-body .item-square').forEach(sq=>{
+    sq.addEventListener('click',()=>openUnitUpgradeDetail(sq.dataset.unit,'hp'));
   });
 }
 
@@ -3561,7 +3886,10 @@ function renderUnitUpgradeDetailBody(unitId,stat){
   const cost=maxed?0:getUpgradeCost(tier+1);
   const canAfford=S.currency>=cost;
   const pips=Array.from({length:UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
-  const pctSoFar=Math.round(tier*HP_PERCENT_PER_TIER*100);
+  // Computed directly from the real baseMaxHp vs current maxHp, not tier count times the flat
+  // constant — stays correct regardless of whether any tier was bought while Jupiter Fleet
+  // Manifest was doubling the bonus (which permanently bakes a different % into THAT tier only).
+  const pctSoFar=u.baseMaxHp?Math.round((u.maxHp/u.baseMaxHp-1)*100):Math.round(tier*HP_PERCENT_PER_TIER*100);
   const label=stat==='hp'?'Max HP':stat;
   const h=`
     <div class="overlay-section"><div class="overlay-value" style="font-size:.9rem"><strong>${u.name}</strong> — ${label}</div></div>
@@ -3587,13 +3915,16 @@ function openTeamUpgradeDetail(stat){
 }
 
 function renderTeamUpgradeDetailBody(stat){
-  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
+  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0,dmgBonus:0,defBonus:0});
   const tier=teamTiers[stat];
   const maxed=tier>=TEAM_UPGRADE_MAX_TIER;
   const cost=maxed?0:getTeamUpgradeCost(tier+1);
   const canAfford=S.currency>=cost;
   const pips=Array.from({length:TEAM_UPGRADE_MAX_TIER},(_,i)=>i<tier?'●':'○').join(' ');
-  const pctSoFar=Math.round(tier*TEAM_UPGRADE_PERCENT_PER_TIER*100);
+  // Reads the ACTUAL accumulated bonus (teamTiers.dmgBonus/defBonus), not tier count times the
+  // flat constant — the flat-multiply approach would silently under-report the real percentage
+  // for any tier bought while Jupiter Fleet Manifest was doubling it.
+  const pctSoFar=Math.round((teamTiers[stat+'Bonus']||0)*100);
   const label=stat==='dmg'?'Team Damage':'Team Defense';
   const h=`
     <div class="overlay-section"><div class="overlay-value" style="font-size:.9rem"><strong>${label}</strong> — affects all 3 equipped units</div></div>
@@ -3626,20 +3957,34 @@ function buyUpgrade(unitId,stat){
 
   if(stat==='hp'){
     const baseMaxHp=u.baseMaxHp||(u.baseMaxHp=u.maxHp); // remember the pre-upgrade base, once
-    u.maxHp=Math.round(baseMaxHp*(1+HP_PERCENT_PER_TIER*tiers.hp));
+    // Jupiter Fleet Manifest — doubles the % bonus THIS specific purchase grants. Tracked as an
+    // ACCUMULATED SUM (u.hpBonusAccum), not tiers.hp times a single "current" rate — the old
+    // formula recomputed maxHp from baseMaxHp using only whatever rate was active on THIS call,
+    // which silently overwrote/erased whatever rate earlier tiers were actually bought at. This
+    // is the same class of bug already fixed for the team-upgrade system; it just hadn't been
+    // applied here yet (only the display popup was fixed before, not this actual stat formula).
+    const pctThisTier=HP_PERCENT_PER_TIER*(S.run.jupiterFleetActive?2:1);
+    u.hpBonusAccum=(u.hpBonusAccum||0)+pctThisTier;
+    u.maxHp=Math.round(baseMaxHp*(1+u.hpBonusAccum));
     // also heal the current run-tracked HP by the same absolute amount gained, so upgrading doesn't waste the run's current HP
-    if(S.run.unitHp[unitId]!=null) S.run.unitHp[unitId]=Math.min(u.maxHp,S.run.unitHp[unitId]+Math.round(baseMaxHp*HP_PERCENT_PER_TIER));
+    if(S.run.unitHp[unitId]!=null) S.run.unitHp[unitId]=Math.min(u.maxHp,S.run.unitHp[unitId]+Math.round(baseMaxHp*pctThisTier));
   }
   renderUpgradeScreen(); // refresh the screen behind the popup too, so the summary row's tier updates
 }
 
 function buyTeamUpgrade(stat){
-  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
+  const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0,dmgBonus:0,defBonus:0});
   if(teamTiers[stat]>=TEAM_UPGRADE_MAX_TIER) return;
   const cost=getTeamUpgradeCost(teamTiers[stat]+1);
   if(S.currency<cost) return;
   S.currency-=cost;
   teamTiers[stat]++;
+  // Jupiter Fleet Manifest — doubles the % bonus THIS specific tier purchase grants, tracked as
+  // an accumulated bonus value (not recalculated from the tier count later), so tiers bought
+  // before/after the modifier was active correctly keep their own original, undoubled value.
+  const pctThisTier=TEAM_UPGRADE_PERCENT_PER_TIER*(S.run.jupiterFleetActive?2:1);
+  const bonusKey=stat+'Bonus';
+  teamTiers[bonusKey]=(teamTiers[bonusKey]||0)+pctThisTier;
   renderUpgradeScreen();
 }
 
@@ -3656,6 +4001,7 @@ function flashCurrency(){
 }
 $('btn-upgrades-done').addEventListener('click',()=>{
   S.run.nextUpgradeDiscount=null; // consumed for this visit, win or not used at all — never carries to a future shop
+  S.run.jupiterFleetActive=null;
   enterNextZone();
 });
 
@@ -3671,38 +4017,40 @@ function renderShop(){
   // despite it being deliberately meant to be a rare, hard-to-get pickup, not something you can
   // just buy repeatedly. Legendaries stay reward-screen/dice-check-only.
   const shopStock=DATA.items.filter(it=>it.category==='consumable'&&it.rarity!=='Legendary');
-  // Shop prices scale up modestly per zone — this is intentionally separate from the upgrade
-  // system above, which instead escalates by HOW MANY TIERS YOU'VE BOUGHT, not by zone at all.
-  // BUGFIX: same currentZoneIndex() identity bug as aiAggressionBonus — shop prices were scaling
-  // by a zone's fixed array position rather than its real position in this run's sequence.
-  const zoneIdx=currentZoneNumber()-1;
-  const shopZoneMultiplier=1+Math.max(0,zoneIdx)*0.25;
+  // Flat rarity-based pricing — Common 100, Uncommon 150, Rare 200, no zone scaling and no
+  // per-purchase increase (there never was a per-purchase increase; buying something doesn't
+  // touch its own price at all, only this flat table decides it). Replaces the old per-item
+  // SHOP_PRICES lookup + zone multiplier, which scaled price by how far into the run you are —
+  // explicitly removed per request, since prices should stay flat and predictable.
   let h='';
   shopStock.forEach(item=>{
-    const price=Math.round((SHOP_PRICES[item.id]||100)*shopZoneMultiplier);
+    const price=SHOP_RARITY_PRICES[item.rarity]||100;
     const canAfford=S.currency>=price;
-    // Tapping the card itself buys it — no separate buy button. This avoids the small fixed-height
-    // card clipping a button at the bottom on narrow phone screens, which was unreachable/unusable.
-    h+=`<div class="reward-card shop-item-card rarity-${item.rarity}" data-id="${item.id}" data-price="${price}" style="cursor:${canAfford?'pointer':'not-allowed'};opacity:${canAfford?'1':'.55'}">
-      <div class="reward-card-tile" style="min-height:50px">
-        <div>
-          <div class="reward-card-name">${item.name}</div>
-          <div class="reward-card-sub">${item.rarity} · ⬡ ${price} G${canAfford?' · Tap to buy':' · Not enough G'}</div>
-        </div>
-      </div>
-      <div class="reward-card-desc" style="display:block">
-        ${item.description}
-      </div>
+    h+=`<div class="item-square rarity-${item.rarity}-bg${canAfford?'':' unaffordable'}" data-id="${item.id}" data-price="${price}" style="background:${rarityBgColor(item.rarity)}">
+      <div class="sq-name">${item.name}</div>
+      <div class="sq-price">⬡${price}</div>
     </div>`;
   });
   $('shop-body').innerHTML=h;
-  document.querySelectorAll('.shop-item-card').forEach(card=>{
-    card.addEventListener('click',()=>{
-      const id=card.dataset.id;
-      const price=parseInt(card.dataset.price);
-      if(S.currency<price) return;
+  $('shop-body').className='item-grid';
+  document.querySelectorAll('#shop-body .item-square').forEach(sq=>{
+    sq.addEventListener('click',()=>showShopItemDetail(sq.dataset.id,parseInt(sq.dataset.price)));
+  });
+}
+
+function showShopItemDetail(id,price){
+  const item=DATA.items.find(it=>it.id===id);
+  const canAfford=S.currency>=price;
+  openOverlay(item.name,`
+    <div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">${item.description}</div></div>
+    <div class="overlay-section"><div class="overlay-label">${item.rarity} · ⬡ ${price} G</div></div>
+    <button id="shop-buy-btn" class="btn-primary" style="width:100%;margin-top:.5rem;opacity:${canAfford?'1':'.5'}" ${canAfford?'':'disabled'}>
+      ${canAfford?'BUY':'NOT ENOUGH G'}
+    </button>
+  `);
+  if(canAfford){
+    $('shop-buy-btn').addEventListener('click',()=>{
       S.currency-=price;
-      const item=DATA.items.find(it=>it.id===id);
       if(item.stackable){
         const existing=S.inventory.find(i=>i.id===item.id);
         if(existing) existing.count=(existing.count||1)+1;
@@ -3710,12 +4058,23 @@ function renderShop(){
       } else {
         S.inventory.push(clone(item));
       }
+      closeOverlay();
       renderShop();
     });
-  });
+  }
 }
 
-const SHOP_PRICES={repair_spray:25,ms_repair_kit:75,gn_condenser:150,bit_communication:350};
+// Maps rarity to a square background color — reuses the same palette as the reward-card rarity
+// classes, just exposed as a plain function since the squares set background directly rather
+// than relying on a CSS class hierarchy built for the old long-strip card shape.
+function rarityBgColor(rarity){
+  return {Common:'#3a3a4a',Uncommon:'#1a7a1a',Rare:'#6b21a8',Epic:'#b8860b',Legendary:'#b8860b'}[rarity]||'#3a3a4a';
+}
+
+// Flat rarity-based shop prices — Common 100, Uncommon 150, Rare 200. Legendary consumables
+// (e.g. Trans-Am) never appear in the shop at all (filtered out in renderShop above), so no
+// Legendary entry is needed here.
+const SHOP_RARITY_PRICES={Common:100,Uncommon:150,Rare:200};
 
 /* ── SHOP INVENTORY / HEAL-TURN SYSTEM (mirrors combat's heal rules, but turn-based by fixed unit order) ── */
 function openShopInventory(){
