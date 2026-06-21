@@ -1326,7 +1326,7 @@
     "energyPerBasic": 2,
     "ultGaugeMax": 100,
     "ultGaugePerTurn": 5,
-    "ultGaugePerCrit": 15,
+    "ultGaugePerCrit": 20,
     "critMultiplier": 1.5,
     "defMultiplier": 0.5,
     "damageFloorPercent": 0.1,
@@ -2386,6 +2386,257 @@
       },
       "ultimate": {
         "name": "Wings of Light Barrage",
+        "description": "1.0x ATK on all enemies + applies DEF Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "age1_normal",
+      "name": "AGE-1 Gundam",
+      "series": "AGE",
+      "cost": 1,
+      "category": "Melee",
+      "hp": 170,
+      "maxHp": 170,
+      "atk": 24,
+      "def": 19,
+      "spd": 34,
+      "passive": {
+        "name": "AGE System Learning",
+        "description": "Gains +3% ATK at the start of every round, stacking for the rest of the fight (the AGE System adapts to the enemy).",
+        "type": "stacking_self_aura_per_round",
+        "stat": "atk",
+        "valuePerStack": 0.03
+      },
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "DODS Rifle Shot",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "AGE System Overdrive",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "age2_normal",
+      "name": "AGE-2 Gundam",
+      "series": "AGE",
+      "cost": 2,
+      "category": "Ranged",
+      "hp": 215,
+      "maxHp": 215,
+      "atk": 30,
+      "def": 23,
+      "spd": 38,
+      "passive": {
+        "name": "Reliable Targeting Computer",
+        "description": "Crit chance rolls are guaranteed to land when they would normally proc (no double-roll loss). Landing a crit also grants +5% SPD for 2 turns.",
+        "type": "crit_reliable_spd_bonus",
+        "spdBonusValue": 1.05,
+        "spdBonusDuration": 2
+      },
+      "basic": {
+        "name": "Long-Range Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Twin Beam Spray Gun Burst",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Full Burst Mode",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "age2_dark_hound",
+      "name": "AGE-2 Dark Hound",
+      "series": "AGE",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 230,
+      "maxHp": 230,
+      "atk": 36,
+      "def": 22,
+      "spd": 46,
+      "passive": {
+        "name": "Ambush Specialist",
+        "description": "Deals +25% damage on any attack if no enemy targeted it during the previous round.",
+        "type": "untargeted_last_round_dmg_bonus",
+        "value": 1.25
+      },
+      "basic": {
+        "name": "Claw Arm Strike",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Vector Cannon Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Shadow Strike",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "age3_normal",
+      "name": "AGE-3 Gundam",
+      "series": "AGE",
+      "cost": 3,
+      "category": "Melee",
+      "hp": 245,
+      "maxHp": 245,
+      "atk": 30,
+      "def": 26,
+      "spd": 32,
+      "passive": {
+        "name": "Pacifist Protocol",
+        "description": "20% chance for Basic Attack to apply a random debuff instead of dealing damage. Whenever this unit lands the killing blow, the whole team gains +10% ATK for 2 turns.",
+        "type": "basic_debuff_chance_kill_team_buff",
+        "debuffChance": 0.2,
+        "killTeamBuff": {
+          "type": "atk_up",
+          "value": 1.1,
+          "duration": 2
+        }
+      },
+      "basic": {
+        "name": "Restraint Beam Whip",
+        "description": "Standard melee hit on a single target (20% chance to debuff instead).",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Subduing Strike",
+        "description": "1.75x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.75,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Final Restraint",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "age_fx",
+      "name": "AGE-FX",
+      "series": "AGE",
+      "cost": 4,
+      "category": "Mobility",
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 38,
+      "def": 27,
+      "spd": 42,
+      "passive": {
+        "name": "Burst Mode Activation",
+        "description": "Once per fight (player-activated), enter Burst Mode for 3 turns: Basic Attack becomes AoE C-Funnel damage and grants bonus energy. Costs 10% max HP when Burst Mode ends.",
+        "type": "player_activated_burst_mode",
+        "duration": 3,
+        "hpCostOnEnd": 0.1,
+        "burstBasic": {
+          "name": "C-Funnel Saturation",
+          "description": "0.8x ATK on all enemies, grants +1 bonus energy.",
+          "type": "damage",
+          "target": "all",
+          "multiplier": 0.8,
+          "energyGain": 3
+        }
+      },
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Mega Particle Cannon",
+        "description": "1.9x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "C-Funnel Full Deployment",
         "description": "1.0x ATK on all enemies + applies DEF Down to all for 2 turns.",
         "type": "damage_debuff",
         "target": "all",
