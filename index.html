@@ -620,11 +620,25 @@ const catLabel=(cat)=>({Melee:'M',Ranged:'R',Mobility:'A'}[cat]||cat?.[0]||'?');
 const catDisplayName=(cat)=>({Melee:'Melee',Ranged:'Ranged',Mobility:'Agility'}[cat]||cat);
 const catColor=(cat)=>({Melee:'#1f6e30',Ranged:'#3a7bd5',Mobility:'#e08a2e'}[cat]||'#5a5a7a');
 const hpColor=(cur,max)=>{ const pct=max>0?cur/max*100:0; return pct>50?'var(--green-hp)':pct>25?'var(--yellow-hp)':'var(--red-hp)'; };
+// Some boss/ace full names are too long to read on the small in-combat unit square (e.g. "Char
+// Aznable's Sazabi" gets truncated to a meaningless fragment by the generic 14-char cut). This
+// map gives specific units a short, always-readable square label instead — the dedicated boss HP
+// bar elsewhere on screen still shows the real full name (via boss.name directly), unaffected.
+const SQUARE_DISPLAY_NAME_OVERRIDE={
+  "Char Aznable's Sazabi":'Sazabi',
+  "Ramba Ral's Gouf Custom":'Gouf Custom'
+};
+function squareDisplayName(fullName){
+  if(SQUARE_DISPLAY_NAME_OVERRIDE[fullName]) return SQUARE_DISPLAY_NAME_OVERRIDE[fullName];
+  return fullName.replace('Gundam ','').substring(0,14);
+}
+
 // Picks the most distinctive word of a unit's name for compact UI labels (turn strip etc).
 // Skips generic/boilerplate prefixes (Gundam, model numbers, possessive pilot names) in favor
 // of the actual distinguishing word — e.g. "AGE-1 Spallow" -> "Spallow", "Gundam Dynames" -> "Dynames".
 const SHORTNAME_SKIP=new Set(['gundam',"gundam's",'ms','rx-78-2','rx-78','age-1','age-2','age-3','mobile','suit',"char's","gaia's","m'quve's",'gouf','zaku','ii','iii','custom']);
 function shortName(fullName){
+  if(SQUARE_DISPLAY_NAME_OVERRIDE[fullName]) return SQUARE_DISPLAY_NAME_OVERRIDE[fullName].substring(0,7);
   const words=fullName.split(' ').filter(w=>w.length>0);
   for(let i=words.length-1;i>=0;i--){
     const clean=words[i].replace(/[^a-zA-Z0-9'-]/g,'');
@@ -660,6 +674,14 @@ function critChance(u){ return clamp(0.05+u.spd/100,0.05,0.40); }
 /* ── DAMAGE ── */
 function calcDmg(atk,def,mult,pierce,isCrit){
   const cfg=DATA.combatConfig;
+  // Negate-chance passive (e.g. Crossbone X1's anti-beam I-Field): rolled BEFORE any other damage
+  // math — if it triggers, the hit deals exactly 0 regardless of every other multiplier involved.
+  const negatePassive=def.passive?.type==='negate_damage_chance';
+  if(negatePassive&&(!def.passive.vsCategory||def.passive.vsCategory===atk.category)){
+    if(Math.random()<def.passive.chance){
+      return {damage:0,isCrit:false,rpsMult:1,negated:true};
+    }
+  }
   const a=atk.atk*(atk.atkMod||1);
   const d=def.def*(def.defMod||1)*(1-(pierce||0));
   const raw=a-d*cfg.defMultiplier;
@@ -693,7 +715,13 @@ function applyStatus(target,eff){
 }
 
 function rebuildMods(u){
-  u.atkMod=1;u.defMod=1;u.spdMod=1;
+  // Permanent transform multipliers (e.g. Penelope's mode change, Zeta's Bio-Sensor surge) live in
+  // their own base*Mod fields, separate from the temporary per-status layer below — this function
+  // used to reset everything straight to 1, which would silently erase a permanent transform the
+  // next time ANY status was applied or expired anywhere in the fight.
+  u.atkMod=u.baseAtkMod!=null?u.baseAtkMod:1;
+  u.defMod=u.baseDefMod!=null?u.baseDefMod:1;
+  u.spdMod=u.baseSpdMod!=null?u.baseSpdMod:1;
   if(!u.statuses) return;
   for(const s of u.statuses){
     if(s.mod==='atkMod') u.atkMod*=s.value;
@@ -784,7 +812,17 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   if(!baseAb) return;
   // Flexible specials (e.g. Strike Gundam): swap in the AoE variant's target/multiplier/effect
   // while keeping the original name/description/energyCost intact.
-  const ab=(useAoeVariant&&baseAb.aoeVariant)?{...baseAb,...baseAb.aoeVariant}:baseAb;
+  let ab=(useAoeVariant&&baseAb.aoeVariant)?{...baseAb,...baseAb.aoeVariant}:baseAb;
+  // ZZ Gundam-style "pre-charged first Special" — the FIRST Special use each fight (tracked per
+  // unit via a flag on the combat object, since C is rebuilt fresh every encounter) deals a
+  // boosted multiplier instead of the normal one. Only ever fires once per fight, ever.
+  if(!isEnemy&&abilityKey==='special'&&attacker.passive?.type==='first_special_precharge'){
+    if(!C.firstSpecialUsed) C.firstSpecialUsed={};
+    if(!C.firstSpecialUsed[attacker.id]){
+      C.firstSpecialUsed[attacker.id]=true;
+      ab={...ab,multiplier:attacker.passive.boostedMultiplier};
+    }
+  }
   const cfg=DATA.combatConfig;
   let tlist=[];
   if(ab.target==='single') tlist=[targets[0]];
@@ -819,7 +857,11 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(abilityKey==='special'&&t.passive?.type==='special_negate'&&Math.random()<t.passive.chance){log(`→ ${nm(t,!isEnemy)} <em>negates the special!</em>`);continue;}
     // crit
     const isCrit=Math.random()<critChance(attacker);
-    const {damage,rpsMult}=calcDmg(attacker,t,ab.multiplier,ab.defPierce||0,isCrit);
+    const {damage,rpsMult,negated}=calcDmg(attacker,t,ab.multiplier,ab.defPierce||0,isCrit);
+    if(negated){
+      log(`→ ${nm(t,!isEnemy)} <em>deflects the beam attack entirely!</em>`);
+      continue;
+    }
     const prev=t.hp;
     t.hp=Math.max(0,t.hp-damage);
     // ult gain (the ultimate itself doesn't refill the gauge it just spent)
@@ -928,11 +970,59 @@ function checkTokenSpawnTrigger(enemy,C){
 }
 
 /* ── COMBAT ROUND ── */
+/* ── HP-THRESHOLD PERMANENT TRANSFORM (e.g. Penelope's mode change, Zeta's Bio-Sensor) ── */
+// Checked at the start of EVERY unit's turn (player or enemy) — once a unit drops below its
+// passive's threshold, its stat mods permanently shift for the rest of the fight. Fires once only.
+function checkHpThresholdTransform(unit,C){
+  if(!unit.passive) return;
+  const t=unit.passive.type;
+  if(t!=='hp_threshold_transform'&&t!=='low_hp_power_surge') return;
+  if(unit.transformTriggered) return;
+  const hpPct=unit.hp/unit.maxHp;
+  const threshold=unit.passive.threshold!=null?unit.passive.threshold:0.3;
+  if(hpPct>=threshold) return;
+
+  unit.transformTriggered=true;
+  if(t==='hp_threshold_transform'){
+    const mods=unit.passive.transformMods||{};
+    if(mods.atkMod!=null) unit.baseAtkMod=(unit.baseAtkMod!=null?unit.baseAtkMod:1)*mods.atkMod;
+    if(mods.defMod!=null) unit.baseDefMod=(unit.baseDefMod!=null?unit.baseDefMod:1)*mods.defMod;
+    if(mods.spdMod!=null) unit.baseSpdMod=(unit.baseSpdMod!=null?unit.baseSpdMod:1)*mods.spdMod;
+  } else if(t==='low_hp_power_surge'){
+    // Zeta-style surge: bonus ATK/SPD, but takes increased damage for the rest of the fight
+    if(unit.passive.atkBonus!=null) unit.baseAtkMod=(unit.baseAtkMod!=null?unit.baseAtkMod:1)*unit.passive.atkBonus;
+    if(unit.passive.spdBonus!=null) unit.baseSpdMod=(unit.baseSpdMod!=null?unit.baseSpdMod:1)*unit.passive.spdBonus;
+    if(unit.passive.dmgTakenPenalty!=null) unit.dmgTakenMod=(unit.dmgTakenMod||1)*unit.passive.dmgTakenPenalty;
+  }
+  log(`<span class="log-phase">⚡ ${unit.name}'s ${unit.passive.name} activates!</span>`);
+  rebuildMods(unit);
+}
+
+// Stacking team-wide aura (e.g. V2 Gundam's Minovsky Craft Aura) — grows by a flat amount every
+// round the source unit is alive, with no cap within a single fight. Uses the same base*Mod layer
+// as the HP-threshold transform above, so it's never silently erased by a later rebuildMods call
+// from an unrelated status application/expiry elsewhere in the same round.
+function applyStackingAuras(C){
+  const sources=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='stacking_team_aura_per_round');
+  for(const src of sources){
+    src.auraStacks=(src.auraStacks||0)+1;
+    const team=C.playerUnits.includes(src)?C.playerUnits:C.enemyUnits;
+    const totalBonus=1+src.passive.valuePerStack*src.auraStacks;
+    const statKey=src.passive.stat==='atk'?'baseAtkMod':src.passive.stat==='def'?'baseDefMod':'baseSpdMod';
+    for(const ally of team){
+      if(ally.defeated||ally.hp<=0) continue;
+      ally[statKey]=totalBonus;
+      rebuildMods(ally);
+    }
+  }
+}
+
 async function runRound(C){
   if(C.waitingForPlayer) return;
   lockActionBar();
   clearTrait(C);
   applyTrait(C);
+  applyStackingAuras(C);
   const all=[...C.playerUnits,...C.enemyUnits].filter(u=>u.hp>0&&!u.defeated);
   C.currentOrder=buildOrder(all);
   renderTurnStrip(C);
@@ -948,6 +1038,7 @@ async function runRound(C){
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
+      checkHpThresholdTransform(unit,C);
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -957,7 +1048,7 @@ async function runRound(C){
       lockActionBar();
       setActive(unit.id);
       await delay(380);
-      checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);
+      checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);checkHpThresholdTransform(unit,C);
       const act=aiAction(unit,C);
       if(act){
         execAbility(unit,act.ability,[act.target],C,true);
@@ -990,6 +1081,7 @@ async function resumeRound(C){
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
+      checkHpThresholdTransform(unit,C);
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -999,7 +1091,7 @@ async function resumeRound(C){
       lockActionBar();
       setActive(unit.id);
       await delay(380);
-      checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);
+      checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);checkHpThresholdTransform(unit,C);
       const act=aiAction(unit,C);
       if(act){execAbility(unit,act.ability,[act.target],C,true);renderField(C);playPendingFx(C);renderRes(C);await delay(450);}
     }
@@ -1336,7 +1428,7 @@ function buildUnitEl(u,isEnemy,C){
   const nl=document.createElement('div');
   const tierCls=isEnemy&&u.tier==='ace'?' tier-ace':isEnemy&&(u.tier==='boss'||u.isBoss)?' tier-boss':'';
   nl.className='unit-name-label'+tierCls;
-  nl.textContent=u.name.replace('Gundam ','').substring(0,14);div.appendChild(nl);
+  nl.textContent=squareDisplayName(u.name);div.appendChild(nl);
   const cl=document.createElement('div');cl.className='unit-category-label';
   cl.textContent=catLabel(u.category);div.appendChild(cl);
 
