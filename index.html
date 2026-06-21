@@ -732,7 +732,7 @@ function rps(atkCat,defCat,attackerIsEnemy){
 }
 
 /* ── CRIT CHANCE ── */
-function critChance(u){ return clamp(0.05+u.spd/100,0.05,0.40); }
+function critChance(u){ return clamp(0.05+u.spd/100+(u.critBonusThisRound||0),0.05,0.40); }
 
 /* ── DAMAGE ── */
 function hasCombatModifier(id){
@@ -758,6 +758,19 @@ function calcDmg(atk,def,mult,pierce,isCrit){
   const critMult=isCrit?cfg.critMultiplier:1;
   const v=1+randF(-cfg.varianceRange,cfg.varianceRange);
   let finalDamage=Math.max(1,Math.round(floored*mult*rpsMult*critMult*v));
+  // GN Shot Intercept (Cherudim Gundam) — once per round, the FIRST qualifying hit aimed at any
+  // ally on Cherudim's own team gets reduced by the configured percentage. "Biggest hit of the
+  // round" isn't knowable in advance (hits resolve one at a time as the round plays out), so this
+  // implements the practical version: the first hit against an ally each round is the one that
+  // gets intercepted, reset fresh every round by runRound's per-round setup.
+  if(S.combat){
+    const defenderTeam=S.combat.playerUnits.includes(def)?S.combat.playerUnits:S.combat.enemyUnits;
+    const cherudim=defenderTeam.find(u=>!u.defeated&&u.hp>0&&u.passive?.type==='ally_dmg_intercept_per_round'&&!u.interceptUsedThisRound&&u.id!==def.id);
+    if(cherudim){
+      cherudim.interceptUsedThisRound=true;
+      finalDamage=Math.round(finalDamage*(1-cherudim.passive.reductionValue));
+    }
+  }
   // Full Cloth Armoring (Combat Modifier) — once owned, no single hit can ever exceed 30% of the
   // TARGET's max HP, regardless of source or multiplier stack. Applied as the very last clamp,
   // after every other multiplier (RPS, crit, variance) has already been factored in.
@@ -966,7 +979,12 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     // Basic is hand-set to 3 instead of the global default) — falls back to the energy_boost
     // passive check, then the global default, for units that don't override it directly.
     const ownGain=ab.energyGain;
-    const gain=ownGain!=null?ownGain:((attacker.passive?.type==='energy_boost'&&!isEnemy)?cfg.energyPerBasic+attacker.passive.value:cfg.energyPerBasic);
+    let gain=ownGain!=null?ownGain:((attacker.passive?.type==='energy_boost'&&!isEnemy)?cfg.energyPerBasic+attacker.passive.value:cfg.energyPerBasic);
+    // Twin Drive failure (00 Gundam) — on a round where the gamble failed, Basic Attack's energy
+    // gain is reduced by the configured penalty amount (never below 0).
+    if(attacker.passive?.type==='twin_drive_gamble'&&attacker.twinDriveSuccessThisRound===false){
+      gain=Math.max(0,gain-attacker.passive.failEnergyPenalty);
+    }
     if(!isEnemy) C.playerEnergy=Math.min(cfg.energyMax,C.playerEnergy+gain);
     else C.enemyEnergy=Math.min(cfg.energyMax,C.enemyEnergy+gain);
   } else if(abilityKey==='special'){
@@ -1011,6 +1029,18 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(attacker.passive?.type==='untargeted_last_round_dmg_bonus'){
       const wasTargeted=C.targetedLastRound&&C.targetedLastRound.has(attacker.id);
       if(!wasTargeted) effMult=effMult*attacker.passive.value;
+    }
+    // Pure Speed (Avalanche Exia) — bonus damage if this unit was genuinely the first to act
+    // this round, tracked via C.firstActorThisRoundId set at round-start.
+    if(attacker.passive?.type==='acts_first_dmg_bonus'&&C.firstActorThisRoundId===attacker.id){
+      effMult=effMult*attacker.passive.value;
+    }
+    // Adapted Combat Frame (Susanowo) — bonus damage on single-target attacks ONLY, zero bonus on
+    // any AoE hit. Checked against the ABILITY's own target type, not tlist.length, since a
+    // single-target ability hitting one enemy and an AoE ability that happens to only have one
+    // living enemy left are mechanically different things — only the former counts here.
+    if(attacker.passive?.type==='single_target_only_dmg_bonus'&&ab.target==='single'){
+      effMult=effMult*attacker.passive.value;
     }
     // Debuff Exploiter (Kimaris Vidar) — bonus damage against a target that currently has ANY
     // active debuff (atk_down, def_down, spd_down, or the corrosive dot), rewarding it for pairing
@@ -1072,9 +1102,21 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       applyStatus(attacker,{type:'spd_up',value:attacker.passive.spdBonusValue,duration:attacker.passive.spdBonusDuration});
       log(`→ <span class="log-status">${nm(attacker,isEnemy)}'s targeting computer reacts — SPD Up!</span>`);
     }
+    // Energy Engine (GN-001 Exia) — a critical BASIC ATTACK SPECIFICALLY grants +1 extra energy on
+    // top of whatever the normal Basic energy gain already was. Checked here (post-crit-roll),
+    // not at the earlier energy-gain block, since isCrit isn't known yet at that point.
+    if(isCrit&&abilityKey==='basic'&&!isEnemy&&attacker.passive?.type==='crit_basic_energy_bonus'){
+      C.playerEnergy=Math.min(cfg.energyMax,C.playerEnergy+attacker.passive.value);
+      log(`→ <span class="log-system">${nm(attacker,isEnemy)}'s Energy Engine surges — +${attacker.passive.value} energy!</span>`);
+    }
     // ult gain (the ultimate itself doesn't refill the gauge it just spent)
     if(abilityKey!=='ultimate'){
       let ug=isCrit?cfg.ultGaugePerCrit:cfg.ultGaugePerTurn;
+      // Fully Stabilized Twin Drive (00 Raiser) — on a crit specifically, grants a flat +30% Ult
+      // gauge instead of the normal (smaller) crit amount.
+      if(isCrit&&attacker.passive?.type==='energy_boost_and_ult_crit_bonus'){
+        ug=attacker.passive.ultCritBonus;
+      }
       // Ahab Wave Interference (IBO zone trait) — player's own Ult charge rate is reduced 30%,
       // EXCEPT once only 1 living enemy remains (drops to no penalty), and fully negated if the
       // player holds the "Innovator Awakening" legendary (checked generically by item id, so this
@@ -1317,6 +1359,44 @@ function tickBurstMode(unit,C){
 // round the source unit is alive, with no cap within a single fight. Uses the same base*Mod layer
 // as the HP-threshold transform above, so it's never silently erased by a later rebuildMods call
 // from an unrelated status application/expiry elsewhere in the same round.
+// Per-round gamble/mode mechanics — Kyrios's Dual Personality (always picks one of two modes,
+// 50/50) and 00 Gundam's Twin Drive (weighted success/fail roll). Both reset and re-roll fresh at
+// the start of EVERY round, applied through the same base-mod layer (baseAtkMod/baseDefMod) used
+// by every other stat-modifying mechanic in this engine, so they correctly coexist with whatever
+// else is touching a unit's stats that same round.
+function applyRandomModeUnits(C){
+  const kyriosUnits=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='random_mode_per_round');
+  for(const u of kyriosUnits){
+    const mode=pick(u.passive.modes);
+    u.currentRoundMode=mode.name;
+    u.baseAtkMod=mode.atkMod||1;
+    u.baseDefMod=mode.defMod||1;
+    rebuildMods(u);
+    if(mode.energyBonus){
+      const isEnemySide=C.enemyUnits.includes(u);
+      if(!isEnemySide) C.playerEnergy=Math.min(DATA.combatConfig.energyMax,C.playerEnergy+mode.energyBonus);
+      else C.enemyEnergy=Math.min(DATA.combatConfig.energyMax,C.enemyEnergy+mode.energyBonus);
+    }
+    u.critBonusThisRound=mode.critBonus||0; // read by critChance() for the rest of this round
+    log(`<span class="log-phase">${u.name} shifts into ${mode.name}!</span>`);
+  }
+
+  const twinDriveUnits=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='twin_drive_gamble');
+  for(const u of twinDriveUnits){
+    const success=Math.random()<u.passive.successChance;
+    u.twinDriveSuccessThisRound=success;
+    if(success){
+      u.baseAtkMod=u.passive.successAtkMod;
+      rebuildMods(u);
+      log(`<span class="log-phase">${u.name}'s Twin Drive stabilizes — +ATK this round!</span>`);
+    } else {
+      u.baseAtkMod=1;
+      rebuildMods(u);
+      log(`<span class="log-phase">${u.name}'s Twin Drive falters — reduced energy gain this round.</span>`);
+    }
+  }
+}
+
 function applyStackingAuras(C){
   const teamSources=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='stacking_team_aura_per_round');
   for(const src of teamSources){
@@ -1348,12 +1428,28 @@ async function runRound(C){
   clearTrait(C);
   applyTrait(C);
   applyStackingAuras(C);
+  applyRandomModeUnits(C);
   // "Untargeted last round" tracking (e.g. AGE-2 Dark Hound's Ambush Specialist) — shift this
   // round's hit-set into "last round" before clearing it for the round about to start.
   C.targetedLastRound=C.targetedThisRound||new Set();
   C.targetedThisRound=new Set();
   const all=[...C.playerUnits,...C.enemyUnits].filter(u=>u.hp>0&&!u.defeated);
   C.currentOrder=buildOrder(all);
+  // Marks the unit that's genuinely first to act this round (e.g. for Avalanche Exia's
+  // acts-first damage bonus) — read once at the moment the unit actually takes its turn, not
+  // assumed from currentOrder[0] alone, since a defeated/skipped entry could shift who's truly first.
+  C.firstActorThisRoundId=C.currentOrder[0]||null;
+  // Cherudim's GN Shot Intercept resets fresh every round — one intercept opportunity per round, never carried over.
+  for(const u of all) if(u.passive?.type==='ally_dmg_intercept_per_round') u.interceptUsedThisRound=false;
+  // Stable Synergy (Arios Gundam) — flat +5% to the shared Ult gauge every round, no RNG involved
+  // at all (unlike Kyrios's gamble above).
+  for(const u of all){
+    if(u.passive?.type==='ult_gauge_per_round'){
+      const isEnemySide=C.enemyUnits.includes(u);
+      if(!isEnemySide) C.playerUlt=Math.min(100,C.playerUlt+u.passive.value);
+      else C.enemyUlt=Math.min(100,C.enemyUlt+u.passive.value);
+    }
+  }
   renderTurnStrip(C);
 
   for(const uid of C.currentOrder){
@@ -3674,11 +3770,16 @@ function updateCaptainNameDisplay(){
 }
 $('btn-how').addEventListener('click',()=>{
   openOverlay('How to Play',`
-    <div class="overlay-section"><div class="overlay-label">Flow</div><div class="overlay-value">Draft 3 units → clear 10 stages (1 zone) → collect rewards after each stage.</div></div>
-    <div class="overlay-section"><div class="overlay-label">RPS</div><div class="overlay-value">Melee > Agility > Ranged > Melee · Advantage ×1.5 · Disadvantage ×0.67</div></div>
-    <div class="overlay-section"><div class="overlay-label">Resources</div><div class="overlay-value">EN max 8 — spent on Specials, gained from Basic attacks.<br>ULT 0–100% — gains per turn and on crits. Use anytime at 100%.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Stages</div><div class="overlay-value">10 stages per zone. Stage 5: Ace (yellow). Stage 10: Boss (red). Bosses have a dedicated HP bar at the top.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Log</div><div class="overlay-value">Tap blue unit names or gold skill names in the log to see their stats and details.</div></div>`);
+    <div class="overlay-section"><div class="overlay-label">The Run</div><div class="overlay-value">Draft 3 Mobile Suits, then fight your way through a sequence of 10 zones — Earth is always your first, the other 9 (UC Space, SEED, 00, AGE, IBO, WFM, Wing, After War X, and a final convergence zone) come in random order. Each zone is 10 stages long: stage 5 is an Ace fight, stage 10 is a Boss. Clear a zone and you fully heal, manage your roster, and move to the next.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Built so far</div><div class="overlay-value" style="font-size:.82rem">Earth, UC Space, AGE, and IBO are fully playable today. The rest are designed but not yet in the game — you'll only ever encounter the 4 above for now.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Combat Basics</div><div class="overlay-value">3 of your units fight 2-3 enemies at once, turn order set by SPD. Each turn: Basic Attack (free, builds Energy), Special (costs Energy, stronger), or Ultimate (free once the shared gauge hits 100%, very strong) — plus Items if you're carrying any.</div></div>
+    <div class="overlay-label" style="margin-top:.3rem">Categories &amp; Type Advantage</div><div class="overlay-value">Every unit is Melee (M), Ranged (R), or Agility/Mobility (A). Melee beats Agility, Agility beats Ranged, Ranged beats Melee — a hit with the advantage deals ×1.5 damage, a hit at a disadvantage only ×0.67. Matching the right unit to the right enemy matters a lot.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Resources</div><div class="overlay-value">Energy (max 8, shared by your team) is spent on Specials and refills from Basic Attacks. The Ult gauge (0–100%, also shared) builds every turn and gets a bigger boost on crits — once it's full, any of your units can unleash their Ultimate for free.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Recruiting New Units</div><div class="overlay-value">Roughly 1 in 3 normal stages offers a recruitment encounter instead of a fight — either a Station (pick 1 of 3 units outright) or a dice-check (beat a roll to win a single offered unit). You start with a roster of 46+ units to pull from across every series, and stronger/rarer units show up more often the deeper into a run you go.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Garage &amp; Storage</div><div class="overlay-value">You can only field 3 units at a time, but you can hold up to 4 more in storage (7 total per run). Swap freely between your active squad and storage at every zone transition — recruiting a unit you don't have room for active just banks it for later.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Upgrades &amp; Items</div><div class="overlay-value">Spend currency at zone transitions on permanent per-unit HP tiers or squad-wide Damage/Defense tiers. Reward screens after every stage offer items: Common/Uncommon consumables and stat buffs are common early; Rare and Legendary items (run-changing effects) get noticeably more likely the deeper you go, and Ace/Boss fights always reward better loot.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Talk &amp; Recruit Bosses</div><div class="overlay-value">With the Newtype Gene Legendary, you can attempt to Talk down a boss instead of finishing the fight — succeed and you recruit them. A few bosses (like IBO's Hashmal) have no pilot and can never be talked down.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Helpful Taps</div><div class="overlay-value">Tap blue unit names or gold skill names in the combat log to see their stats and details. The "Actives" button up top lists every permanent or run-changing effect you currently have active.</div></div>`);
 });
 $('btn-restart').addEventListener('click',()=>show('title'));
 $('btn-vic-ok').addEventListener('click',()=>show('title'));
