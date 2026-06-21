@@ -689,10 +689,26 @@ function show(id){
 }
 
 /* ── RPS ── */
-function rps(atkCat,defCat){
+// Asymmetric RPS — enemies get STRONGER rock-paper-scissors swings than the player does, on both
+// sides of the matchup: when an enemy has the type advantage, they hit harder than the player
+// would in the same matchup; when an enemy is at a disadvantage, they resist it better than the
+// player would. The player's own RPS multipliers are completely untouched either way — this is
+// deliberately one-sided, making wrong matchups against enemies hurt more without also making the
+// player's correct matchups against enemies hit harder than they already do.
+const ENEMY_RPS_ADVANTAGE_MULT=1.7;   // vs the shared player-side 1.5
+const ENEMY_RPS_DISADVANTAGE_MULT=0.8; // vs the shared player-side 0.67 — enemies resist their bad matchup better
+
+function rps(atkCat,defCat,attackerIsEnemy){
   const c=DATA.rpsChart;
-  if(c[atkCat]?.advantage===defCat) return c.advantageMultiplier;
-  if(c[atkCat]?.disadvantage===defCat) return c.disadvantageMultiplier;
+  const isAdvantage=c[atkCat]?.advantage===defCat;
+  const isDisadvantage=c[atkCat]?.disadvantage===defCat;
+  if(attackerIsEnemy){
+    if(isAdvantage) return ENEMY_RPS_ADVANTAGE_MULT;
+    if(isDisadvantage) return ENEMY_RPS_DISADVANTAGE_MULT;
+    return 1.0;
+  }
+  if(isAdvantage) return c.advantageMultiplier;
+  if(isDisadvantage) return c.disadvantageMultiplier;
   return 1.0;
 }
 
@@ -714,7 +730,8 @@ function calcDmg(atk,def,mult,pierce,isCrit){
   const d=def.def*(def.defMod||1)*(1-(pierce||0));
   const raw=a-d*cfg.defMultiplier;
   const floored=Math.max(raw,a*cfg.damageFloorPercent);
-  const rpsMult=rps(atk.category,def.category);
+  const attackerIsEnemy=S.combat&&S.combat.enemyUnits&&S.combat.enemyUnits.includes(atk);
+  const rpsMult=rps(atk.category,def.category,attackerIsEnemy);
   const critMult=isCrit?cfg.critMultiplier:1;
   const v=1+randF(-cfg.varianceRange,cfg.varianceRange);
   return {damage:Math.max(1,Math.round(floored*mult*rpsMult*critMult*v)),isCrit,rpsMult};
@@ -800,7 +817,7 @@ function buildOrder(cb){
 // zone-1 baseline either.
 function aiAggressionBonus(){
   const zIdx=currentZoneIndex(); // 0 = Earth
-  return Math.min(0.25,zIdx*0.08); // +8% per zone past Earth, capped at +25% total
+  return Math.min(0.25,zIdx*0.10); // +10% per zone past Earth, capped at +25% total
 }
 
 function aiAction(enemy,C){
@@ -817,7 +834,7 @@ function aiAction(enemy,C){
     // 50% baseline that felt too passive.
     if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&Math.random()<Math.min(.92,.65+aggro)) ability='special';
   } else if(tier==='ace'){
-    const adv=players.find(p=>rps(enemy.category,p.category)>1);
+    const adv=players.find(p=>rps(enemy.category,p.category,true)>1);
     target=adv||players[0];
     if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(adv||Math.random()<Math.min(.85,.5+aggro))) ability='special';
     // Aces fire their Ultimate reliably once banked, but not near-automatically — pulled back from
@@ -835,7 +852,7 @@ function aiAction(enemy,C){
       target=players.reduce((b,p)=>p.spd*(p.spdMod||1)>b.spd*(b.spdMod||1)?p:b,players[0]);
       // Boss phase 1: moderately willing to use Special without an RPS edge — between the original
       // 35% and the overtuned 60%.
-      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category)>1||Math.random()<Math.min(.75,.45+aggro))) ability='special';
+      if(enemy.special&&C.enemyEnergy>=(enemy.special.energyCost||99)&&(rps(enemy.category,target.category,true)>1||Math.random()<Math.min(.75,.45+aggro))) ability='special';
       // Boss ultimate fires once banked and below 60% HP — a middle point between the original
       // <50% gate and the overly eager <70% gate. The zone-based aggression bonus extends the HP
       // window itself here, rather than the chance, since boss ult-on-bank is otherwise unconditional.
@@ -1374,6 +1391,14 @@ async function startRoundAfterIntro(C){
   runRound(C);
 }
 
+// Systematic per-zone enemy stat scaling — HP and ATK both get +10% per zone past Earth, applied
+// here at encounter-build time rather than relying on each zone's base unit data being hand-tuned
+// to roughly hit a target growth curve. This makes the scaling a hard, consistent rule instead of
+// an approximation, and it'll apply correctly and automatically to every future zone too.
+function enemyZoneStatMultiplier(){
+  return 1+currentZoneIndex()*0.10; // Earth (index 0) = 1.0x, no boost; +10% per zone after
+}
+
 function buildEncounter(zone,floor,isBoss,isAce){
   let ids=[];
   if(isBoss){ids=[zone.bossId];}
@@ -1387,11 +1412,13 @@ function buildEncounter(zone,floor,isBoss,isAce){
     const cnt=Math.random()<.33?3:2;
     for(let i=0;i<cnt;i++) ids.push(pick(zone.gruntPool));
   }
+  const statMult=enemyZoneStatMultiplier();
   const units=ids.map(id=>{
     const base=byId(id,DATA.enemyUnits);if(!base) return null;
     const u=clone(base);
     u.instanceId=id+'_'+Math.random().toString(36).substr(2,5);
     u.id=u.instanceId;u.baseId=base.id;
+    u.maxHp=Math.round(u.maxHp*statMult);u.hp=u.maxHp;u.atk=Math.round(u.atk*statMult);
     u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];u.phaseTriggered=false;u.defeated=false;
     u.tokensSpawned=false;
     return u;
