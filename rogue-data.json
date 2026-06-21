@@ -1682,11 +1682,11 @@
       "name": "Luna Titanium Coating",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +10% DEF for 5 stages.",
+      "description": "Team +7% DEF for 3 stages.",
       "effect": {
         "type": "team_def_up",
-        "value": 1.1,
-        "duration_floors": 5
+        "value": 1.07,
+        "duration_floors": 3
       }
     },
     {
@@ -1694,11 +1694,11 @@
       "name": "Weapon Calibration",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +10% ATK for 5 stages.",
+      "description": "Team +7% ATK for 3 stages.",
       "effect": {
         "type": "team_atk_up",
-        "value": 1.1,
-        "duration_floors": 5
+        "value": 1.07,
+        "duration_floors": 3
       }
     },
     {
@@ -1706,11 +1706,175 @@
       "name": "Thruster Overclocking",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +10% SPD for 5 stages.",
+      "description": "Team +7% SPD for 3 stages.",
       "effect": {
         "type": "team_spd_up",
-        "value": 1.1,
-        "duration_floors": 5
+        "value": 1.07,
+        "duration_floors": 3
+      }
+    },
+    {
+      "id": "advanced_def_plating",
+      "name": "Advanced Defense Plating",
+      "category": "passive_boost",
+      "rarity": "Rare",
+      "description": "Team +18% DEF for 2 whole zones (20 stages).",
+      "effect": {
+        "type": "team_def_up",
+        "value": 1.18,
+        "duration_floors": 20
+      }
+    },
+    {
+      "id": "overcharged_weapon_systems",
+      "name": "Overcharged Weapon Systems",
+      "category": "passive_boost",
+      "rarity": "Rare",
+      "description": "Team +18% ATK for 2 whole zones (20 stages).",
+      "effect": {
+        "type": "team_atk_up",
+        "value": 1.18,
+        "duration_floors": 20
+      }
+    },
+    {
+      "id": "experimental_thruster_array",
+      "name": "Experimental Thruster Array",
+      "category": "passive_boost",
+      "rarity": "Rare",
+      "description": "Team +18% SPD for 2 whole zones (20 stages).",
+      "effect": {
+        "type": "team_spd_up",
+        "value": 1.18,
+        "duration_floors": 20
+      }
+    },
+    {
+      "id": "trans_am",
+      "name": "Trans-Am",
+      "category": "consumable",
+      "rarity": "Legendary",
+      "description": "Activate: whole team x3 ALL stats for 3 stages, then x0.5 ALL stats for 2 stages (Burst hangover). Goes to inventory, used during combat on the unit's own turn.",
+      "effect": {
+        "type": "trans_am",
+        "burstMult": 3,
+        "burstDuration": 3,
+        "hangoverMult": 0.5,
+        "hangoverDuration": 2
+      }
+    },
+    {
+      "id": "bit_communication",
+      "name": "Bit Communication",
+      "category": "consumable",
+      "rarity": "Rare",
+      "description": "All 3 active units get an extra turn this round. Can be used during combat on your turn.",
+      "effect": {
+        "type": "extra_team_turn"
+      }
+    },
+    {
+      "id": "dragoon_calibration",
+      "name": "DRAGOON Calibration",
+      "category": "combat_modifier",
+      "rarity": "Rare",
+      "description": "Permanent for the rest of the run: whenever you attack with a type advantage, 20% chance the hit spreads to every enemy.",
+      "effect": {
+        "type": "combat_modifier_marker"
+      }
+    },
+    {
+      "id": "seed_mode",
+      "name": "SEED Mode",
+      "category": "run_changer",
+      "rarity": "Legendary",
+      "description": "Choose one of your 3 active units. That unit revives once (at 30% HP) if it's ever defeated this run.",
+      "effect": {
+        "type": "seed_mode_assign"
+      }
+    },
+    {
+      "id": "age_systeme",
+      "name": "AGE Systeme",
+      "category": "run_changer",
+      "rarity": "Legendary",
+      "description": "Permanent for the rest of the run: +5% ATK/DEF per active unit, stacking further at every zone transition.",
+      "effect": {
+        "type": "age_systeme_assign",
+        "percentPerUnit": 0.05
+      }
+    },
+    {
+      "id": "overdrive_cell",
+      "name": "Overdrive Cell",
+      "category": "consumable",
+      "rarity": "Uncommon",
+      "description": "Instantly fills the shared energy pool to max (8) and grants +10% Ultimate gauge from the overflow surge.",
+      "effect": {
+        "type": "fill_energy_overflow_ult",
+        "ultBonus": 10
+      }
+    },
+    {
+      "id": "propellant_tank",
+      "name": "Propellant Tank",
+      "category": "consumable",
+      "rarity": "Uncommon",
+      "description": "Grants the user one immediate extra turn right now.",
+      "effect": {
+        "type": "extra_self_turn"
+      }
+    },
+    {
+      "id": "psycommu_burst",
+      "name": "Psycommu Burst",
+      "category": "consumable",
+      "rarity": "Rare",
+      "description": "Instantly fills the shared Ultimate gauge by +40%.",
+      "effect": {
+        "type": "fill_ult_gauge",
+        "value": 40
+      }
+    },
+    {
+      "id": "haro_support_unit",
+      "name": "Haro Support Unit",
+      "category": "consumable",
+      "rarity": "Uncommon",
+      "description": "Your next zone transition's Upgrade shop has all costs reduced by 30%.",
+      "effect": {
+        "type": "next_upgrade_discount",
+        "value": 0.3
+      }
+    },
+    {
+      "id": "fang_barrage",
+      "name": "Fang Barrage",
+      "category": "combat_modifier",
+      "rarity": "Rare",
+      "description": "Permanent for the rest of the run: every DoT effect ticks twice per turn instead of once.",
+      "effect": {
+        "type": "combat_modifier_marker"
+      }
+    },
+    {
+      "id": "full_cloth_armoring",
+      "name": "Full Cloth Armoring",
+      "category": "combat_modifier",
+      "rarity": "Rare",
+      "description": "Permanent for the rest of the run: no single hit can ever deal more than 30% of the target's max HP, regardless of source.",
+      "effect": {
+        "type": "combat_modifier_marker"
+      }
+    },
+    {
+      "id": "exam_system",
+      "name": "Exam System",
+      "category": "combat_modifier",
+      "rarity": "Rare",
+      "description": "Permanent for the rest of the run: whenever an active ally is defeated, the other two gain +25% ATK for 3 turns.",
+      "effect": {
+        "type": "combat_modifier_marker"
       }
     }
   ],
@@ -3055,6 +3219,330 @@
           "value": 0.85,
           "duration": 2
         }
+      }
+    },
+    {
+      "id": "gundam_barbatos",
+      "name": "Gundam Barbatos",
+      "series": "IBO",
+      "cost": 2,
+      "category": "Melee",
+      "hp": 215,
+      "maxHp": 215,
+      "atk": 30,
+      "def": 24,
+      "spd": 34,
+      "passive": {
+        "name": "Counter-Puncher",
+        "description": "15% chance to immediately fire a free counter-Basic Attack back at whoever just hit this unit.",
+        "type": "counter_chance",
+        "chance": 0.15,
+        "hpCost": 0
+      },
+      "basic": {
+        "name": "Mace Swing",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Nano-Laminate Tackle",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Mace Overhead Crush",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "gundam_flauros",
+      "name": "Gundam Flauros",
+      "series": "IBO",
+      "cost": 2,
+      "category": "Ranged",
+      "hp": 205,
+      "maxHp": 205,
+      "atk": 31,
+      "def": 22,
+      "spd": 36,
+      "passive": {
+        "name": "Lock-On Targeting",
+        "description": "The 2nd consecutive Basic Attack on the same target ignores 30% of its DEF.",
+        "type": "consecutive_hit_pierce",
+        "pierceValue": 0.3
+      },
+      "basic": {
+        "name": "Rifle Bit Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Field Repair Bits",
+        "description": "No damage. Restores 30 HP to the whole team.",
+        "type": "team_heal",
+        "target": "self",
+        "energyCost": 3,
+        "healValue": 30
+      },
+      "ultimate": {
+        "name": "Full Bit Barrage",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "barbatos_lupus",
+      "name": "Gundam Barbatos Lupus",
+      "series": "IBO",
+      "cost": 3,
+      "category": "Melee",
+      "hp": 250,
+      "maxHp": 250,
+      "atk": 35,
+      "def": 27,
+      "spd": 32,
+      "passive": {
+        "name": "Escalated Counter",
+        "description": "25% chance to fire a free counter-Basic Attack after being hit, dealt at 1.3x strength — but costs this unit 8 HP each time it triggers.",
+        "type": "counter_chance",
+        "chance": 0.25,
+        "hpCost": 8,
+        "counterMultiplier": 1.3
+      },
+      "basic": {
+        "name": "Mace Swing",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Nano-Laminate Crush",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Lupus Rampage",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gusion_rebake",
+      "name": "Gundam Gusion Rebake",
+      "series": "IBO",
+      "cost": 3,
+      "category": "Melee",
+      "hp": 245,
+      "maxHp": 245,
+      "atk": 32,
+      "def": 28,
+      "spd": 30,
+      "passive": {
+        "name": "Pain Tolerance",
+        "description": "Gains +2 bonus energy whenever hit by an enemy Special Attack.",
+        "type": "gains_energy_on_enemy_special",
+        "value": 2
+      },
+      "basic": {
+        "name": "Beam Dagger Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Field Medic Protocol",
+        "description": "No damage. Restores 30 HP to the whole team and grants +12% DEF for 2 turns.",
+        "type": "team_heal_buff",
+        "target": "self",
+        "energyCost": 4,
+        "healValue": 30,
+        "teamBuff": {
+          "type": "def_up",
+          "value": 1.12,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Gusion Overdrive Slash",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "kimaris_vidar",
+      "name": "Gundam Kimaris Vidar",
+      "series": "IBO",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 235,
+      "maxHp": 235,
+      "atk": 36,
+      "def": 24,
+      "spd": 40,
+      "passive": {
+        "name": "Debuff Exploiter",
+        "description": "Deals +20% damage to any target that currently has an active debuff.",
+        "type": "debuffed_target_dmg_bonus",
+        "value": 1.2
+      },
+      "basic": {
+        "name": "Claw Strike",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Rentaro Drive Slash",
+        "description": "1.8x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Vidar Full Throttle",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gundam_bael",
+      "name": "Gundam Bael",
+      "series": "IBO",
+      "cost": 3,
+      "category": "Melee",
+      "hp": 240,
+      "maxHp": 240,
+      "atk": 34,
+      "def": 26,
+      "spd": 34,
+      "passive": {
+        "name": "Ult Momentum",
+        "description": "Basic Attack always grants +3 energy instead of the normal amount. This unit's Ultimate banks 20% of its leftover gauge instead of resetting to 0.",
+        "type": "energy_boost_and_ult_bank",
+        "energyValue": 3,
+        "ultBankPercent": 0.2
+      },
+      "basic": {
+        "name": "Mace Strike",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 3
+      },
+      "special": {
+        "name": "Bael Charge Slash",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Bael Ascension Strike",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "barbatos_lupus_rex",
+      "name": "Gundam Barbatos Lupus Rex",
+      "series": "IBO",
+      "cost": 4,
+      "category": "Melee",
+      "hp": 285,
+      "maxHp": 285,
+      "atk": 41,
+      "def": 30,
+      "spd": 36,
+      "passive": {
+        "name": "Max Aggression",
+        "description": "35% chance to fire a free counter-Basic Attack after being hit, dealt at 1.3x strength. Immune to ATK Down.",
+        "type": "counter_chance",
+        "chance": 0.35,
+        "hpCost": 0,
+        "counterMultiplier": 1.3,
+        "immuneToAtkDown": true
+      },
+      "basic": {
+        "name": "Mace Smash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Field Repair Surge",
+        "description": "No damage. Restores 55 HP to the whole team and grants +12% ATK for 2 turns.",
+        "type": "team_heal_buff",
+        "target": "self",
+        "energyCost": 5,
+        "healValue": 55,
+        "teamBuff": {
+          "type": "atk_up",
+          "value": 1.12,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Lupus Rex Annihilation",
+        "description": "2.4x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.4
       }
     }
   ]
