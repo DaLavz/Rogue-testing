@@ -72,6 +72,40 @@
       ],
       "bossFloor": 10,
       "doubleAceChance": 0.25
+    },
+    {
+      "id": "age",
+      "name": "AGE",
+      "seriesName": "AGE",
+      "flavorName": "Second Moon — Vagan Front",
+      "totalFloors": 10,
+      "background": "space",
+      "trait": {
+        "id": "vagan_corrosive_coating",
+        "name": "Vagan Corrosive Coating",
+        "description": "25% chance for an enemy Basic Attack to apply a 10-dmg-per-turn corrosive DoT. Any DEF Up on the affected unit cleanses it immediately.",
+        "effectType": "enemy_basic_dot_chance",
+        "chance": 0.25,
+        "dotValue": 10
+      },
+      "gruntPool": [
+        "gafran",
+        "baqto",
+        "dorado",
+        "wrozzo",
+        "danazine"
+      ],
+      "acePool": [
+        "desil_khronos",
+        "yurin_farsia",
+        "girard_thieleva"
+      ],
+      "bossId": "zeheart_legilis",
+      "aceFloors": [
+        5
+      ],
+      "bossFloor": 10,
+      "doubleAceChance": 0.25
     }
   ],
   "playerUnits": [
@@ -1188,6 +1222,381 @@
         "target": "single",
         "multiplier": 1.0
       }
+    },
+    {
+      "id": "gafran",
+      "name": "Gafran",
+      "fullName": "AGE-X (Gafran)",
+      "series": "AGE",
+      "tier": "grunt",
+      "family": "gafran",
+      "category": "Mobility",
+      "hp": 160,
+      "maxHp": 160,
+      "atk": 30,
+      "def": 18,
+      "spd": 40,
+      "basic": {
+        "name": "Claw Strike",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Twin Vulcan Burst",
+        "description": "1.6x ATK on one target + applies SPD Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.6,
+        "energyCost": 4,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "baqto",
+      "name": "Baqto",
+      "fullName": "Baqto",
+      "series": "AGE",
+      "tier": "grunt",
+      "family": "baqto",
+      "category": "Melee",
+      "hp": 175,
+      "maxHp": 175,
+      "atk": 31,
+      "def": 24,
+      "spd": 26,
+      "basic": {
+        "name": "Heat Blade Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Crushing Tackle",
+        "description": "1.8x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "dorado",
+      "name": "Dorado",
+      "fullName": "Dorado",
+      "series": "AGE",
+      "tier": "grunt",
+      "family": "dorado",
+      "category": "Ranged",
+      "hp": 162,
+      "maxHp": 162,
+      "atk": 33,
+      "def": 20,
+      "spd": 30,
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Long-Range Bombardment",
+        "description": "0.6x ATK on all 3 player units + applies DEF Down to one random target for 1 turn.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 0.6,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1,
+          "targetMode": "random_one"
+        }
+      }
+    },
+    {
+      "id": "wrozzo",
+      "name": "Wrozzo",
+      "fullName": "Wrozzo (Gen3)",
+      "series": "AGE",
+      "tier": "grunt",
+      "family": "wrozzo",
+      "category": "Mobility",
+      "hp": 155,
+      "maxHp": 155,
+      "atk": 32,
+      "def": 17,
+      "spd": 48,
+      "basic": {
+        "name": "Beam Saber Dash",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Gen3 Overdrive Slash",
+        "description": "1.7x ATK on one target + applies ATK Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "danazine",
+      "name": "Danazine",
+      "fullName": "Danazine",
+      "series": "AGE",
+      "tier": "grunt",
+      "family": "danazine",
+      "category": "Melee",
+      "hp": 185,
+      "maxHp": 185,
+      "atk": 32,
+      "def": 26,
+      "spd": 22,
+      "basic": {
+        "name": "Heavy Claw Strike",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Earthquake Slam",
+        "description": "1.8x ATK on one target + applies DEF Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "desil_khronos",
+      "name": "Desil Galette's Khronos",
+      "fullName": "OB-902 Khronos",
+      "series": "AGE",
+      "tier": "ace",
+      "family": "khronos",
+      "category": "Mobility",
+      "hp": 250,
+      "maxHp": 250,
+      "atk": 36,
+      "def": 22,
+      "spd": 52,
+      "passive": {
+        "name": "X-Rounder Reflexes",
+        "description": "20% chance to dodge any incoming attack entirely.",
+        "type": "dodge",
+        "value": 0.2
+      },
+      "basic": {
+        "name": "Beam Spray Gun Shot",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Twin Drill Lance Charge",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Khronos Overdrive Lance",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "yurin_farsia",
+      "name": "Yurin L'Ciel's Farsia",
+      "fullName": "OB-903 Farsia",
+      "series": "AGE",
+      "tier": "ace",
+      "family": "farsia",
+      "category": "Mobility",
+      "hp": 235,
+      "maxHp": 235,
+      "atk": 33,
+      "def": 24,
+      "spd": 42,
+      "passive": {
+        "name": "Forced Control",
+        "description": "30% chance to act a second time this round — but loses 20 HP each time this triggers (the unwilling pilot's body is being forced past its limits).",
+        "type": "forced_extra_turn_chance",
+        "chance": 0.3,
+        "hpCost": 20
+      },
+      "basic": {
+        "name": "Beam Bazooka Shot",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Override Strike",
+        "description": "1.7x ATK on one target + applies SPD Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.8,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Farsia Last Resistance",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "girard_thieleva",
+      "name": "Girard Spriggan's Thieleva",
+      "fullName": "OB-901 Thieleva",
+      "series": "AGE",
+      "tier": "ace",
+      "family": "thieleva",
+      "category": "Ranged",
+      "hp": 245,
+      "maxHp": 245,
+      "atk": 35,
+      "def": 23,
+      "spd": 36,
+      "passive": {
+        "name": "Crit Punisher",
+        "description": "Whenever hit by a player's critical hit, gains +15% ATK for the rest of the fight (punishes crit-fishing strategies).",
+        "type": "gains_atk_on_being_crit",
+        "value": 1.15
+      },
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Precision Beam Volley",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Thieleva Full Burst",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "zeheart_legilis",
+      "name": "Zeheart Galette's Gundam Legilis",
+      "fullName": "XVV-XCR Gundam Legilis",
+      "series": "AGE",
+      "tier": "boss",
+      "family": "legilis",
+      "category": "Mobility",
+      "isBoss": true,
+      "hp": 460,
+      "maxHp": 460,
+      "atk": 50,
+      "def": 26,
+      "spd": 46,
+      "passive": {
+        "name": "Crusade of the Vagans",
+        "description": "+12% ATK and +8% DEF while a Vagan grunt token is alive alongside him.",
+        "type": "ally_token_alive_buff",
+        "atkBonus": 1.12,
+        "defBonus": 1.08
+      },
+      "basic": {
+        "name": "Beam Spray Gun Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Twin Drill Lance Assault",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 5,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Legilis Overdrive Lance",
+        "description": "1.0x ATK on all player units + applies ATK Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "phases": [
+        {
+          "threshold": 0.5,
+          "forceSpecial": true,
+          "forceUltOnBank": true,
+          "targetMode": "highest_spd",
+          "description": "Zeheart abandons restraint, fighting with the full weight of the Vagan cause."
+        }
+      ],
+      "introLines": [
+        "\"For the Vagans who came before me... I will not fall here!\"",
+        "\"Earth Federation, witness the resolve of those you cast aside!\""
+      ]
     }
   ],
   "items": [
