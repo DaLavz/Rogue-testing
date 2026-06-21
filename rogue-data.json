@@ -106,6 +106,40 @@
       ],
       "bossFloor": 10,
       "doubleAceChance": 0.25
+    },
+    {
+      "id": "ibo",
+      "name": "IBO",
+      "seriesName": "IBO",
+      "flavorName": "Tekkadan",
+      "totalFloors": 10,
+      "background": "space",
+      "trait": {
+        "id": "ahab_wave_interference",
+        "name": "Ahab Wave Interference",
+        "description": "Your Ult gauge charge rate is reduced by 30%. The penalty drops away entirely once only 1 enemy remains. Fully negated by holding Innovator Awakening.",
+        "effectType": "player_ult_gain_reduction",
+        "reductionPercent": 0.3
+      },
+      "gruntPool": [
+        "graze",
+        "reginlaze",
+        "hyakuren",
+        "man_rodi",
+        "helmwige_reincar"
+      ],
+      "acePool": [
+        "mcgillis_bael",
+        "julieta_reginlaze_julia",
+        "iok_reginlaze_custom"
+      ],
+      "bossId": "hashmal",
+      "bossRecruitable": false,
+      "aceFloors": [
+        5
+      ],
+      "bossFloor": 10,
+      "doubleAceChance": 0.25
     }
   ],
   "playerUnits": [
@@ -1597,6 +1631,398 @@
         "\"For the Vagans who came before me... I will not fall here!\"",
         "\"Earth Federation, witness the resolve of those you cast aside!\""
       ]
+    },
+    {
+      "id": "graze",
+      "name": "Graze",
+      "fullName": "EB-AX2 Graze",
+      "series": "IBO",
+      "tier": "grunt",
+      "family": "graze",
+      "category": "Melee",
+      "hp": 210,
+      "maxHp": 210,
+      "atk": 38,
+      "def": 26,
+      "spd": 28,
+      "basic": {
+        "name": "Anti-MS Sword Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Shotel Combo",
+        "description": "1.7x ATK on one target + applies DEF Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "reginlaze",
+      "name": "Reginlaze",
+      "fullName": "EB-AX3 Reginlaze",
+      "series": "IBO",
+      "tier": "grunt",
+      "family": "reginlaze",
+      "category": "Ranged",
+      "hp": 215,
+      "maxHp": 215,
+      "atk": 41,
+      "def": 22,
+      "spd": 32,
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Twin Beam Volley",
+        "description": "0.65x ATK on all 3 player units.",
+        "type": "damage",
+        "target": "all",
+        "multiplier": 0.65,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "hyakuren",
+      "name": "Hyakuren",
+      "fullName": "EB-AX4 Hyakuren",
+      "series": "IBO",
+      "tier": "grunt",
+      "family": "hyakuren",
+      "category": "Ranged",
+      "hp": 205,
+      "maxHp": 205,
+      "atk": 38,
+      "def": 24,
+      "spd": 30,
+      "basic": {
+        "name": "Long Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Precision Snipe",
+        "description": "1.8x ATK on one target + applies ATK Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "man_rodi",
+      "name": "Man Rodi",
+      "fullName": "EB-06x Man Rodi",
+      "series": "IBO",
+      "tier": "grunt",
+      "family": "man_rodi",
+      "category": "Melee",
+      "hp": 210,
+      "maxHp": 210,
+      "atk": 37,
+      "def": 28,
+      "spd": 26,
+      "basic": {
+        "name": "Claw Crush",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Crushing Grapple",
+        "description": "1.8x ATK on one target + applies DEF Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "helmwige_reincar",
+      "name": "Helmwige Reincar",
+      "fullName": "EB-AX0 Helmwige Reincar",
+      "series": "IBO",
+      "tier": "grunt",
+      "family": "helmwige",
+      "category": "Melee",
+      "hp": 230,
+      "maxHp": 230,
+      "atk": 40,
+      "def": 30,
+      "spd": 18,
+      "basic": {
+        "name": "Heavy Sword Cleave",
+        "description": "Standard melee hit on a single target — the heaviest IBO grunt.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Devastating Cleave",
+        "description": "1.9x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "mcgillis_bael",
+      "name": "McGillis Fareed's Gundam Bael",
+      "fullName": "ASW-G-XX Gundam Bael",
+      "series": "IBO",
+      "tier": "ace",
+      "family": "ace_bael",
+      "category": "Melee",
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 43,
+      "def": 28,
+      "spd": 38,
+      "passive": {
+        "name": "Ambition's Momentum",
+        "description": "Basic Attack always grants +3 energy instead of the normal amount.",
+        "type": "energy_boost_and_ult_bank",
+        "energyValue": 3,
+        "ultBankPercent": 0
+      },
+      "basic": {
+        "name": "Mace Strike",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 3
+      },
+      "special": {
+        "name": "Bael Charge Slash",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Ambition's Conviction",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "julieta_reginlaze_julia",
+      "name": "Julieta Juris's Reginlaze Julia",
+      "fullName": "EB-AX3-Julia Reginlaze Julia",
+      "series": "IBO",
+      "tier": "ace",
+      "family": "ace_reginlaze",
+      "category": "Melee",
+      "hp": 285,
+      "maxHp": 285,
+      "atk": 41,
+      "def": 30,
+      "spd": 34,
+      "passive": {
+        "name": "Unshaken Resolve",
+        "description": "Cannot be affected by ATK Down — hard counters the player's main debuff tool.",
+        "type": "atk_down_immune_marker",
+        "immuneToAtkDown": true
+      },
+      "basic": {
+        "name": "Sword Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Julia Crushing Blow",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Resolute Cleave",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "iok_reginlaze_custom",
+      "name": "Iok Kujan's Reginlaze Custom",
+      "fullName": "EB-AX3-Custom Reginlaze",
+      "series": "IBO",
+      "tier": "ace",
+      "family": "ace_reginlaze_custom",
+      "category": "Ranged",
+      "hp": 260,
+      "maxHp": 260,
+      "atk": 40,
+      "def": 26,
+      "spd": 30,
+      "passive": {
+        "name": "Reckless Command",
+        "description": "Comic relief: 20% chance any attack accidentally hits one of his own ally grunts instead of the player.",
+        "type": "friendly_fire_chance",
+        "chance": 0.2
+      },
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Panicked Barrage",
+        "description": "1.8x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Desperate Volley",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "hashmal",
+      "name": "Mobile Armor Hashmal",
+      "fullName": "HCGF00 Hashmal",
+      "series": "IBO",
+      "tier": "boss",
+      "family": "hashmal",
+      "category": "Ranged",
+      "isBoss": true,
+      "noPilot": true,
+      "hp": 720,
+      "maxHp": 720,
+      "atk": 52,
+      "def": 30,
+      "spd": 26,
+      "passive": {
+        "name": "Pluma Swarm",
+        "description": "Spawns 2 Pluma tokens at fight start and again at the Phase 2 transition. Phase-1 tokens respawn once if killed; Phase-2 tokens do not.",
+        "type": "token_spawn",
+        "spawnTrigger": "immediate",
+        "tokenId": "pluma_token",
+        "tokenCount": 2,
+        "phase2Respawn": true,
+        "phase1RespawnOnceIfKilled": true
+      },
+      "basic": {
+        "name": "Particle Beam Blast",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Mass Driver Barrage",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 5,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Apocalyptic Salvo",
+        "description": "1.0x ATK on all player units + applies ATK Down to all for 2 turns.",
+        "type": "damage_debuff",
+        "target": "all",
+        "multiplier": 1.0,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "phases": [
+        {
+          "threshold": 0.5,
+          "forceSpecial": true,
+          "forceUltOnBank": true,
+          "targetMode": "highest_spd",
+          "description": "Hashmal's autonomous systems escalate to full output, the Pluma swarm surging anew."
+        }
+      ]
+    },
+    {
+      "id": "pluma_token",
+      "name": "Pluma",
+      "fullName": "Pluma Mass-Production Unit",
+      "series": "IBO",
+      "tier": "grunt",
+      "family": "pluma",
+      "category": "Mobility",
+      "isToken": true,
+      "hp": 60,
+      "maxHp": 60,
+      "atk": 18,
+      "def": 10,
+      "spd": 44,
+      "basic": {
+        "name": "Reckless Charge",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      }
     }
   ],
   "items": [
@@ -1605,7 +2031,7 @@
       "name": "Field Technician",
       "category": "heal_reward",
       "rarity": "Uncommon",
-      "description": "Restores 500 HP to one unit of your choice. Reward only — never appears in the shop.",
+      "description": "Restores 500 HP to one unit of your choice — enough to fully revive a unit that was defeated. The only other way to bring a unit back besides SEED Mode. Reward only — never appears in the shop.",
       "effect": {
         "type": "heal_one",
         "value": 500
@@ -1682,11 +2108,11 @@
       "name": "Luna Titanium Coating",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +7% DEF for 3 stages.",
+      "description": "Team +10% DEF for 4 stages.",
       "effect": {
         "type": "team_def_up",
-        "value": 1.07,
-        "duration_floors": 3
+        "value": 1.1,
+        "duration_floors": 4
       }
     },
     {
@@ -1694,11 +2120,11 @@
       "name": "Weapon Calibration",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +7% ATK for 3 stages.",
+      "description": "Team +10% ATK for 4 stages.",
       "effect": {
         "type": "team_atk_up",
-        "value": 1.07,
-        "duration_floors": 3
+        "value": 1.1,
+        "duration_floors": 4
       }
     },
     {
@@ -1706,11 +2132,11 @@
       "name": "Thruster Overclocking",
       "category": "passive_boost",
       "rarity": "Common",
-      "description": "Team +7% SPD for 3 stages.",
+      "description": "Team +10% SPD for 4 stages.",
       "effect": {
         "type": "team_spd_up",
-        "value": 1.07,
-        "duration_floors": 3
+        "value": 1.1,
+        "duration_floors": 4
       }
     },
     {
@@ -1795,7 +2221,7 @@
     },
     {
       "id": "age_systeme",
-      "name": "AGE Systeme",
+      "name": "AGE System",
       "category": "run_changer",
       "rarity": "Legendary",
       "description": "Permanent for the rest of the run: +5% ATK/DEF per active unit, stacking further at every zone transition.",
@@ -1875,6 +2301,26 @@
       "description": "Permanent for the rest of the run: whenever an active ally is defeated, the other two gain +25% ATK for 3 turns.",
       "effect": {
         "type": "combat_modifier_marker"
+      }
+    },
+    {
+      "id": "jupiter_fleet_manifest",
+      "name": "Jupiter Fleet Manifest",
+      "category": "consumable",
+      "rarity": "Uncommon",
+      "description": "Your next Upgrade shop visit: every upgrade tier purchased there gives DOUBLE its normal bonus.",
+      "effect": {
+        "type": "jupiter_fleet_manifest"
+      }
+    },
+    {
+      "id": "fleet_recon_directive",
+      "name": "Fleet Recon Directive",
+      "category": "consumable",
+      "rarity": "Legendary",
+      "description": "Choose the category and cost of your next encounter this zone. Still a real dice-check — this only decides who shows up. One-time per run.",
+      "effect": {
+        "type": "fleet_recon_directive"
       }
     }
   ],
