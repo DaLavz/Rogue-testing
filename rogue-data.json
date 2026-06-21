@@ -3990,6 +3990,387 @@
         "target": "single",
         "multiplier": 2.4
       }
+    },
+    {
+      "id": "gn001_exia",
+      "name": "GN-001 Exia",
+      "series": "00",
+      "cost": 2,
+      "category": "Melee",
+      "hp": 210,
+      "maxHp": 210,
+      "atk": 33,
+      "def": 22,
+      "spd": 38,
+      "passive": {
+        "name": "Energy Engine",
+        "description": "Critical Basic Attacks grant +1 extra energy on top of the normal amount.",
+        "type": "crit_basic_energy_bonus",
+        "value": 1
+      },
+      "basic": {
+        "name": "GN Sword Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "GN Sword Rifle Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Trans-Am Burst Slash",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gn003_kyrios",
+      "name": "GN-003 Kyrios",
+      "series": "00",
+      "cost": 2,
+      "category": "Mobility",
+      "hp": 205,
+      "maxHp": 205,
+      "atk": 32,
+      "def": 23,
+      "spd": 40,
+      "passive": {
+        "name": "Dual Personality",
+        "description": "At the start of each round, randomly enters Allelujah Mode (+12% DEF, +1 energy) or Hallelujah Mode (+15% ATK, +8% crit chance) for that round.",
+        "type": "random_mode_per_round",
+        "modes": [
+          {
+            "name": "Allelujah Mode",
+            "defMod": 1.12,
+            "energyBonus": 1
+          },
+          {
+            "name": "Hallelujah Mode",
+            "atkMod": 1.15,
+            "critBonus": 0.08
+          }
+        ]
+      },
+      "basic": {
+        "name": "GN Beam Cannon Shot",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "GN Vulcan Barrage",
+        "description": "1.7x ATK on one target + applies SPD Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "GN Cannon Overload",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "avalanche_exia",
+      "name": "Gundam Avalanche Exia",
+      "series": "00",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 235,
+      "maxHp": 235,
+      "atk": 36,
+      "def": 22,
+      "spd": 52,
+      "passive": {
+        "name": "Pure Speed",
+        "description": "The fastest cost-3 unit in the 00 pool. Deals +15% damage on any attack if this unit is the first to act in the round.",
+        "type": "acts_first_dmg_bonus",
+        "value": 1.15
+      },
+      "basic": {
+        "name": "GN Sword III Slash",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Avalanche Charge",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "GN Sword III Overdrive",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gundam_00",
+      "name": "00 Gundam",
+      "series": "00",
+      "cost": 3,
+      "category": "Melee",
+      "hp": 250,
+      "maxHp": 250,
+      "atk": 37,
+      "def": 26,
+      "spd": 36,
+      "passive": {
+        "name": "Twin Drive System",
+        "description": "Each round: 70% chance of +15% ATK for that round, 30% chance of reduced energy gain on Basic Attack instead — high-risk, high-reward.",
+        "type": "twin_drive_gamble",
+        "successChance": 0.7,
+        "successAtkMod": 1.15,
+        "failEnergyPenalty": 1
+      },
+      "basic": {
+        "name": "GN Sword II Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Twin Drive Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Twin Drive Overdrive Slash",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "cherudim_gundam",
+      "name": "Cherudim Gundam",
+      "series": "00",
+      "cost": 3,
+      "category": "Ranged",
+      "hp": 240,
+      "maxHp": 240,
+      "atk": 35,
+      "def": 25,
+      "spd": 32,
+      "passive": {
+        "name": "GN Shot Intercept",
+        "description": "Once per round, intercepts the single biggest hit aimed at an ally, reducing that hit's damage by 30%.",
+        "type": "ally_dmg_intercept_per_round",
+        "reductionValue": 0.3
+      },
+      "basic": {
+        "name": "GN Sniper Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Fang Burst Shield",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "GN Sniper Rifle Full Burst",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "arios_gundam",
+      "name": "Arios Gundam",
+      "series": "00",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 245,
+      "maxHp": 245,
+      "atk": 34,
+      "def": 25,
+      "spd": 40,
+      "passive": {
+        "name": "Stable Synergy",
+        "description": "Passively grants +5% to the shared Ult gauge at the start of every round — no RNG involved, unlike Kyrios's gamble.",
+        "type": "ult_gauge_per_round",
+        "value": 5
+      },
+      "basic": {
+        "name": "GN Beam Saber Slash",
+        "description": "Standard mobility hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "TRANS-AM Stabilizer Strike",
+        "description": "1.7x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Arios Full Drive Strike",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "00_raiser",
+      "name": "00 Raiser",
+      "series": "00",
+      "cost": 4,
+      "category": "Melee",
+      "hp": 280,
+      "maxHp": 280,
+      "atk": 41,
+      "def": 29,
+      "spd": 38,
+      "passive": {
+        "name": "Fully Stabilized Twin Drive",
+        "description": "Basic Attack always grants +3 energy. Critical hits also grant +30% to the shared Ult gauge instead of the normal crit amount — the cleanest, most consistent kit in the 00 pool.",
+        "type": "energy_boost_and_ult_crit_bonus",
+        "ultCritBonus": 30
+      },
+      "basic": {
+        "name": "GN Sword II Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 3
+      },
+      "special": {
+        "name": "Raiser Sword Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "00 Raiser Trans-Am Slash",
+        "description": "2.4x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.4
+      }
+    },
+    {
+      "id": "susanowo",
+      "name": "Susanowo",
+      "series": "00",
+      "cost": 4,
+      "category": "Melee",
+      "hp": 285,
+      "maxHp": 285,
+      "atk": 44,
+      "def": 30,
+      "spd": 30,
+      "passive": {
+        "name": "Adapted Combat Frame",
+        "description": "+20% damage on single-target attacks only (no bonus on any AoE hit) — the highest single-target damage in the roster, at the cost of zero AoE scaling.",
+        "type": "single_target_only_dmg_bonus",
+        "value": 1.2
+      },
+      "basic": {
+        "name": "GN Bits Wired Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Wired Claw Crush",
+        "description": "1.9x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Susanowo Annihilation Strike",
+        "description": "2.4x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.4
+      }
     }
   ]
 }
