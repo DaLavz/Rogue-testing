@@ -731,9 +731,20 @@ function applyStatus(target,eff){
   else if(t==='def_down')    push(t,'defMod',eff.value,eff.duration,'↓DEF','def-down');
   else if(t==='spd_down')    push(t,'spdMod',eff.value,eff.duration,'↓SPD','spd-down');
   else if(t==='atk_up')      push(t,'atkMod',eff.value,eff.duration,'↑ATK','atk-up');
-  else if(t==='def_up')      push(t,'defMod',eff.value,eff.duration,'↑DEF','def-up');
+  else if(t==='def_up'){
+    push(t,'defMod',eff.value,eff.duration,'↑DEF','def-up');
+    // Vagan Corrosive Coating cleanse — ANY DEF Up clears the corrosive DoT early, regardless of
+    // its remaining duration. This is checked here rather than in the DoT tick itself, since the
+    // cleanse is meant to happen the instant the buff lands, not on the next scheduled tick.
+    const corrosive=target.statuses.find(s=>s.type==='dot'&&s.corrosive);
+    if(corrosive){
+      target.statuses=target.statuses.filter(s=>s!==corrosive);
+      const isEnemySide=S.combat&&S.combat.enemyUnits&&S.combat.enemyUnits.includes(target);
+      log(`→ <span class="log-unit ${isEnemySide?'enemy':'friendly'}" data-id="${target.id}" data-enemy="${isEnemySide}">${target.name}</span>'s corrosive coating is neutralized by the DEF boost!`);
+    }
+  }
   else if(t==='spd_up')      push(t,'spdMod',eff.value,eff.duration,'↑SPD','spd-up');
-  else if(t==='dot')         target.statuses.push({type:'dot',dotValue:eff.value,duration:eff.duration,label:'🔥',cls:'dot'});
+  else if(t==='dot')         target.statuses.push({type:'dot',dotValue:eff.value,duration:eff.duration,label:'🔥',cls:'dot',corrosive:eff.corrosive||false});
   else if(t==='atk_def_down'){applyStatus(target,{type:'atk_down',value:eff.value,duration:eff.duration});applyStatus(target,{type:'def_down',value:eff.value,duration:eff.duration});}
   else if(t==='atk_spd_down'){applyStatus(target,{type:'atk_down',value:eff.value,duration:eff.duration});applyStatus(target,{type:'spd_down',value:eff.value,duration:eff.duration});}
   else if(t==='atk_down_dot'){applyStatus(target,{type:'atk_down',value:eff.atkDownValue,duration:eff.duration});applyStatus(target,{type:'dot',value:eff.dotValue,duration:eff.duration});}
@@ -908,6 +919,16 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     const prev=t.hp;
     t.hp=Math.max(0,t.hp-damage);
     if(C.targetedThisRound) C.targetedThisRound.add(t.id);
+    // Vagan Corrosive Coating (AGE zone trait) — any ENEMY Basic Attack has a 25% chance to apply
+    // a 10-dmg-per-turn DoT to the player unit it hit. Cleansed early if that unit gains ANY DEF
+    // Up buff afterward (checked at the point the buff is applied, not here).
+    if(isEnemy&&abilityKey==='basic'){
+      const zone=DATA.zones.find(z=>z.id===C.zoneId);
+      if(zone?.trait?.id==='vagan_corrosive_coating'&&Math.random()<0.25){
+        applyStatus(t,{type:'dot',value:10,duration:99,corrosive:true}); // duration 99 = persists until cleansed, not a normal timed DoT
+        log(`→ ${nm(t,!isEnemy)} <em>is coated in corrosive residue!</em>`);
+      }
+    }
     // AGE-2-style "crit grants a SPD buff" passive — fires only when this attacker's own crit
     // actually landed, applying a temporary SPD Up to the attacker (not the target).
     if(isCrit&&attacker.passive?.type==='crit_reliable_spd_bonus'){
@@ -1240,10 +1261,18 @@ function onWin(C){
 
   if(C.floor>=10){
     setTimeout(()=>{
-      const remaining=DATA.zones.filter(z=>!S.run.visitedZones.includes(z.id));
+      const remaining=getRemainingRandomizableZones(S.run);
       if(remaining.length===0){
-        $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
-        show('victory');
+        // Every randomizable zone is cleared — if a Final zone exists and hasn't been visited yet,
+        // that's the actual next stop (deliberately, never randomized in). Otherwise (no Final
+        // zone defined yet, or it's somehow already been visited), the run is genuinely complete.
+        const finalZone=DATA.zones.find(z=>z.id==='final');
+        if(finalZone&&!S.run.visitedZones.includes('final')){
+          showZoneTransition([finalZone]);
+        } else {
+          $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
+          show('victory');
+        }
       } else {
         showZoneTransition(remaining);
       }
@@ -1255,6 +1284,16 @@ function onWin(C){
 
 /* ── RUN START ── */
 function startRun(ids){
+  // Per-unit upgrades (Max HP tiers) must NEVER carry over between runs — they live as permanent
+  // fields directly on the shared DATA.playerUnits objects (since those persist across the whole
+  // page session), so without this reset, a unit upgraded in one run would stay permanently
+  // buffed in every future run too. Restore every unit to its true pre-upgrade base and clear the
+  // tier tracking entirely, for every unit in the full known roster — not just the 3 about to be
+  // drafted, since a unit upgraded earlier in a PAST run might not even be one of today's picks.
+  DATA.playerUnits.forEach(u=>{
+    if(u.baseMaxHp!=null){ u.maxHp=u.baseMaxHp; delete u.baseMaxHp; }
+    if(u.upgradeTiers) delete u.upgradeTiers;
+  });
   S.run={zoneId:'earth',currentFloor:1,playerUnitIds:ids,bankedUlt:0,unitHp:{},visitedZones:['earth'],recruitedThisRun:[],doubleAceZone:false,teamUpgrades:{dmg:0,def:0}};
   // init HP tracking to full
   ids.forEach(id=>{const base=byId(id,DATA.playerUnits);if(base) S.run.unitHp[id]=base.maxHp;});
@@ -1991,6 +2030,25 @@ const ZONE_COST_WEIGHTS={
   9:{2:8,3:45,4:47}
 };
 // 1-based zone number for the CURRENT run zone — Earth is always zone 1; every zone visited after
+// Zones eligible to be randomly picked as "the next zone" — every zone except Earth (which is
+// always the fixed 1st zone, never re-rolled) and the Final zone (id==='final', which is ALWAYS
+// the scripted last stop after every other zone is cleared, never a random pick along the way).
+// This exclusion is written explicitly and permanently here, rather than relying on the Final
+// zone simply not existing yet — so the moment it's added later, it's automatically protected
+// with no risk of someone forgetting to special-case it again at that point.
+function getRandomizableZonePool(){
+  return DATA.zones.filter(z=>z.id!=='earth'&&z.id!=='final');
+}
+
+// Returns every zone the player hasn't visited yet this run, drawn from the randomizable pool
+// above — this is what actually feeds the "pick the next zone" roll. A zone can only ever be
+// visited once per run (visitedZones tracks that), and the Final zone is never part of this pool
+// at all, so it can only ever be reached on purpose once every other zone has been cleared.
+function getRemainingRandomizableZones(run){
+  const pool=getRandomizableZonePool();
+  return pool.filter(z=>!(run||S.run).visitedZones.includes(z.id));
+}
+
 // it counts up from there using how many zones the player has actually cleared this run, NOT the
 // zone's fixed position in DATA.zones (since zones 2+ are meant to be randomized/shuffled once
 // more exist). Falls back to the last defined tier if the run somehow goes past zone 9 for now.
@@ -2153,8 +2211,13 @@ function advanceAfterReward(){
   S.activePassives=S.activePassives.map(p=>({...p,floorsLeft:p.floorsLeft-1})).filter(p=>p.floorsLeft>0);
   S.run.currentFloor++;
   if(S.run.currentFloor>10){
-    const remaining=DATA.zones.filter(z=>!S.run.visitedZones.includes(z.id));
+    const remaining=getRemainingRandomizableZones(S.run);
     if(remaining.length===0){
+      const finalZone=DATA.zones.find(z=>z.id==='final');
+      if(finalZone&&!S.run.visitedZones.includes('final')){
+        showZoneTransition([finalZone]);
+        return;
+      }
       $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
       show('victory');
       return;
