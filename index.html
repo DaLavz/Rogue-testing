@@ -626,7 +626,8 @@ const hpColor=(cur,max)=>{ const pct=max>0?cur/max*100:0; return pct>50?'var(--g
 // bar elsewhere on screen still shows the real full name (via boss.name directly), unaffected.
 const SQUARE_DISPLAY_NAME_OVERRIDE={
   "Char Aznable's Sazabi":'Sazabi',
-  "Ramba Ral's Gouf Custom":'Gouf Custom'
+  "Ramba Ral's Gouf Custom":'Gouf Custom',
+  "Zeheart Galette's Gundam Legilis":'Legilis'
 };
 // STANDING RULE: the in-combat unit square and the turn-order strip should ALWAYS show just the
 // core machine name — never a pilot's possessive name, never the literal word "Gundam" cluttering
@@ -635,26 +636,38 @@ const SQUARE_DISPLAY_NAME_OVERRIDE={
 // generic rule could produce a sane result (e.g. "Char Aznable's Sazabi" -> "Sazabi").
 function squareDisplayName(fullName){
   if(SQUARE_DISPLAY_NAME_OVERRIDE[fullName]) return SQUARE_DISPLAY_NAME_OVERRIDE[fullName];
-  // Strip the word "Gundam" wherever it appears (prefix, suffix, or mid-string), not just as a
-  // literal leading "Gundam " — this is what let "RX-78-2 Gundam" and "Calamity Gundam" keep or
-  // mangle the word before, since the old check only matched it at the very start of the string.
+  // Strip the word "Gundam" wherever it appears, same as before.
   let cleaned=fullName.replace(/\bGundam\b/gi,'').replace(/\s{2,}/g,' ').trim();
-  if(!cleaned) cleaned=fullName; // degenerate case: name was ONLY the word "Gundam" — keep original
+  if(!cleaned) cleaned=fullName;
   if(cleaned.length<=14) return cleaned;
-  // Still too long — if it STARTS with a model-number-style token (GAT-X105, RX-78-2, AGE-1, etc.,
-  // matching the same pattern recognized elsewhere as non-distinctive), drop that token first and
-  // re-check, since the real machine name is virtually always the word(s) AFTER the model code,
-  // not the code itself (e.g. "GAT-X105 Strike" should show "Strike", not "GAT-X105").
-  const words=cleaned.split(' ');
-  if(words.length>1&&/^[A-Z]{1,4}-?[A-Z0-9]{1,4}(-\d+)?$/.test(words[0])){
-    const withoutPrefix=words.slice(1).join(' ');
-    if(withoutPrefix.length<=14) return withoutPrefix;
-    cleaned=withoutPrefix; // still too long, fall through to the generic word-boundary truncation below
+
+  // STANDING RULE follow-through: for names with a leading possessive pilot clause ("Char
+  // Aznable's Sazabi", "Yurin L'Ciel's Farsia"), forward truncation kept landing on the PILOT's
+  // name instead of the machine's, since the pilot clause always comes first and is often long
+  // enough to eat the whole 14-char budget by itself. Mirrors shortName's proven approach instead:
+  // scan backward from the END of the name, accumulating whole words, and stop BEFORE crossing
+  // into a possessive clause or a known-generic skip word — whatever's accumulated by then is the
+  // actual machine name, regardless of how long the pilot-name prefix in front of it was.
+  const words=cleaned.split(' ').filter(w=>w.length>0);
+  let collected=[];
+  for(let i=words.length-1;i>=0;i--){
+    const word=words[i];
+    const clean=word.replace(/[^a-zA-Z0-9'-]/g,'');
+    const isPossessive=/'s$/.test(word)||/^[A-Z]['’]/.test(word); // "Char's", "L'Ciel's" etc.
+    if(isPossessive) break; // hit the pilot-name boundary — everything collected so far is the machine name
+    if(SHORTNAME_SKIP.has(clean.toLowerCase())&&collected.length>0) break; // generic word AFTER already collecting something real — stop here
+    collected.unshift(word);
+    const joined=collected.join(' ');
+    if(joined.length>=14&&collected.length>1){ collected.shift(); break; } // don't blow the budget by grabbing one extra word
   }
-  // Truncate on a WORD boundary, never mid-word — find the last space within the 14-char budget.
+  const result=collected.join(' ').trim();
+  if(result) return result.length<=14?result:result.substring(0,14);
+
+  // Fallback: nothing survived the backward scan (e.g. a name that's ENTIRELY possessive clauses) —
+  // truncate on a word boundary from the front rather than return an empty string.
   const cut=cleaned.substring(0,14);
   const lastSpace=cut.lastIndexOf(' ');
-  return lastSpace>3?cut.substring(0,lastSpace):cut; // keep at least a few chars even if no good break point
+  return lastSpace>3?cut.substring(0,lastSpace):cut;
 }
 
 // Picks the most distinctive word of a unit's name for compact UI labels (turn strip etc).
@@ -716,6 +729,10 @@ function rps(atkCat,defCat,attackerIsEnemy){
 function critChance(u){ return clamp(0.05+u.spd/100,0.05,0.40); }
 
 /* ── DAMAGE ── */
+function hasCombatModifier(id){
+  return !!(S.run&&S.run.combatModifiers&&S.run.combatModifiers.includes(id));
+}
+
 function calcDmg(atk,def,mult,pierce,isCrit){
   const cfg=DATA.combatConfig;
   // Negate-chance passive (e.g. Crossbone X1's anti-beam I-Field): rolled BEFORE any other damage
@@ -734,13 +751,24 @@ function calcDmg(atk,def,mult,pierce,isCrit){
   const rpsMult=rps(atk.category,def.category,attackerIsEnemy);
   const critMult=isCrit?cfg.critMultiplier:1;
   const v=1+randF(-cfg.varianceRange,cfg.varianceRange);
-  return {damage:Math.max(1,Math.round(floored*mult*rpsMult*critMult*v)),isCrit,rpsMult};
+  let finalDamage=Math.max(1,Math.round(floored*mult*rpsMult*critMult*v));
+  // Full Cloth Armoring (Combat Modifier) — once owned, no single hit can ever exceed 30% of the
+  // TARGET's max HP, regardless of source or multiplier stack. Applied as the very last clamp,
+  // after every other multiplier (RPS, crit, variance) has already been factored in.
+  if(hasCombatModifier('full_cloth_armoring')){
+    const cap=Math.round(def.maxHp*0.3);
+    if(finalDamage>cap) finalDamage=cap;
+  }
+  return {damage:finalDamage,isCrit,rpsMult};
 }
 
 /* ── STATUS ── */
 function applyStatus(target,eff){
   if(!target.statuses) target.statuses=[];
   const t=eff.type;
+  // ATK Down immunity (e.g. Barbatos Lupus Rex's Max Aggression) — the debuff simply never lands,
+  // checked before anything else so it can't even be queued and then no-op later.
+  if(t==='atk_down'&&target.passive?.immuneToAtkDown) return;
   // remove same type first
   target.statuses=target.statuses.filter(s=>s.type!==t);
   const push=(type,mod,val,dur,lbl,cls)=>target.statuses.push({type,mod,value:val,duration:dur,label:lbl,cls});
@@ -789,10 +817,16 @@ function rebuildMods(u){
 function tickDot(u){
   const msgs=[];
   if(!u.statuses) return msgs;
+  // Fang Barrage (Combat Modifier) — every DoT tick happens TWICE instead of once, for the rest
+  // of the run once owned. Applied as a flat multiplier on the per-tick damage rather than
+  // literally calling this function twice, which would also double the duration countdown below —
+  // the doc's intent is "ticks harder", not "the DoT expires in half the time".
+  const fangMult=hasCombatModifier('fang_barrage')?2:1;
   for(const s of u.statuses){
     if(s.type==='dot'&&s.dotValue){
-      u.hp=Math.max(0,u.hp-s.dotValue);
-      msgs.push(`${u.name} takes <span class="log-damage">${s.dotValue}</span> burn damage`);
+      const dmg=s.dotValue*fangMult;
+      u.hp=Math.max(0,u.hp-dmg);
+      msgs.push(`${u.name} takes <span class="log-damage">${dmg}</span> burn damage`);
     }
   }
   u.statuses=u.statuses.map(s=>({...s,duration:s.duration-1})).filter(s=>s.duration>0);
@@ -816,8 +850,16 @@ function buildOrder(cb){
 // a guaranteed 100% (always leaves the player some window), and never reduces a roll below its
 // zone-1 baseline either.
 function aiAggressionBonus(){
-  const zIdx=currentZoneIndex(); // 0 = Earth
-  return Math.min(0.25,zIdx*0.10); // +10% per zone past Earth, capped at +25% total
+  // BUGFIX: this used to read currentZoneIndex(), which finds a zone's FIXED position in the
+  // static DATA.zones array (Earth=0, UC Space=1, AGE=2, ALWAYS, regardless of which slot they
+  // actually land in for a given run) — not the zone's real position in the randomized run
+  // sequence. That meant UC Space was always treated as "zone 2 difficulty" even when it was
+  // genuinely the player's 3rd or 4th zone, and AGE always "zone 3" even as zone 2. Switched to
+  // currentZoneNumber(), which is correctly 1-indexed on visitedZones.length (the actual sequence
+  // position) — Earth is always 1, so subtract 1 to get the same "0 = no boost yet" baseline this
+  // function always intended.
+  const seqIdx=currentZoneNumber()-1; // 0 = Earth (always 1st), 1 = the 2nd zone visited, etc.
+  return Math.min(0.25,seqIdx*0.10); // +10% per zone past Earth, capped at +25% total
 }
 
 function aiAction(enemy,C){
@@ -885,17 +927,39 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   else if(ab.target==='self') tlist=[]; // no damage targets — self/team buff-only ultimate (e.g. Guntank's Fortress Mode)
   else tlist=isEnemy?C.playerUnits.filter(p=>p.hp>0):C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
 
+  // DRAGOON Calibration (Combat Modifier) — owned permanently for the rest of the run once picked
+  // up. Only ever applies to the PLAYER's own single-target hits (matches the doc's framing of it
+  // as a player-side upgrade, not something that also empowers enemies). When the attacker has the
+  // genuine RPS advantage against their original single target, there's a 20% chance the hit
+  // expands to hit every living enemy instead of just the one — same multiplier, just spread wider.
+  if(!isEnemy&&ab.target==='single'&&tlist[0]&&hasCombatModifier('dragoon_calibration')){
+    const hasAdvantage=rps(attacker.category,tlist[0].category,false)>1;
+    if(hasAdvantage&&Math.random()<0.2){
+      tlist=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+      log(`<span class="log-system">⚡ DRAGOON Calibration triggers — the attack spreads to every enemy!</span>`);
+    }
+  }
+
   // energy
   if(abilityKey==='basic'){
-    const gain=(attacker.passive?.type==='energy_boost'&&!isEnemy)?cfg.energyPerBasic+attacker.passive.value:cfg.energyPerBasic;
+    // Prefer the ability's OWN energyGain value when the data specifies one (e.g. Gundam Bael's
+    // Basic is hand-set to 3 instead of the global default) — falls back to the energy_boost
+    // passive check, then the global default, for units that don't override it directly.
+    const ownGain=ab.energyGain;
+    const gain=ownGain!=null?ownGain:((attacker.passive?.type==='energy_boost'&&!isEnemy)?cfg.energyPerBasic+attacker.passive.value:cfg.energyPerBasic);
     if(!isEnemy) C.playerEnergy=Math.min(cfg.energyMax,C.playerEnergy+gain);
     else C.enemyEnergy=Math.min(cfg.energyMax,C.enemyEnergy+gain);
   } else if(abilityKey==='special'){
     if(!isEnemy) C.playerEnergy=Math.max(0,C.playerEnergy-(ab.energyCost||0));
     else C.enemyEnergy=Math.max(0,C.enemyEnergy-(ab.energyCost||0));
   } else if(abilityKey==='ultimate'){
-    if(!isEnemy) C.playerUlt=0;
-    else C.enemyUlt=0;
+    // Ult Momentum (Gundam Bael) — when BAEL HIMSELF uses his Ultimate, the shared gauge banks
+    // 20% of whatever it was at instead of resetting fully to 0. Other units' Ultimates still
+    // reset the shared gauge normally — this is specifically about Bael's own usage.
+    if(!isEnemy){
+      const bankPercent=attacker.passive?.type==='energy_boost_and_ult_bank'?attacker.passive.ultBankPercent:0;
+      C.playerUlt=bankPercent?Math.round(C.playerUlt*bankPercent):0;
+    } else C.enemyUlt=0;
   }
 
   const nm=(u,enemySide)=>{
@@ -928,7 +992,22 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       const wasTargeted=C.targetedLastRound&&C.targetedLastRound.has(attacker.id);
       if(!wasTargeted) effMult=effMult*attacker.passive.value;
     }
-    const {damage,rpsMult,negated}=calcDmg(attacker,t,effMult,ab.defPierce||0,isCrit);
+    // Debuff Exploiter (Kimaris Vidar) — bonus damage against a target that currently has ANY
+    // active debuff (atk_down, def_down, spd_down, or the corrosive dot), rewarding it for pairing
+    // with a debuffer ally rather than needing to apply debuffs itself.
+    if(attacker.passive?.type==='debuffed_target_dmg_bonus'){
+      const targetIsDebuffed=t.statuses&&t.statuses.some(s=>['atk_down','def_down','spd_down'].includes(s.type));
+      if(targetIsDebuffed) effMult=effMult*attacker.passive.value;
+    }
+    // Lock-On Targeting (Flauros) — bonus DEF pierce on the 2nd consecutive Basic Attack against
+    // the SAME target. Tracked via a simple "last target" field on the attacker itself, reset
+    // whenever a different target is hit (or a non-Basic ability is used).
+    let lockOnPierce=0;
+    if(abilityKey==='basic'&&attacker.passive?.type==='consecutive_hit_pierce'){
+      if(attacker.lastBasicTargetId===t.id) lockOnPierce=attacker.passive.pierceValue;
+      attacker.lastBasicTargetId=t.id;
+    }
+    const {damage,rpsMult,negated}=calcDmg(attacker,t,effMult,(ab.defPierce||0)+lockOnPierce,isCrit);
     if(negated){
       log(`→ ${nm(t,!isEnemy)} <em>deflects the beam attack entirely!</em>`);
       continue;
@@ -936,6 +1015,27 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     const prev=t.hp;
     t.hp=Math.max(0,t.hp-damage);
     if(C.targetedThisRound) C.targetedThisRound.add(t.id);
+    // Pain Tolerance (Gusion Rebake) — bonus energy whenever hit by an enemy Special specifically
+    // (not Basic, not Ultimate). Checked here, right where the hit actually lands.
+    if(isEnemy&&abilityKey==='special'&&t.passive?.type==='gains_energy_on_enemy_special'){
+      C.playerEnergy=Math.min(DATA.combatConfig.energyMax,C.playerEnergy+t.passive.value);
+      log(`→ <span class="log-system">${nm(t,false)} grits through the hit — +${t.passive.value} energy!</span>`);
+    }
+    // Counter-Puncher family (Barbatos line) — the unit that just took this hit has a chance to
+    // fire back immediately with a free counter-Basic, at a (possibly boosted) multiplier, before
+    // anything else resolves. Some versions cost the counterer HP each time it triggers — a real
+    // risk/reward tradeoff, not just a free action. Checked here (right after damage lands) rather
+    // than as a separate ability slot, since it's reactive, not something the player chooses to use.
+    if(t.hp>0&&!t.defeated&&t.passive?.type==='counter_chance'&&attacker.hp>0&&!attacker.defeated&&Math.random()<t.passive.chance){
+      const counterMult=(t.passive.counterMultiplier||1)*(t.basic?.multiplier||1);
+      const counterIsEnemy=C.enemyUnits.includes(t);
+      const cIsCrit=Math.random()<critChance(t);
+      const {damage:counterDmg}=calcDmg(t,attacker,counterMult,0,cIsCrit);
+      attacker.hp=Math.max(0,attacker.hp-counterDmg);
+      if(t.passive.hpCost) t.hp=Math.max(0,t.hp-t.passive.hpCost);
+      log(`→ <span class="log-system">${nm(t,counterIsEnemy)} counters! <span class="log-damage">-${counterDmg} HP</span> → ${nm(attacker,!counterIsEnemy)}</span>${t.passive.hpCost?` <em>(-${t.passive.hpCost} HP self-cost)</em>`:''}`);
+      if(attacker.hp<=0&&!attacker.defeated){attacker.defeated=true;log(`<strong>${nm(attacker,!counterIsEnemy)}</strong> is defeated.`);}
+    }
     // Vagan Corrosive Coating (AGE zone trait) — any ENEMY Basic Attack has a 25% chance to apply
     // a 10-dmg-per-turn DoT to the player unit it hit. Cleansed early if that unit gains ANY DEF
     // Up buff afterward (checked at the point the buff is applied, not here).
@@ -980,6 +1080,19 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   // damage targets). Was Ultimate-only; now also works on Specials, for support units whose core
   // kit action is a buff rather than damage.
   if(!isEnemy&&(abilityKey==='ultimate'||abilityKey==='special')&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
+  // team heal (whole active party) — e.g. Flauros's Field Repair Bits, Gusion Rebake's Field
+  // Medic Protocol, Lupus Rex's Field Repair Surge. Fires independently of teamBuff below, so a
+  // single ability can do both (heal AND buff) when the data specifies healValue alongside teamBuff.
+  if(!isEnemy&&(abilityKey==='ultimate'||abilityKey==='special')&&ab.healValue){
+    const healed=[];
+    for(const ally of C.playerUnits){
+      if(ally.hp<=0||ally.defeated) continue;
+      const before=ally.hp;
+      ally.hp=Math.min(ally.maxHp,ally.hp+ab.healValue);
+      if(ally.hp>before) healed.push(ally.name);
+    }
+    if(healed.length) log(`→ <span class="log-heal">+${ab.healValue} HP</span> → whole party`);
+  }
   // team buff (whole active party, not just the caster) — e.g. Mk-II's Super Gundam Formation,
   // Guntank's Fortress Mode. Was Ultimate-only; now also works on Specials, since some support
   // units' signature ability (not their Ult) is meant to be a no-damage, team-wide buff.
@@ -994,7 +1107,30 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   // defeats
   for(const t of tlist){
     if(t.hp<=0&&!t.defeated){
+      // SEED Mode revive — if this exact unit is the one a SEED Mode Legendary was assigned to,
+      // and that one-time revive hasn't been spent yet this run, catch it here BEFORE the defeat
+      // is finalized: restore some HP and skip marking it defeated at all. Checks whether the
+      // TARGET is a player unit (via direct membership), NOT whether the attacker is an enemy —
+      // the original version checked the attacker's side, which is always false in the one
+      // scenario that actually matters (an enemy landing the killing blow on a player unit).
+      const targetIsPlayerUnit=C.playerUnits.includes(t);
+      if(targetIsPlayerUnit&&t.id===S.run.seedModeUnitId&&!S.run.seedModeUsed){
+        S.run.seedModeUsed=true;
+        t.hp=Math.round(t.maxHp*0.3);
+        log(`<span class="log-phase">⚡ SEED Mode activates! ${nm(t,false)} refuses to fall!</span>`);
+        continue; // skip the defeat entirely for this unit
+      }
       t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);
+      // Exam System (Combat Modifier) — when an ACTIVE PLAYER ALLY is defeated, the other two
+      // surviving active units get a temporary ATK buff, turning a loss into a comeback window
+      // rather than just a straight loss of board presence.
+      if(C.playerUnits.includes(t)&&hasCombatModifier('exam_system')){
+        for(const ally of C.playerUnits){
+          if(ally.id===t.id||ally.hp<=0||ally.defeated) continue;
+          applyStatus(ally,{type:'atk_up',value:1.25,duration:3});
+        }
+        log(`<span class="log-status">⚡ Exam System activates — the remaining team gains +25% ATK!</span>`);
+      }
       // Pacifist Protocol's kill bonus (e.g. AGE-3) — landing the killing blow grants the whole
       // team a temporary ATK buff, a small reward for an otherwise restraint-focused kit.
       if(!isEnemy&&attacker.passive?.type==='basic_debuff_chance_kill_team_buff'&&attacker.passive.killTeamBuff){
@@ -1186,7 +1322,12 @@ async function runRound(C){
       }
     }
   }
-  endRound(C);
+  // Extra-turn queue (e.g. Bit Communication) — processed only after the round's NORMAL order is
+  // fully exhausted, never interleaved with it, so it can never desync resumeRound's id-lookup.
+  // Drains via a dedicated function rather than recursing back into runRound, since runRound's top
+  // does once-per-round setup (trait reapplication, stacking auras, the targeted-last-round shift)
+  // that must NEVER run twice for what is still fundamentally the same round.
+  drainExtraTurnQueue(C);
 }
 
 async function resumeRound(C){
@@ -1196,6 +1337,14 @@ async function resumeRound(C){
   playPendingFx(C);
   renderRes(C);
   if(checkEnd(C)) return;
+  // If the unit that just acted was drawn from the extra-turn queue (Bit Communication), continue
+  // draining that queue directly — the normal currentOrder/indexOf logic below is specifically for
+  // resuming the round's ORIGINAL turn order, which has nothing to do with queued extra turns and
+  // would desync against duplicate-elsewhere ids if it tried to handle both.
+  if(C.inExtraTurnPhase){
+    C.inExtraTurnPhase=false;
+    return drainExtraTurnQueue(C);
+  }
   const ord=C.currentOrder||[];
   const idx=ord.indexOf(C.activeUnit?.id);
   const rest=ord.slice(idx+1);
@@ -1223,7 +1372,8 @@ async function resumeRound(C){
       if(act){execAbility(unit,act.ability,[act.target],C,true);renderField(C);playPendingFx(C);renderRes(C);await delay(450);}
     }
   }
-  endRound(C);
+  // Normal rest-of-round loop finished — drain any queued extra turns before actually ending the round.
+  return drainExtraTurnQueue(C);
 }
 
 function endRound(C){
@@ -1232,6 +1382,41 @@ function endRound(C){
   renderRes(C);
   if(checkEnd(C)) return;
   setTimeout(()=>runRound(C),180);
+}
+
+// Drains Bit Communication's extra-turn queue, one unit at a time, AFTER the round's normal turn
+// order has already fully finished. Mirrors the same per-unit turn logic as runRound/resumeRound's
+// main loops, but deliberately kept as its own function rather than recursing back into either of
+// those — both of them do once-per-round setup at their top that must never repeat mid-round.
+async function drainExtraTurnQueue(C){
+  while(C.extraTurnQueue&&C.extraTurnQueue.length){
+    if(checkEnd(C)) return;
+    const uid=C.extraTurnQueue.shift();
+    const unit=[...C.playerUnits,...C.enemyUnits].find(u=>u.id===uid);
+    if(!unit||unit.hp<=0||unit.defeated) continue;
+    const isPlayer=C.playerUnits.includes(unit);
+    if(isPlayer){
+      C.inExtraTurnPhase=true; // tells resumeRound which logic path to continue with after this unit acts
+      setActive(unit.id);
+      C.waitingForPlayer=true;
+      C.activeUnit=unit;
+      updateActionBar(unit,C);
+      return; // wait for the player's input — resumeRound checks inExtraTurnPhase and continues draining after
+    } else {
+      lockActionBar();
+      setActive(unit.id);
+      await delay(380);
+      const act=aiAction(unit,C);
+      if(act){
+        execAbility(unit,act.ability,[act.target],C,true);
+        renderField(C);
+        playPendingFx(C);
+        renderRes(C);
+        await delay(450);
+      }
+    }
+  }
+  endRound(C);
 }
 
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -1363,12 +1548,30 @@ function startFloor(run){
       if(t==='team_atk_up') u.atk=Math.round(u.atk*p.effect.value);
       else if(t==='team_def_up') u.def=Math.round(u.def*p.effect.value);
       else if(t==='team_spd_up') u.spd=Math.round(u.spd*p.effect.value);
+      else if(t==='trans_am_phase'){
+        // Whole-team, all-three-stats multiplier — burst phase boosts everything, hangover phase
+        // weakens everything. Reads whichever phase this particular entry is currently in.
+        const mult=p.phase==='burst'?p.burstMult:p.hangoverMult;
+        u.atk=Math.round(u.atk*mult);u.def=Math.round(u.def*mult);u.spd=Math.round(u.spd*mult);
+      }
     }
     // apply permanent team-wide DMG/DEF upgrades bought this run (separate from the temporary
     // passive-boost items above — these never expire, they last the whole run)
     if(run.teamUpgrades){
       if(run.teamUpgrades.dmg) u.atk=Math.round(u.atk*(1+TEAM_UPGRADE_PERCENT_PER_TIER*run.teamUpgrades.dmg));
       if(run.teamUpgrades.def) u.def=Math.round(u.def*(1+TEAM_UPGRADE_PERCENT_PER_TIER*run.teamUpgrades.def));
+    }
+    // AGE Systeme — +5% ATK/DEF per ACTIVE unit (so 3 active units = +15% at 1 stack), multiplied
+    // further by however many zone transitions have passed since picking it up. Recalculated fresh
+    // here every stage build, same as everything else in this loop, rather than baked permanently
+    // into the unit's stats — so it scales correctly even if the active roster changes mid-run.
+    if(run.combatModifiers&&run.combatModifiers.includes('age_systeme')){
+      const ageItem=DATA.items.find(it=>it.id==='age_systeme');
+      const perUnit=ageItem?.effect?.percentPerUnit||0.05;
+      const activeCount=run.playerUnitIds.length;
+      const stacks=run.ageSystemeStacks||1;
+      const bonus=1+perUnit*activeCount*stacks;
+      u.atk=Math.round(u.atk*bonus);u.def=Math.round(u.def*bonus);
     }
     return u;
   }).filter(Boolean);
@@ -1391,14 +1594,6 @@ async function startRoundAfterIntro(C){
   runRound(C);
 }
 
-// Systematic per-zone enemy stat scaling — HP and ATK both get +10% per zone past Earth, applied
-// here at encounter-build time rather than relying on each zone's base unit data being hand-tuned
-// to roughly hit a target growth curve. This makes the scaling a hard, consistent rule instead of
-// an approximation, and it'll apply correctly and automatically to every future zone too.
-function enemyZoneStatMultiplier(){
-  return 1+currentZoneIndex()*0.10; // Earth (index 0) = 1.0x, no boost; +10% per zone after
-}
-
 function buildEncounter(zone,floor,isBoss,isAce){
   let ids=[];
   if(isBoss){ids=[zone.bossId];}
@@ -1412,13 +1607,12 @@ function buildEncounter(zone,floor,isBoss,isAce){
     const cnt=Math.random()<.33?3:2;
     for(let i=0;i<cnt;i++) ids.push(pick(zone.gruntPool));
   }
-  const statMult=enemyZoneStatMultiplier();
   const units=ids.map(id=>{
     const base=byId(id,DATA.enemyUnits);if(!base) return null;
     const u=clone(base);
     u.instanceId=id+'_'+Math.random().toString(36).substr(2,5);
     u.id=u.instanceId;u.baseId=base.id;
-    u.maxHp=Math.round(u.maxHp*statMult);u.hp=u.maxHp;u.atk=Math.round(u.atk*statMult);
+    u.hp=u.maxHp;
     u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];u.phaseTriggered=false;u.defeated=false;
     u.tokensSpawned=false;
     return u;
@@ -2031,6 +2225,11 @@ function zoneRarityMultiplier(rarity,zoneIndex){
   const bumpPerZone={Common:0,Uncommon:0.08,Rare:0.12,Epic:0.15,Legendary:0.18};
   return 1+(bumpPerZone[rarity]||0)*zoneIndex;
 }
+// WARNING: this returns a zone's FIXED position in the static DATA.zones array (Earth=0,
+// UC Space=1, AGE=2, ALWAYS) — it has nothing to do with which slot that zone occupies in the
+// CURRENT run's randomized sequence. Every per-zone difficulty/rarity/price scaling system should
+// use currentZoneNumber() instead, which is keyed on the run's actual visitedZones progress. This
+// function was previously mis-used for exactly that purpose in 3 places (now fixed) — don't repeat it.
 function currentZoneIndex(){
   if(!S.run) return 0;
   return DATA.zones.findIndex(z=>z.id===S.run.zoneId);
@@ -2110,10 +2309,10 @@ function pickUnitFromGlobalPoolByZone(run){
   if(!candidates.length) return null; // truly nothing recruitable exists anywhere — caller handles this
 
   // Series bias — within whichever cost tier was actually settled on above, units whose series
-  // matches the CURRENT zone's own series get a STRICT 60/40 split: 60% chance to pick from
-  // same-series candidates only, 40% chance to pick from candidates EXCLUDING that series (not
+  // matches the CURRENT zone's own series get a STRICT 70/30 split: 70% chance to pick from
+  // same-series candidates only, 30% chance to pick from candidates EXCLUDING that series (not
   // just re-rolling the full pool, which would let the same series win on both branches and push
-  // the real rate well past 60%). Earth and UC Space currently share seriesName 'UC', so this
+  // the real rate well past 70%). Earth and UC Space currently share seriesName 'UC', so this
   // treats them as one continuous UC-leaning pool rather than splitting "Earth's own" from "UC
   // Space's own" — that matches how the global pool already works everywhere else. If either side
   // of the split has zero candidates, falls through to whichever side actually has options.
@@ -2122,7 +2321,7 @@ function pickUnitFromGlobalPoolByZone(run){
     const seriesMatches=candidates.filter(u=>u.series===zone.seriesName);
     const seriesOthers=candidates.filter(u=>u.series!==zone.seriesName);
     if(seriesMatches.length&&seriesOthers.length){
-      return Math.random()<0.6?pick(seriesMatches):pick(seriesOthers);
+      return Math.random()<0.7?pick(seriesMatches):pick(seriesOthers);
     }
     if(seriesMatches.length) return pick(seriesMatches); // nothing outside this series at this cost — no real choice anyway
     // else: no series-matching candidates at all — falls through to the full pool below
@@ -2166,9 +2365,14 @@ function getBossRecruitCostByZone(bossUnit){
 const ITEM_WEIGHT_OVERRIDE={newtype_gene:2.6};
 
 function weightedPick(items){
-  const zIdx=currentZoneIndex();
-  // Extra one-time boost when the cleared stage was an ace fight inside a double-ace zone variant —
-  // these fights are tougher than a normal stage, so the reward should feel noticeably better.
+  // BUGFIX: same currentZoneIndex() identity bug as aiAggressionBonus — was scaling rarity odds
+  // by a zone's fixed array position rather than its real position in this run's sequence.
+  const zIdx=currentZoneNumber()-1;
+  // Extra one-time boost after a genuinely tougher fight (ace or boss) — set by showReward right
+  // before calling generateRewardPool, cleared immediately after. Stacks multiplicatively on top
+  // of zoneRarityMultiplier below, by design — a boss clear early in the run can roll better loot
+  // than a normal stage much later on, since what's being rewarded is the fight's difficulty, not
+  // just how far into the run you are.
   const bonusBoost=S._rewardBonusBoost||{};
   const weights=items.map(it=>(RARITY_WEIGHT[it.rarity]||10)*zoneRarityMultiplier(it.rarity,zIdx)*(1+(bonusBoost[it.rarity]||0))*(ITEM_WEIGHT_OVERRIDE[it.id]||1));
   const total=weights.reduce((s,w)=>s+w,0);
@@ -2180,13 +2384,40 @@ function weightedPick(items){
   return items[items.length-1];
 }
 
+// Permanent-effect items must never reappear in the reward pool while their effect is already
+// active/owned — otherwise they'd stack in ways that don't make sense (two copies of a one-time
+// run-changer, or two units somehow both "having" SEED Mode). Each category has its own real
+// storage location to check, since they don't all live in S.inventory the same way a normal
+// stackable consumable would:
+//   - run_changer (Newtype Gene): lives in S.inventory once picked up, excluded once owned there.
+//   - combat_modifier (DRAGOON Calibration): does NOT go through S.inventory at all — it's pushed
+//     straight into S.run.combatModifiers by applyReward, so THAT list is what must be checked.
+//   - seed_mode specifically: doesn't go through applyReward/S.inventory either (it has its own
+//     picker flow) — excluded only while S.run.seedModeUnitId is set AND not yet used. Once the
+//     revive is actually spent (seedModeUsed=true), it correctly becomes eligible again, since
+//     the doc's intent is "only one unit has it at a time," not "only once per run forever."
+function isItemEligibleForRewardPool(item){
+  if(item.id==='seed_mode'){
+    return !(S.run.seedModeUnitId&&!S.run.seedModeUsed);
+  }
+  // AGE Systeme is data-categorized as run_changer (a Legendary, one-per-run unique) but is
+  // actually STORED in S.run.combatModifiers, not S.inventory — checked explicitly here rather
+  // than relying on the generic run_changer branch below, which only ever looks at S.inventory
+  // and would never see it.
+  if(item.id==='age_systeme'){
+    return !(S.run.combatModifiers&&S.run.combatModifiers.includes('age_systeme'));
+  }
+  if(item.category==='run_changer'){
+    return !S.inventory.some(i=>i.id===item.id);
+  }
+  if(item.category==='combat_modifier'){
+    return !(S.run.combatModifiers&&S.run.combatModifiers.includes(item.id));
+  }
+  return true;
+}
+
 function generateRewardPool(){
-  // Build eligible pool: exclude owned unique legendaries (run_changer)
-  const owned=new Set(S.inventory.map(i=>i.id));
-  let pool=DATA.items.filter(it=>{
-    if(it.category==='run_changer'&&owned.has(it.id)) return false; // already have this legendary
-    return true;
-  });
+  let pool=DATA.items.filter(isItemEligibleForRewardPool);
   const currencyItems=pool.filter(it=>it.category==='currency');
   const nonCurrency=pool.filter(it=>it.category!=='currency');
 
@@ -2212,13 +2443,21 @@ function generateRewardPool(){
 
 function showReward(C){
   show('reward');
-  const isBonusAceReward=C.isAce&&C.isDoubleAce;
-  $('reward-title').textContent=(isBonusAceReward?'⚔ Ace Defeated — ':'')+'Stage '+C.floor+' Cleared';
+  // Better loot after a genuinely tougher fight — applies to EVERY ace and boss clear. These
+  // exact multipliers were tuned EMPIRICALLY against the real generateRewardPool() output (not
+  // just calculated in isolation — the real pool has multiple distinct items per rarity tier plus
+  // a separate currency-slot roll, which shapes the final percentages differently than a clean
+  // per-rarity weight calculation would predict). Verified via direct measurement: ace now gives
+  // Uncommon as the clear plurality (~45%) with a real Rare presence (~25%), Common suppressed to
+  // ~26% — genuinely "mostly uncommon, some rare". Boss gives a real Legendary shot (~14%, nearly
+  // 5x the ~2.8% baseline) while Uncommon/Rare both stay strong and Common drops to ~21%.
+  const titlePrefix=C.isBoss?'👑 Boss Defeated — ':C.isAce?'⚔ Ace Defeated — ':'';
+  $('reward-title').textContent=titlePrefix+'Stage '+C.floor+' Cleared';
   $('reward-bar').style.display='none';
   const cards=$('reward-cards');cards.innerHTML='';
-  // Better rewards for clearing an ace fight inside a double-ace zone variant — these fights
-  // replace what would normally be easier grunt stages, so the payoff should feel proportionate.
-  S._rewardBonusBoost=isBonusAceReward?{Uncommon:0.25,Rare:0.4,Epic:0.5,Legendary:0.6}:null;
+  if(C.isBoss) S._rewardBonusBoost={Common:-0.6,Uncommon:1.5,Rare:3.0,Epic:3.0,Legendary:6.0};
+  else if(C.isAce) S._rewardBonusBoost={Common:-0.5,Uncommon:2.5,Rare:2.0,Epic:1.0,Legendary:0.8};
+  else S._rewardBonusBoost=null;
   const picked=generateRewardPool();
   S._rewardBonusBoost=null; // one-shot, never leaks into the next (normal) reward screen
   let sel=null;
@@ -2247,6 +2486,11 @@ function showReward(C){
       showInstantHealPicker(sel,()=>advanceAfterReward());
       return;
     }
+    // SEED Mode: prompt which active unit it permanently attaches to, then advance
+    if(sel.effect.type==='seed_mode_assign'){
+      showSeedModePicker(sel,()=>advanceAfterReward());
+      return;
+    }
     applyReward(sel);
     advanceAfterReward();
   };
@@ -2254,7 +2498,18 @@ function showReward(C){
 
 function advanceAfterReward(){
   // tick passive durations
-  S.activePassives=S.activePassives.map(p=>({...p,floorsLeft:p.floorsLeft-1})).filter(p=>p.floorsLeft>0);
+  S.activePassives=S.activePassives.map(p=>{
+    const next={...p,floorsLeft:p.floorsLeft-1};
+    // Trans-Am-style phase transition: when the BURST phase's duration runs out, flip into the
+    // HANGOVER phase with its own separate duration, instead of just expiring like a normal
+    // single-phase passive would. This is checked here so it correctly survives across however
+    // many zone transitions happen to fall in between — the tick-down loop itself is already
+    // zone-agnostic, this just adds "and also switch phases at the right moment" on top of it.
+    if(next.phase==='burst'&&next.floorsLeft<=0&&next.hangoverDuration){
+      return {...next,phase:'hangover',floorsLeft:next.hangoverDuration};
+    }
+    return next;
+  }).filter(p=>p.floorsLeft>0);
   S.run.currentFloor++;
   if(S.run.currentFloor>10){
     const remaining=getRemainingRandomizableZones(S.run);
@@ -2278,6 +2533,12 @@ function showZoneTransition(remainingZones){
   show('transition');
   const nextZone=pick(remainingZones);
   S.run._pendingNextZone=nextZone.id;
+
+  // AGE Systeme — gains one more stack every zone transition, on top of however many active
+  // units it already scales with. Only increments if the player actually owns it.
+  if(S.run.combatModifiers&&S.run.combatModifiers.includes('age_systeme')){
+    S.run.ageSystemeStacks=(S.run.ageSystemeStacks||1)+1;
+  }
 
   // Alive units are fully healed. Dead (defeated) units are revived, but only at 30% HP, not full.
   const revivedIds=[];
@@ -2652,6 +2913,33 @@ function showInstantHealPicker(item,onDone){
   });
 }
 
+// SEED Mode — a Legendary that, once picked at a reward screen, must be assigned to ONE of the
+// player's 3 currently active units. That specific unit (tracked by id for the rest of the run,
+// even if later swapped to storage and back) will revive once if it's ever defeated. This is a
+// deliberate departure from the design doc's original "catch at 1 HP, never actually die" framing
+// — confirmed explicitly as wanted: a genuine revive instead.
+function showSeedModePicker(item,onDone){
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.9rem">${item.name} — choose which unit this attaches to. That unit will revive once if it's ever defeated this run.</div></div>`;
+  S.run.playerUnitIds.forEach(id=>{
+    const base=byId(id,DATA.playerUnits);if(!base) return;
+    h+=`<button class="seedmode-pick-btn" data-id="${id}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary)">
+      <span style="font-weight:600">${base.name}</span>
+    </button>`;
+  });
+  openOverlay('Assign '+item.name,h);
+  document.querySelectorAll('.seedmode-pick-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const id=btn.dataset.id;
+      S.run.seedModeUnitId=id;
+      S.run.seedModeUsed=false; // one revive available, not yet spent
+      closeOverlay();
+      if(onDone) onDone();
+    });
+  });
+}
+
+
 function applyReward(item){
   if(item.effect.type==='currency'){S.currency+=item.effect.value;return;}
   // Passive boosts become active buffs with stage-duration
@@ -2660,6 +2948,24 @@ function applyReward(item){
       id:item.id,name:item.name,effect:item.effect,
       floorsLeft:item.effect.duration_floors||5
     });
+    return;
+  }
+  // Combat Modifiers — run-permanent, never expire and never get consumed. Once picked up, the
+  // effect just IS true for the rest of the run, checked by id wherever the relevant mechanic
+  // resolves (see hasCombatModifier below). Stored separately from S.inventory since these aren't
+  // "items you use", they're standing rule changes — closer to a quiet, permanent passive.
+  if(item.category==='combat_modifier'){
+    if(!S.run.combatModifiers) S.run.combatModifiers=[];
+    if(!S.run.combatModifiers.includes(item.id)) S.run.combatModifiers.push(item.id);
+    return;
+  }
+  // AGE Systeme — a Legendary that behaves like a combat modifier (run-permanent, never consumed)
+  // but ALSO keeps growing every zone transition, so it gets its own dedicated stack counter
+  // rather than being a flat always-on effect. Starts at 1 stack the moment it's picked up.
+  if(item.effect.type==='age_systeme_assign'){
+    if(!S.run.combatModifiers) S.run.combatModifiers=[];
+    if(!S.run.combatModifiers.includes(item.id)) S.run.combatModifiers.push(item.id);
+    if(!S.run.ageSystemeStacks) S.run.ageSystemeStacks=1;
     return;
   }
   // Stackable consumables (Repair Spray, MS Repair Kit) merge into one inventory entry with a count,
@@ -2725,13 +3031,16 @@ function showInventory(){
     h+=`<div class="overlay-section"><div class="overlay-value" style="color:var(--text-muted)">No items yet.</div></div>`;
     openOverlay('Inventory',h);return;
   }
+  const transAmActive=S.activePassives.some(p=>p.effect?.type==='trans_am_phase');
   S.inventory.forEach((it,idx)=>{
-    const usable=canUse&&it.category==='consumable';
+    const blockedByTransAm=it.effect?.type==='trans_am'&&transAmActive;
+    const usable=canUse&&it.category==='consumable'&&!blockedByTransAm;
     const countLabel=it.count>1?` <span style="color:var(--gold);font-family:var(--font-mono)">x${it.count}</span>`:'';
     h+=`<div style="background:var(--bg-card);border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
         <div style="font-weight:600;font-size:.95rem">${it.name}${countLabel}</div>
-        ${usable?`<button class="inv-use-btn" data-idx="${idx}" style="background:var(--gold);color:var(--bg-void);border-radius:5px;padding:.3rem .7rem;font-size:.82rem;font-weight:700;cursor:pointer">Use</button>`:''}
+        ${usable?`<button class="inv-use-btn" data-idx="${idx}" style="background:var(--gold);color:var(--bg-void);border-radius:5px;padding:.3rem .7rem;font-size:.82rem;font-weight:700;cursor:pointer">Use</button>`
+          :blockedByTransAm?`<span style="color:var(--text-dim);font-size:.78rem">Already active</span>`:''}
       </div>
       <div style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:.2rem">${it.description}</div>
     </div>`;
@@ -2766,6 +3075,84 @@ function useConsumable(idx){
     resumeRound(C); // costs the turn
     return;
   }
+  if(eff.type==='fill_energy_overflow_ult'){
+    // Overdrive Cell — fills energy like GN Condenser, but the "overflow surge" also grants a
+    // flat bonus to the shared Ultimate gauge, the upgraded version of the basic energy refill.
+    C.playerEnergy=DATA.combatConfig.energyMax;
+    C.playerUlt=Math.min(100,C.playerUlt+(eff.ultBonus||0));
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — energy refilled, +${eff.ultBonus}% Ult gauge from the overflow!</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    renderRes(C);
+    resumeRound(C);
+    return;
+  }
+  if(eff.type==='fill_ult_gauge'){
+    // Psycommu Burst — instant flat Ultimate gauge fill.
+    C.playerUlt=Math.min(100,C.playerUlt+eff.value);
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — +${eff.value}% Ult gauge!</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    renderRes(C);
+    resumeRound(C);
+    return;
+  }
+  if(eff.type==='extra_self_turn'){
+    // Propellant Tank — single-unit version of Bit Communication's team-wide extra turn. Queues
+    // just the user itself onto the same extra-turn-queue mechanism, reusing the exact same
+    // draining logic (drainExtraTurnQueue) rather than building a separate one-off path.
+    const userId=C.activeUnit.id;
+    C.extraTurnQueue=[...(C.extraTurnQueue||[]),userId];
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — an immediate extra turn!</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    resumeRound(C);
+    return;
+  }
+  if(eff.type==='next_upgrade_discount'){
+    // Haro Support Unit — flags a one-time discount for the NEXT zone transition's upgrade shop
+    // specifically, consumed the moment that shop is actually opened (see renderUpgradeScreen/
+    // getUpgradeCost), not immediately on use — there's no shop open right now to discount.
+    S.run.nextUpgradeDiscount=eff.value;
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — next upgrade shop discounted ${Math.round(eff.value*100)}%!</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    resumeRound(C);
+    return;
+  }
+  if(eff.type==='extra_team_turn'){
+    // Queues a genuine second turn for every currently-alive active player unit, processed AFTER
+    // the round's normal turn order finishes. Deliberately NOT implemented by appending duplicate
+    // ids into currentOrder itself — resumeRound finds its position via indexOf(activeUnit.id),
+    // which only ever finds the FIRST occurrence of an id, so a duplicate id elsewhere in the
+    // array would desync that lookup and cause turns to replay incorrectly (including enemies').
+    const aliveIds=C.playerUnits.filter(p=>p.hp>0&&!p.defeated).map(p=>p.id);
+    C.extraTurnQueue=[...(C.extraTurnQueue||[]),...aliveIds];
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — the whole team gets an extra turn this round!</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    resumeRound(C); // costs the turn that activated it, same as every other consumable
+    return;
+  }
+  if(eff.type==='trans_am'){
+    // Can't activate a new Trans-Am while one is already running, in EITHER phase — most
+    // importantly during the hangover penalty (when the whole team is weakened), since trying to
+    // "refresh" out of a self-inflicted debuff would defeat the point of it being a real cost.
+    const alreadyActive=S.activePassives.some(p=>p.effect?.type==='trans_am_phase');
+    if(alreadyActive) return;
+    S.activePassives.push({
+      id:item.id,name:item.name,
+      phase:'burst',floorsLeft:eff.burstDuration,
+      burstMult:eff.burstMult,hangoverMult:eff.hangoverMult,hangoverDuration:eff.hangoverDuration,
+      effect:{type:'trans_am_phase'} // placeholder so the generic passive-reader code doesn't choke on a missing .effect.type
+    });
+    log(`<span class="log-system">${C.activeUnit.name} activates ${item.name}! The whole team surges with power.</span>`);
+    S.inventory.splice(idx,1);
+    closeOverlay();
+    startFloor(S.run); // re-apply this stage's units immediately so the burst is felt right away, not next stage
+    resumeRound(C);
+    return;
+  }
 }
 
 function getHealCap(unit){
@@ -2785,42 +3172,29 @@ function showHealPicker(itemIdx,amount){
   const C=S.combat;
   const item=S.inventory[itemIdx];
   const healer=C.activeUnit;
+  // Per-TURN cap still applies (2 uses normally, 3 for units with the heal_cap_boost passive) —
+  // that part was never meant to go away. What's actually removed is the per-FIGHT cumulative
+  // tracking and the same-target lock: a unit can use up to its cap in ONE turn, then later in
+  // the SAME fight (after the round comes back around to it) use its cap again, on any target,
+  // with no memory of what it healed earlier in the fight.
   const cap=getHealCap(healer);
-  const usage=C.healUsage[healer.id];
-  const splitHeal=hasSplitHeal(healer);
-  const lockedTarget=(!splitHeal&&usage&&usage.count>0)?usage.targetId:null;
-  const remainingCap=cap-(usage?usage.count:0);
-
-  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Restore ${amount} HP per use — choose a target, then how many to use.</div></div>`;
-  if(lockedTarget){
-    const lt=C.playerUnits.find(u=>u.id===lockedTarget);
-    h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.75rem;color:var(--text-muted)">${healer.name} already healed ${lt?lt.name:'?'} this fight — must continue healing the same target.</div></div>`;
-  } else if(splitHeal&&usage&&usage.count>0){
-    h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.75rem;color:var(--gold)">${healer.name}'s split-heal passive lets this go to a different unit.</div></div>`;
-  }
+  let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Restore ${amount} HP per use — choose a target, then how many to use (up to ${cap} this turn).</div></div>`;
 
   C.playerUnits.forEach((u,i)=>{
     if(u.hp<=0) return;
-    const lockedOut=lockedTarget&&u.id!==lockedTarget;
     const col=hpColor(u.hp,u.maxHp);
-    h+=`<button class="heal-pick-btn${lockedOut?' heal-locked':''}" data-i="${i}" ${lockedOut?'disabled':''} style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-left:5px solid ${col};border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:${lockedOut?'not-allowed':'pointer'};color:var(--text-primary);opacity:${lockedOut?'.4':'1'}">
+    h+=`<button class="heal-pick-btn" data-i="${i}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-left:5px solid ${col};border-radius:6px;padding:.55rem .65rem;margin-bottom:.4rem;cursor:pointer;color:var(--text-primary)">
       <span style="font-weight:600">${u.name}</span>
       <span style="float:right;font-family:var(--font-mono);font-size:.8rem;color:${col}">${u.hp}/${u.maxHp}</span>
     </button>`;
   });
   openOverlay('Use '+item.name,h);
-  document.querySelectorAll('.heal-pick-btn:not(.heal-locked)').forEach(btn=>{
+  document.querySelectorAll('.heal-pick-btn').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
       const i=parseInt(btn.dataset.i);
       const target=C.playerUnits[i];
-
-      if(remainingCap<=0){
-        log(`<span class="log-system">${healer.name} has no heals left to use this fight.</span>`);
-        closeOverlay();
-        return;
-      }
-      showHealQuantityPicker(itemIdx,amount,target,remainingCap);
+      showHealQuantityPicker(itemIdx,amount,target,cap);
     });
   });
 }
@@ -2866,12 +3240,8 @@ function applyHealUses(itemIdx,amount,target,qty){
   const item=S.inventory[itemIdx];
   const healer=C.activeUnit;
 
-  if(!C.healUsage[healer.id]) C.healUsage[healer.id]={count:0,targetId:null};
-  const hu=C.healUsage[healer.id];
-
   const before=target.hp;
   target.hp=Math.min(target.maxHp,target.hp+amount*qty);
-  hu.count+=qty;hu.targetId=target.id;
 
   log(`<span class="log-system">${healer.name} uses ${item.name} x${qty} on ${target.name} — <span class="log-heal">+${target.hp-before} HP</span> [${before}→${target.hp}].</span>`);
 
@@ -3096,7 +3466,8 @@ $('btn-garage-done').addEventListener('click',()=>showUpgradeScreen());
 const PER_UNIT_UPGRADE_COSTS=[25,50,100,200,400];
 function getUpgradeCost(tier){
   // tier = the tier ABOUT TO BE PURCHASED (1-indexed) — cost to go from tier-1 to tier
-  return PER_UNIT_UPGRADE_COSTS[Math.min(tier-1,PER_UNIT_UPGRADE_COSTS.length-1)];
+  const base=PER_UNIT_UPGRADE_COSTS[Math.min(tier-1,PER_UNIT_UPGRADE_COSTS.length-1)];
+  return S.run?.nextUpgradeDiscount?Math.round(base*(1-S.run.nextUpgradeDiscount)):base;
 }
 const UPGRADE_MAX_TIER=5;
 const HP_PERCENT_PER_TIER=0.03; // +3% max HP per tier
@@ -3108,7 +3479,8 @@ const TEAM_UPGRADE_MAX_TIER=4;
 const TEAM_UPGRADE_COSTS=[125,250,500,750];
 function getTeamUpgradeCost(tier){
   // tier = the tier ABOUT TO BE PURCHASED (1-indexed)
-  return TEAM_UPGRADE_COSTS[Math.min(tier-1,TEAM_UPGRADE_COSTS.length-1)];
+  const base=TEAM_UPGRADE_COSTS[Math.min(tier-1,TEAM_UPGRADE_COSTS.length-1)];
+  return S.run?.nextUpgradeDiscount?Math.round(base*(1-S.run.nextUpgradeDiscount)):base;
 }
 const TEAM_UPGRADE_PERCENT_PER_TIER=0.05;
 
@@ -3125,14 +3497,14 @@ function renderUpgradeScreen(){
   // progress and a dedicated Buy button, rather than cramming all of that into the row itself —
   // this is what was making the screen feel oversized/unreadable on narrow phones.
   const teamTiers=S.run.teamUpgrades||(S.run.teamUpgrades={dmg:0,def:0});
-  h+=`<div class="reward-card rarity-Rare" style="cursor:default">
+  h+=`<div class="reward-card rarity-Rare" style="cursor:default;overflow:visible">
     <div class="reward-card-tile" style="min-height:50px">
       <div>
         <div class="reward-card-name">Squad-Wide Upgrades</div>
         <div class="reward-card-sub">Affects all 3 equipped units at once</div>
       </div>
     </div>
-    <div class="reward-card-desc" style="display:block;max-height:160px;overflow-y:auto">
+    <div class="reward-card-desc" style="display:block;max-height:160px;overflow-y:scroll;-webkit-overflow-scrolling:touch">
       ${renderUpgradeSummaryRow('team','dmg','Team Damage',teamTiers.dmg,TEAM_UPGRADE_MAX_TIER)}
       ${renderUpgradeSummaryRow('team','def','Team Defense',teamTiers.def,TEAM_UPGRADE_MAX_TIER)}
     </div>
@@ -3282,7 +3654,10 @@ function flashCurrency(){
     setTimeout(()=>el.classList.remove('upgrade-row-flash'),650);
   });
 }
-$('btn-upgrades-done').addEventListener('click',()=>enterNextZone());
+$('btn-upgrades-done').addEventListener('click',()=>{
+  S.run.nextUpgradeDiscount=null; // consumed for this visit, win or not used at all — never carries to a future shop
+  enterNextZone();
+});
 
 function showShop(){
   show('shop');
@@ -3291,10 +3666,16 @@ function showShop(){
 
 function renderShop(){
   $('shop-currency').textContent=S.currency;
-  const shopStock=DATA.items.filter(it=>it.category==='consumable'); // heals + energy cells; no run_changers/heal_reward in shop
+  // Every non-Legendary consumable is shop-stockable — this was previously just category-filtered
+  // with no rarity check at all, which let Trans-Am (a Legendary consumable) slip into the shop
+  // despite it being deliberately meant to be a rare, hard-to-get pickup, not something you can
+  // just buy repeatedly. Legendaries stay reward-screen/dice-check-only.
+  const shopStock=DATA.items.filter(it=>it.category==='consumable'&&it.rarity!=='Legendary');
   // Shop prices scale up modestly per zone — this is intentionally separate from the upgrade
   // system above, which instead escalates by HOW MANY TIERS YOU'VE BOUGHT, not by zone at all.
-  const zoneIdx=currentZoneIndex();
+  // BUGFIX: same currentZoneIndex() identity bug as aiAggressionBonus — shop prices were scaling
+  // by a zone's fixed array position rather than its real position in this run's sequence.
+  const zoneIdx=currentZoneNumber()-1;
   const shopZoneMultiplier=1+Math.max(0,zoneIdx)*0.25;
   let h='';
   shopStock.forEach(item=>{
@@ -3334,7 +3715,7 @@ function renderShop(){
   });
 }
 
-const SHOP_PRICES={repair_spray:25,ms_repair_kit:75,gn_condenser:150};
+const SHOP_PRICES={repair_spray:25,ms_repair_kit:75,gn_condenser:150,bit_communication:350};
 
 /* ── SHOP INVENTORY / HEAL-TURN SYSTEM (mirrors combat's heal rules, but turn-based by fixed unit order) ── */
 function openShopInventory(){
