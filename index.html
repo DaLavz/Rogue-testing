@@ -749,14 +749,14 @@ function rps(atkCat,defCat,attackerIsEnemy){
 }
 
 /* ── CRIT CHANCE ── */
-function critChance(u){ return clamp(0.05+u.spd/100+(u.critBonusThisRound||0),0.05,0.40); }
+function critChance(u){ return clamp(0.05+u.spd/100+(u.critBonusThisRound||0)+(u.storageCritBonus||0),0.05,0.40); }
 
 /* ── DAMAGE ── */
 function hasCombatModifier(id){
   return !!(S.run&&S.run.combatModifiers&&S.run.combatModifiers.includes(id));
 }
 
-function calcDmg(atk,def,mult,pierce,isCrit){
+function calcDmg(atk,def,mult,pierce,isCrit,abilityKey){
   const cfg=DATA.combatConfig;
   // Negate-chance passive (e.g. Crossbone X1's anti-beam I-Field): rolled BEFORE any other damage
   // math — if it triggers, the hit deals exactly 0 regardless of every other multiplier involved.
@@ -775,6 +775,13 @@ function calcDmg(atk,def,mult,pierce,isCrit){
   const critMult=isCrit?cfg.critMultiplier:1;
   const v=1+randF(-cfg.varianceRange,cfg.varianceRange);
   let finalDamage=Math.max(1,Math.round(floored*mult*rpsMult*critMult*v));
+  // The Witch's Calculation (Prospera Mercury's Beguir-Pente) — takes reduced damage specifically
+  // from the player's ULTIMATE ability, checked via the explicit abilityKey parameter rather than
+  // inferring it from the multiplier value, since that would be fragile if any unit's Ultimate
+  // ever happened to share a multiplier with a Special.
+  if(def.passive?.type==='ult_dmg_reduction'&&abilityKey==='ultimate'){
+    finalDamage=Math.max(1,Math.round(finalDamage*def.passive.value));
+  }
   // GN Shot Intercept (Cherudim Gundam) — once per round, the FIRST qualifying hit aimed at any
   // ally on Cherudim's own team gets reduced by the configured percentage. "Biggest hit of the
   // round" isn't knowable in advance (hits resolve one at a time as the round plays out), so this
@@ -1002,11 +1009,31 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(attacker.passive?.type==='twin_drive_gamble'&&attacker.twinDriveSuccessThisRound===false){
       gain=Math.max(0,gain-attacker.passive.failEnergyPenalty);
     }
+    // Permet Score Gamble (Gundam Lfrith) — a SEPARATE roll from the damage-bonus gamble (its own
+    // independent random() call, checked elsewhere in the damage-bonus block above this energy
+    // logic — NOT a shared flag, since the doc frames these as two distinct risks). 10% chance
+    // this exact Basic Attack grants ZERO energy instead of the normal amount.
+    if(attacker.passive?.type==='high_variance_gamble'&&Math.random()<attacker.passive.zeroEnergyChance){
+      gain=0;
+      log(`<span class="log-system">${attacker.name}'s Permet score falters — no energy gained!</span>`);
+    }
     if(!isEnemy) C.playerEnergy=Math.min(cfg.energyMax,C.playerEnergy+gain);
     else C.enemyEnergy=Math.min(cfg.energyMax,C.enemyEnergy+gain);
   } else if(abilityKey==='special'){
     if(!isEnemy) C.playerEnergy=Math.max(0,C.playerEnergy-(ab.energyCost||0));
     else C.enemyEnergy=Math.max(0,C.enemyEnergy-(ab.energyCost||0));
+    // GUND-ARM Synergy (Gundam Schwarzette) — whenever an ally on the SAME side as the attacker
+    // uses ITS OWN Special, and that ally's id is on Schwarzette's configured trigger list, he
+    // gains bonus energy. Checked against every living ally with this passive type, not just one
+    // hardcoded Schwarzette instance, so duplicate copies (if ever recruited twice) would each
+    // independently react.
+    if(!isEnemy){
+      const synergyUnits=C.playerUnits.filter(p=>!p.defeated&&p.hp>0&&p.passive?.type==='ally_special_energy_bonus'&&p.id!==attacker.id&&p.passive.triggerIds?.includes(attacker.recruitedFromPool||attacker.recruitedFrom||attacker.id));
+      for(const syn of synergyUnits){
+        C.playerEnergy=Math.min(cfg.energyMax,C.playerEnergy+syn.passive.value);
+        log(`<span class="log-system">${syn.name} resonates with the GUND-ARM signal — +${syn.passive.value} energy!</span>`);
+      }
+    }
   } else if(abilityKey==='ultimate'){
     // Ult Momentum (Gundam Bael) — when BAEL HIMSELF uses his Ultimate, the shared gauge banks
     // 20% of whatever it was at instead of resetting fully to 0. Other units' Ultimates still
@@ -1066,6 +1093,36 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       const targetIsDebuffed=t.statuses&&t.statuses.some(s=>['atk_down','def_down','spd_down'].includes(s.type));
       if(targetIsDebuffed) effMult=effMult*attacker.passive.value;
     }
+    // Cold Precision (Gundam Pharact) — bonus damage specifically when the (auto-selected,
+    // lowest-DEF) target already has DEF Down active, distinct from Kimaris Vidar's broader
+    // any-debuff bonus above.
+    if(attacker.passive?.type==='lowest_def_target_special'&&abilityKey==='special'){
+      const targetHasDefDown=t.statuses&&t.statuses.some(s=>s.type==='def_down');
+      if(targetHasDefDown) effMult=effMult*attacker.passive.debuffedBonus;
+    }
+    // Marksman's Patience (Gundam Dilanza Hound) — bonus damage on Basic Attacks against a target
+    // that hasn't been hit by ANYONE yet this round. Checked against C.targetedThisRound BEFORE
+    // this hit itself gets registered into that set later in this same function — reading it here
+    // means "was this target untouched up to this exact moment," not after-the-fact.
+    if(attacker.passive?.type==='first_hit_dmg_bonus'&&abilityKey==='basic'){
+      const targetAlreadyHitThisRound=C.targetedThisRound&&C.targetedThisRound.has(t.id);
+      if(!targetAlreadyHitThisRound) effMult=effMult*attacker.passive.value;
+    }
+    // Permet Score Gamble (Gundam Lfrith) — 20% chance of +50% damage on ANY attack (Basic,
+    // Special, or Ultimate), genuinely independent from the separate zero-energy-chance roll in
+    // the energy-gain block — the doc describes these as two distinct risks, not one combined
+    // gamble, so each gets its own roll rather than sharing a single random() call.
+    if(attacker.passive?.type==='high_variance_gamble'&&Math.random()<attacker.passive.bonusDmgChance){
+      effMult=effMult*attacker.passive.bonusDmgValue;
+      log(`<span class="log-system">${attacker.name}'s Permet score surges — bonus damage!</span>`);
+    }
+    // Killer's Instinct (Ali Al-Saachez's Enact Custom) — bonus damage against any target
+    // currently below the configured HP threshold (default 50%), rewarding aggressive finishing
+    // rather than spreading damage evenly.
+    if(attacker.passive?.type==='low_hp_target_dmg_bonus'){
+      const targetIsLowHp=(t.hp/t.maxHp)<(attacker.passive.threshold!=null?attacker.passive.threshold:0.5);
+      if(targetIsLowHp) effMult=effMult*attacker.passive.value;
+    }
     // Lock-On Targeting (Flauros) — bonus DEF pierce on the 2nd consecutive Basic Attack against
     // the SAME target. Tracked via a simple "last target" field on the attacker itself, reset
     // whenever a different target is hit (or a non-Basic ability is used).
@@ -1074,7 +1131,7 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       if(attacker.lastBasicTargetId===t.id) lockOnPierce=attacker.passive.pierceValue;
       attacker.lastBasicTargetId=t.id;
     }
-    const {damage,rpsMult,negated}=calcDmg(attacker,t,effMult,(ab.defPierce||0)+lockOnPierce,isCrit);
+    const {damage,rpsMult,negated}=calcDmg(attacker,t,effMult,(ab.defPierce||0)+lockOnPierce,isCrit,abilityKey);
     if(negated){
       log(`→ ${nm(t,!isEnemy)} <em>deflects the beam attack entirely!</em>`);
       continue;
@@ -1167,6 +1224,19 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       for(const et of etargets){
         if(!et) continue;
         if(immune(et,e.type)){log(`→ ${nm(et,!isEnemy)} is immune`);continue;}
+        // Compounding Affliction (Bring Stabity's Gadessa Custom) — DEF Down from THIS unit's
+        // Special stacks instead of refreshing. Tracked via a stack counter on the target itself
+        // (etDefDownStacks), since the normal applyStatus path always replaces same-type statuses
+        // rather than compounding them — this intercepts that specifically for this one unit/effect
+        // combination, leaving every other unit's debuffs working exactly as before.
+        if(abilityKey==='special'&&e.type==='def_down'&&attacker.passive?.type==='stacking_def_down_on_special'){
+          const maxStacks=attacker.passive.maxStacks||3;
+          et.compoundingDefDownStacks=Math.min(maxStacks,(et.compoundingDefDownStacks||0)+1);
+          const stackedValue=Math.pow(attacker.passive.stackValue,et.compoundingDefDownStacks);
+          applyStatus(et,{...e,value:stackedValue});
+          log(`→ <span class="log-status" data-s="def_down">${statusLabel('def_down')} x${et.compoundingDefDownStacks}</span> → ${nm(et,!isEnemy)} (${e.duration}t)`);
+          continue;
+        }
         applyStatus(et,e);
         log(`→ <span class="log-status" data-s="${e.type}">${statusLabel(e.type)}</span> → ${nm(et,!isEnemy)} (${e.duration}t)`);
       }
@@ -1217,6 +1287,21 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
         continue; // skip the defeat entirely for this unit
       }
       t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);
+      // GN Particle Saturation (00 zone) — resets the SPD-stack count to 0 the instant any ENEMY
+      // dies. Checked via direct membership in C.enemyUnits, not the attacker's side, mirroring
+      // the same correctness fix already applied to the SEED Mode check just above.
+      if(C.enemyUnits.includes(t)) resetGnSaturationOnKill(C);
+      // Six Fingers of Betrayal (Michaelis) — permanently gains ATK for each of HIS OWN spawned
+      // tokens that gets destroyed. Checked generically against any living boss with an
+      // atkPerTokenKilled value on its passive, rather than hardcoded to Michaelis by id — the
+      // token's baseId must match that boss's own tokenId, so killing an unrelated token (e.g. a
+      // Pluma) never accidentally buffs a different boss that happens to also be on the field.
+      const tokenSourceBoss=C.enemyUnits.find(e=>e.passive?.type==='token_spawn'&&e.passive.atkPerTokenKilled&&e.passive.tokenId===t.baseId&&!e.defeated&&e.hp>0);
+      if(tokenSourceBoss){
+        tokenSourceBoss.baseAtkMod=(tokenSourceBoss.baseAtkMod!=null?tokenSourceBoss.baseAtkMod:1)*(1+tokenSourceBoss.passive.atkPerTokenKilled);
+        rebuildMods(tokenSourceBoss);
+        log(`<span class="log-phase">${tokenSourceBoss.name} grows stronger from the betrayal — +${Math.round(tokenSourceBoss.passive.atkPerTokenKilled*100)}% ATK!</span>`);
+      }
       // Pluma Swarm (Hashmal) — a Phase-1 Pluma token that dies gets exactly ONE replacement
       // spawned in its place, tracked via a per-token flag so it can never respawn a second time.
       // Phase-2 tokens (marked isPhase2Token by checkPhase above) are explicitly excluded — once
@@ -1275,6 +1360,20 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
 /* ── ZONE TRAIT ── */
 function applyTrait(C){
   const zone=DATA.zones.find(z=>z.id===C.zoneId);
+  if(zone?.trait?.id==='gn_particle_saturation'){
+    // GN Particle Saturation (00 zone) — +10% SPD per round, stacking, applied to EVERY living
+    // enemy. C.gnSaturationStacks persists across rounds (reset to 0 by resetGnSaturation below,
+    // called wherever an enemy defeat is processed) and increments by 1 here every round this
+    // trait is active, BEFORE applying the multiplier — so round 1 already shows +10%, not 0%.
+    C.gnSaturationStacks=(C.gnSaturationStacks||0)+1;
+    const mult=1+0.10*C.gnSaturationStacks;
+    C.enemyUnits.forEach(e=>{
+      if(e.defeated||e.hp<=0) return;
+      e.gnSaturationMod=mult;
+      e.spdMod=(e.spdMod||1)*mult;
+    });
+    return;
+  }
   if(zone?.trait?.id!=='zaku_squad_tactics') return;
   const alive=C.enemyUnits.filter(e=>!e.defeated&&e.hp>0&&e.family==='zaku');
   if(alive.length<2){alive.forEach(e=>{e.zoneMod=1;});return;}
@@ -1282,12 +1381,27 @@ function applyTrait(C){
   alive.forEach(e=>{e.zoneMod=bonus;e.atkMod=(e.atkMod||1)*bonus;});
 }
 function clearTrait(C){
-  C.enemyUnits.forEach(e=>{if(e.zoneMod){e.atkMod=(e.atkMod||1)/e.zoneMod;e.zoneMod=1;}});
+  C.enemyUnits.forEach(e=>{
+    if(e.zoneMod){e.atkMod=(e.atkMod||1)/e.zoneMod;e.zoneMod=1;}
+    if(e.gnSaturationMod){e.spdMod=(e.spdMod||1)/e.gnSaturationMod;e.gnSaturationMod=null;}
+  });
+}
+// Called wherever an enemy defeat is processed (3 separate sites — the main execAbility defeats
+// loop, and the per-unit loops in resumeRound and drainExtraTurnQueue) — resets the GN Particle
+// Saturation stack count to 0 the instant ANY enemy dies, per the trait's explicit design. Safe to
+// call unconditionally even outside the 00 zone; it's a no-op if the trait isn't active there.
+function resetGnSaturationOnKill(C){
+  const zone=DATA.zones.find(z=>z.id===C.zoneId);
+  if(zone?.trait?.id==='gn_particle_saturation') C.gnSaturationStacks=0;
 }
 
 /* ── BOSS PHASE ── */
 function checkPhase(enemy,C){
-  if(!enemy.phases||enemy.tier!=='boss') return;
+  // Originally boss-only; generalized to also cover aces with their own phases array (e.g. Andrei
+  // Smirnov's Ahead Smultron, whose Phase 2 token-spawn mechanic needs this same system). Grunts
+  // and tokens are still excluded — phase mechanics are deliberately reserved for named, named-kit
+  // enemies, not the generic encounter filler.
+  if(!enemy.phases||(enemy.tier!=='boss'&&enemy.tier!=='ace')) return;
   const hpPct=enemy.hp/enemy.maxHp;
   const ph=enemy.phases[0];
   if(hpPct<ph.threshold&&!enemy.phaseTriggered){
@@ -1442,6 +1556,32 @@ function applyStackingAuras(C){
     src[statKey]=totalBonus;
     rebuildMods(src);
   }
+  // Escalating Permet (Gundam Calibarn) — a genuinely different growth curve from the flat-rate
+  // self-aura above: accumulates at earlyRate per round through round (lateRoundThreshold-1), then
+  // DOUBLES to lateRate from that round onward. Tracked as an accumulated total bonus rather than
+  // stacks*rate, since the rate itself changes mid-fight — a simple stacks counter couldn't
+  // represent "the first 4 rounds grew slower than the rest."
+  const escalatingSources=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='escalating_stacking_aura');
+  for(const src of escalatingSources){
+    const round=C.round||1;
+    const rateThisRound=round>=src.passive.lateRoundThreshold?src.passive.lateRate:src.passive.earlyRate;
+    src.escalatingPermetTotal=(src.escalatingPermetTotal||0)+rateThisRound;
+    src.baseAtkMod=1+src.escalatingPermetTotal;
+    rebuildMods(src);
+  }
+  // Brotherhood of Mercury (Lauda Nobliss's Dilanza Sol) — checked fresh every round, not a
+  // growing stack like the auras above: a flat +12% ATK/+10% DEF that's simply ON or OFF
+  // depending on whether any OTHER WFM-origin unit is currently alive on his own side. Correctly
+  // reverts to 1 the moment that condition stops being true (e.g. the last other WFM ally dies),
+  // rather than permanently locking in once triggered.
+  const brotherhoodUnits=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='ally_series_alive_stat_bonus');
+  for(const src of brotherhoodUnits){
+    const team=C.playerUnits.includes(src)?C.playerUnits:C.enemyUnits;
+    const hasAlly=team.some(ally=>ally!==src&&!ally.defeated&&ally.hp>0&&ally.series===src.passive.requiredSeries);
+    src.baseAtkMod=hasAlly?src.passive.atkMod:1;
+    src.baseDefMod=hasAlly?src.passive.defMod:1;
+    rebuildMods(src);
+  }
 }
 
 async function runRound(C){
@@ -1497,7 +1637,7 @@ async function runRound(C){
     const dots=tickDot(unit);
     dots.forEach(m=>log(m));
     renderField(C);
-    if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);continue;}
+    if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);if(C.enemyUnits.includes(unit)) resetGnSaturationOnKill(C);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
       checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);
@@ -1530,6 +1670,18 @@ async function runRound(C){
 }
 
 async function resumeRound(C){
+  // Propellant Tank's bonus actions — if the unit that just acted still has free actions queued,
+  // consume one and let them go again immediately, skipping turn-order advancement entirely. This
+  // is what makes "use the item, then take 2 more REAL actions" genuinely work, rather than only
+  // refreshing the action bar once after the item itself (which only covered the item's own turn,
+  // not the actions taken afterward).
+  if(C.activeUnit&&C.activeUnit.bonusActionsRemaining>0){
+    C.activeUnit.bonusActionsRemaining--;
+    renderField(C);playPendingFx(C);renderRes(C);
+    if(checkEnd(C)) return;
+    updateActionBar(C.activeUnit,C);
+    return;
+  }
   C.waitingForPlayer=false;
   lockActionBar();
   renderField(C);
@@ -1553,7 +1705,7 @@ async function resumeRound(C){
     if(checkEnd(C)) return;
     const dots=tickDot(unit);dots.forEach(m=>log(m));
     renderField(C);
-    if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);continue;}
+    if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);if(C.enemyUnits.includes(unit)) resetGnSaturationOnKill(C);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
       checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);
@@ -1596,6 +1748,10 @@ async function drainExtraTurnQueue(C){
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
       C.inExtraTurnPhase=true; // tells resumeRound which logic path to continue with after this unit acts
+      // Grants this queued unit 2 real actions too (same mechanism Propellant Tank uses) — set
+      // fresh each time a unit's queued turn begins, consumed by the same bonus-action check at
+      // the top of resumeRound, which runs before the inExtraTurnPhase branch either way.
+      unit.bonusActionsRemaining=1;
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -1757,6 +1913,14 @@ function startFloor(run){
     u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];
     // carry HP between stages (default to full if not tracked yet)
     u.hp=(run.unitHp&&run.unitHp[id]!=null)?run.unitHp[id]:u.maxHp;
+    // GUND-ARM Data Storm (WFM zone trait) — 20 flat damage to any unit that entered THIS floor
+    // at full HP, checked right here before anything else touches u.hp. Field Technician used
+    // BEFORE this point (i.e. during the previous floor's reward/transition) would have already
+    // healed past this check or left the unit below full, correctly preventing the hit — this
+    // only ever sees the HP value as carried in from the previous floor, nothing retroactive.
+    if(zone?.trait?.id==='gund_arm_data_storm'&&u.hp>=u.maxHp&&u.hp>0){
+      u.hp=Math.max(1,u.hp-20); // never lets the storm itself reduce a unit to 0 entering the floor
+    }
     // A unit at 0 HP stays dead/excluded for the rest of the zone — it only comes back at the
     // next zone transition's revive-at-30% step. No per-stage safety-net revive anymore.
     u.defeated=u.hp<=0;
@@ -1794,6 +1958,27 @@ function startFloor(run){
       const stacks=run.ageSystemeStacks||1;
       const bonus=1+perUnit*activeCount*stacks;
       u.atk=Math.round(u.atk*bonus);u.def=Math.round(u.def*bonus);
+    }
+    // Storage Reserve Bonus — units held in storage (recruited but not currently active) grant a
+    // small ATK/DEF % bonus and a tiny flat crit-chance bonus to all 3 active units, scaled by
+    // each stored unit's own cost. Deliberately kept well under Trans-Am's 3x ceiling even at the
+    // theoretical maximum (4 slots, all cost-4 units): the real formula caps out around x1.50 ATK/
+    // DEF and +3.2% crit chance at that extreme, confirmed by direct calculation before this was
+    // implemented — meant to reward holding onto strong recruits, not to rival a genuine ultimate-
+    // tier cooldown like Trans-Am.
+    const storedUnitIds=(run.recruitedThisRun||[]).filter(id=>!run.playerUnitIds.includes(id));
+    if(storedUnitIds.length){
+      let storagePctBonus=0;
+      let storageCritBonus=0;
+      for(const sid of storedUnitIds){
+        const storedUnit=byId(sid,DATA.playerUnits);
+        if(!storedUnit) continue;
+        storagePctBonus+=0.03+0.024*storedUnit.cost;
+        storageCritBonus+=0.008;
+      }
+      u.atk=Math.round(u.atk*(1+storagePctBonus));
+      u.def=Math.round(u.def*(1+storagePctBonus));
+      u.storageCritBonus=storageCritBonus; // read by critChance() at combat time, not baked into a stat field
     }
     return u;
   }).filter(Boolean);
@@ -2146,7 +2331,12 @@ function updateActionBar(u,C){
   // talk button — Talk is always available on a boss fight (regardless of past recruits; duplicates are fine)
   // EXCEPT for a boss with noPilot set (e.g. Hashmal) — there's no pilot to talk down, so the
   // option must never appear here regardless of Newtype Gene ownership, per the design doc.
-  const liveBoss=C.isBoss?C.enemyUnits.find(e=>!e.defeated&&e.hp>0):null;
+  // FIXED: this used to find the FIRST living, non-defeated enemy by array order with no check
+  // that it was actually the boss — meaning a Pluma token (spawned alongside Hashmal) could get
+  // mistaken for "the boss" and incorrectly allow + target Talk on it instead, letting the player
+  // recruit a Pluma even though the real boss is correctly untalkable. Now explicitly requires
+  // tier==='boss', so a token can never be picked up by this lookup regardless of array order.
+  const liveBoss=C.isBoss?C.enemyUnits.find(e=>!e.defeated&&e.hp>0&&e.tier==='boss'):null;
   const hasTalk=S.inventory.some(i=>i.effect?.type==='enable_talk')&&C.isBoss&&!(liveBoss&&liveBoss.noPilot);
   let tb=$('btn-talk');
   if(hasTalk&&!tb){
@@ -2279,6 +2469,17 @@ function selectTarget(uid,C,overrideAction){
   if(uid){const t=C.enemyUnits.find(e=>e.id===uid);if(t) targets=[t];}
   else targets=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
   if(!targets.length) return;
+  // Cold Precision (Gundam Pharact) — Special always resolves against the lowest-DEF living
+  // enemy, overriding whatever the player actually clicked. Checked here rather than at the
+  // button level, since the player still needs to go through the normal target-picker UI flow —
+  // this just substitutes the real target underneath it once a click is made.
+  if(action==='special'&&u.passive?.type==='lowest_def_target_special'){
+    const aliveEnemies=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+    if(aliveEnemies.length){
+      const lowestDef=aliveEnemies.reduce((lo,e)=>(e.def*(e.defMod||1))<(lo.def*(lo.defMod||1))?e:lo,aliveEnemies[0]);
+      targets=[lowestDef];
+    }
+  }
   execAbility(u,action,targets,C,false);
   resumeRound(C);
 }
@@ -2423,7 +2624,10 @@ const TALK_LINES=[
 ];
 
 function doTalk(C){
-  const boss=C.enemyUnits.find(e=>!e.defeated&&e.hp>0);if(!boss||!C.isBoss) return;
+  // FIXED: same bug as the button-visibility check above - this used to find the FIRST living
+  // enemy by array order with no tier check, which could resolve to a Pluma token instead of the
+  // actual boss. Now explicitly requires tier==='boss', so Talk can never target anything else.
+  const boss=C.enemyUnits.find(e=>!e.defeated&&e.hp>0&&e.tier==='boss');if(!boss||!C.isBoss) return;
   const pct=boss.hp/boss.maxHp;
   log(`<span class="log-system">${C.activeUnit.name} attempts <span class="log-skill">Talk</span> with ${boss.name}…</span>`);
   log(`<span class="log-quote">"${pick(TALK_LINES)}"</span>`);
@@ -3002,6 +3206,12 @@ function showReward(C){
       showSeedModePicker(sel,()=>advanceAfterReward());
       return;
     }
+    // Fleet Recon Directive: prompt category/cost now (it needs the player's input before the
+    // reward flow can advance, same reasoning as the two branches above), THEN advance.
+    if(sel.effect.type==='fleet_recon_directive'){
+      showFleetReconPicker(()=>advanceAfterReward());
+      return;
+    }
     applyReward(sel);
     advanceAfterReward();
   };
@@ -3471,7 +3681,7 @@ function showSeedModePicker(item,onDone){
 // Fleet Recon Directive — two-step picker (category, then cost) shown when the item is used.
 // Neither the item nor the player's turn is consumed until BOTH choices are confirmed via the
 // final step's button — backing out by closing the overlay leaves the item untouched in inventory.
-function showFleetReconPicker(idx){
+function showFleetReconPicker(onDone){
   const categories=['Melee','Ranged','Mobility'];
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Choose the TYPE of unit your next encounter this zone will be. The encounter is still a real dice-check — this only decides who shows up, not whether you win them.</div></div>`;
   categories.forEach(cat=>{
@@ -3483,12 +3693,12 @@ function showFleetReconPicker(idx){
   document.querySelectorAll('.fleetrecon-cat-btn').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
-      showFleetReconCostPicker(idx,btn.dataset.cat);
+      showFleetReconCostPicker(btn.dataset.cat,onDone);
     });
   });
 }
 
-function showFleetReconCostPicker(idx,category){
+function showFleetReconCostPicker(category,onDone){
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Choose the COST tier — higher costs are rarer, stronger units.</div></div>`;
   [1,2,3,4].forEach(cost=>{
     h+=`<button class="fleetrecon-cost-btn" data-cost="${cost}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary);font-weight:600">
@@ -3500,20 +3710,36 @@ function showFleetReconCostPicker(idx,category){
     btn.addEventListener('click',e=>{
       e.stopPropagation();
       const cost=parseInt(btn.dataset.cost);
-      const C=S.combat;
-      const item=S.inventory[idx];
       S.run.fleetReconPending={category,cost};
       S.run.fleetReconUsedThisRun=true;
-      log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — the next encounter this zone will be a ${category} unit, Cost ${cost}.</span>`);
-      S.inventory.splice(idx,1);
       closeOverlay();
-      resumeRound(C);
+      if(onDone) onDone();
     });
   });
 }
 
 
 function applyReward(item){
+  // Auto-activating consumables — Haro Support Unit, Jupiter Fleet Manifest, and Fleet Recon
+  // Directive don't affect combat at all (they only flag a future shop/encounter state), so they
+  // activate immediately the moment they're picked from a reward screen rather than sitting in
+  // inventory waiting to be manually used. They still show up in the Actives tab exactly as
+  // before — only the trigger point moved from "use from inventory" to "pick from rewards".
+  if(item.effect.type==='next_upgrade_discount'){
+    S.run.nextUpgradeDiscount=item.effect.value;
+    return;
+  }
+  if(item.effect.type==='jupiter_fleet_manifest'){
+    S.run.jupiterFleetActive=true;
+    return;
+  }
+  if(item.effect.type==='fleet_recon_directive'){
+    // Still needs the player to pick a category/cost — opens the same picker as before, just
+    // triggered from the reward-confirm flow instead of from inventory. The picker itself sets
+    // S.run.fleetReconPending and S.run.fleetReconUsedThisRun once the player actually confirms.
+    showFleetReconPicker(null);
+    return;
+  }
   if(item.effect.type==='currency'){S.currency+=item.effect.value;return;}
   // Passive boosts become active buffs with stage-duration
   if(item.category==='passive_boost'){
@@ -3600,12 +3826,17 @@ function showInventory(){
   const canUse=C&&C.waitingForPlayer&&C.activeUnit; // player's turn in combat
   let h=`<div class="overlay-section"><div class="overlay-label">Currency</div><div class="overlay-value" style="color:var(--gold)">⬡ ${S.currency} G</div></div>`;
   if(canUse) h+=`<div class="overlay-section"><div class="overlay-value" style="color:var(--text-muted);font-size:.78rem">Using an item costs ${C.activeUnit.name}'s turn.</div></div>`;
-  if(!S.inventory.length){
+  // Run-changer items (Newtype Gene, SEED Mode) are deliberately excluded from this list — they
+  // have no "Use" action here at all (permanent once owned), and are already shown clearly in the
+  // Actives tab, so listing them here would just be redundant clutter with nothing to actually do.
+  const displayableItems=S.inventory.filter(it=>it.category!=='run_changer');
+  if(!displayableItems.length){
     h+=`<div class="overlay-section"><div class="overlay-value" style="color:var(--text-muted)">No items yet.</div></div>`;
     openOverlay('Inventory',h);return;
   }
   const transAmActive=S.activePassives.some(p=>p.effect?.type==='trans_am_phase');
-  S.inventory.forEach((it,idx)=>{
+  displayableItems.forEach((it)=>{
+    const idx=S.inventory.indexOf(it); // use the REAL inventory index for the Use button, not the filtered array's position
     const blockedByTransAm=it.effect?.type==='trans_am'&&transAmActive;
     const usable=canUse&&it.category==='consumable'&&!blockedByTransAm;
     const countLabel=it.count>1?` <span style="color:var(--gold);font-family:var(--font-mono)">x${it.count}</span>`:'';
@@ -3671,59 +3902,29 @@ function useConsumable(idx){
     return;
   }
   if(eff.type==='extra_self_turn'){
-    // Propellant Tank — works like an Ultimate: a free action that does NOT consume the user's
-    // own turn at all. Previously this called resumeRound() after queuing the extra turn, which
-    // advanced past the user entirely — they'd lose their CURRENT turn, then have to wait a full
-    // round cycle before the queued extra turn actually arrived. Now there's no queue involved for
-    // the user itself: just close the item overlay and refresh the action bar so this exact same
-    // unit can immediately act again, right now, with a genuine second action this turn.
-    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — acts again immediately!</span>`);
+    // Propellant Tank — using the item itself never ends the turn (no resumeRound call below),
+    // and the unit gets TWO genuinely free real actions afterward, not just one. bonusActionsRemaining
+    // is set to 1 here: the first real action's resumeRound call will see it's >0, consume it, and
+    // let the unit act again instead of advancing the turn; that second action's resumeRound call
+    // then sees 0 remaining and correctly ends the turn as normal.
+    C.activeUnit.bonusActionsRemaining=1;
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — gets 2 free actions this turn!</span>`);
     S.inventory.splice(idx,1);
     closeOverlay();
     renderField(C);renderRes(C);
     updateActionBar(C.activeUnit,C);
     return;
   }
-  if(eff.type==='next_upgrade_discount'){
-    // Haro Support Unit — flags a one-time discount for the NEXT zone transition's upgrade shop
-    // specifically, consumed the moment that shop is actually opened (see renderUpgradeScreen/
-    // getUpgradeCost), not immediately on use — there's no shop open right now to discount.
-    S.run.nextUpgradeDiscount=eff.value;
-    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — next upgrade shop discounted ${Math.round(eff.value*100)}%!</span>`);
-    S.inventory.splice(idx,1);
-    closeOverlay();
-    resumeRound(C);
-    return;
-  }
-  if(eff.type==='jupiter_fleet_manifest'){
-    // Doubles the % bonus of EVERY upgrade tier purchased at the next upgrade shop specifically —
-    // same one-shop-visit lifecycle as Haro Support Unit's discount, cleared on leaving that screen.
-    S.run.jupiterFleetActive=true;
-    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — next upgrade shop's bonuses are doubled!</span>`);
-    S.inventory.splice(idx,1);
-    closeOverlay();
-    resumeRound(C);
-    return;
-  }
-  if(eff.type==='fleet_recon_directive'){
-    // Doesn't consume the item or the turn immediately — opens the category/cost picker first,
-    // THAT picker's confirm button is what actually spends the item and the turn. One-time per
-    // run: applyReward/showFleetReconPicker is responsible for never letting this be picked again
-    // once used (see isItemEligibleForRewardPool).
-    showFleetReconPicker(idx);
-    return;
-  }
   if(eff.type==='extra_team_turn'){
-    // Queues a genuine second turn for every OTHER currently-alive active player unit, processed
-    // AFTER the round's normal turn order finishes — this part is unchanged and correct. What's
-    // fixed here is the USER's own turn: previously they were included in the same queue and lost
-    // their current turn just like everyone else, meaning they specifically had to wait a full
-    // round cycle before their own extra turn ever arrived, even though the rest of the team's
-    // queued turns correctly fired right after the round ended. Now the user is excluded from the
-    // queue and instead gets an immediate second action this turn, exactly like an Ultimate.
+    // Queues a genuine 2-real-action turn for every OTHER currently-alive active player unit,
+    // processed AFTER the round's normal turn order finishes (handled in drainExtraTurnQueue,
+    // which now also sets bonusActionsRemaining per queued unit). The USER's own bonus action
+    // uses the exact same mechanism Propellant Tank does — bonusActionsRemaining=1, consumed by
+    // resumeRound's interception after their first real action, granting a genuine 2nd action.
     const aliveIds=C.playerUnits.filter(p=>p.hp>0&&!p.defeated&&p.id!==C.activeUnit.id).map(p=>p.id);
     C.extraTurnQueue=[...(C.extraTurnQueue||[]),...aliveIds];
-    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — acts again immediately, and the rest of the team gets an extra turn this round too!</span>`);
+    C.activeUnit.bonusActionsRemaining=1;
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — the whole team gets 2 free actions this round!</span>`);
     S.inventory.splice(idx,1);
     closeOverlay();
     renderField(C);renderRes(C);
@@ -4116,7 +4317,7 @@ function getTeamUpgradeCost(tier){
   const base=TEAM_UPGRADE_COSTS[Math.min(tier-1,TEAM_UPGRADE_COSTS.length-1)];
   return S.run?.nextUpgradeDiscount?Math.round(base*(1-S.run.nextUpgradeDiscount)):base;
 }
-const TEAM_UPGRADE_PERCENT_PER_TIER=0.05;
+const TEAM_UPGRADE_PERCENT_PER_TIER=0.10;
 
 function ensureUpgradeTiers(unit){
   if(!unit.upgradeTiers) unit.upgradeTiers={hp:0,atk:0,special:0,ultimate:0};
@@ -4346,11 +4547,13 @@ function showShop(){
 
 function renderShop(){
   $('shop-currency').textContent=S.currency;
-  // Every non-Legendary consumable is shop-stockable — this was previously just category-filtered
-  // with no rarity check at all, which let Trans-Am (a Legendary consumable) slip into the shop
-  // despite it being deliberately meant to be a rare, hard-to-get pickup, not something you can
-  // just buy repeatedly. Legendaries stay reward-screen/dice-check-only.
-  const shopStock=DATA.items.filter(it=>it.category==='consumable'&&it.rarity!=='Legendary');
+  // Every non-Legendary consumable is shop-stockable — EXCEPT auto-activating items (Haro Support
+  // Unit, Jupiter Fleet Manifest), which now trigger immediately when picked from a reward screen
+  // rather than being used from inventory at all. Without this exclusion they'd still pass the
+  // category/rarity check below and show up purchasable in the shop with no way to ever activate
+  // them, since useConsumable no longer has handlers for these effect types.
+  const AUTO_ACTIVATE_EFFECT_TYPES=['next_upgrade_discount','jupiter_fleet_manifest','fleet_recon_directive'];
+  const shopStock=DATA.items.filter(it=>it.category==='consumable'&&it.rarity!=='Legendary'&&!AUTO_ACTIVATE_EFFECT_TYPES.includes(it.effect.type));
   // Flat rarity-based pricing — Common 100, Uncommon 150, Rare 200, no zone scaling and no
   // per-purchase increase (there never was a per-purchase increase; buying something doesn't
   // touch its own price at all, only this flat table decides it). Replaces the old per-item
