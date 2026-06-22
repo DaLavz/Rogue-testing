@@ -123,7 +123,7 @@ button:active{transform:scale(0.97)}
 .boss-hp-track{height:16px;background:var(--bg-card);border-radius:5px;border:1px solid var(--red-dark);overflow:hidden}
 .boss-hp-fill{height:100%;background:linear-gradient(90deg,var(--red-dark),var(--red));border-radius:5px;transition:width .4s ease}
 
-.turn-order-strip{display:flex;gap:.25rem;padding:.3rem .5rem;flex-shrink:1;min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.turn-order-strip{display:flex;gap:.25rem;padding:.3rem .5rem;flex-shrink:1;min-width:0;max-width:100%;min-height:39px;box-sizing:border-box;overflow-x:auto;scrollbar-width:none}
 .turn-order-strip::-webkit-scrollbar{display:none}
 .turn-pip{min-width:58px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.66rem;color:rgba(255,255,255,.65);flex-shrink:0;overflow:hidden;padding:0 4px;transition:all .2s ease}
 .turn-pip.current{min-width:64px;height:30px;border-color:#fff;border-width:2px;background:rgba(255,255,255,.18);color:#fff;font-weight:bold;font-size:.78rem;box-shadow:0 0 8px rgba(255,255,255,.3);transform:translateY(-2px)}
@@ -1635,6 +1635,14 @@ function onWin(C){
   C.playerUnits.forEach(u=>{ S.run.unitHp[u.id]=u.hp; });
   log(`<span class="log-system">— Stage ${C.floor} cleared —</span>`);
 
+  // Flat boss-clear reward — 125G, granted identically whether the boss was defeated outright OR
+  // successfully talked down. Placed here, before the recruit-flow/talk-down branch diverges from
+  // the normal defeat path, so there's no way for one method to grant it and the other to miss it.
+  if(C.isBoss){
+    S.currency+=125;
+    log(`<span class="log-system">⬡ +125 G — boss clear bonus.</span>`);
+  }
+
   if(C.recruitedUnit){
     const recruited=C.recruitedUnit;
     setTimeout(()=>{
@@ -1829,6 +1837,13 @@ function buildEncounter(zone,floor,isBoss,isAce){
     u.hp=u.maxHp;
     u.atkMod=1;u.defMod=1;u.spdMod=1;u.statuses=[];u.phaseTriggered=false;u.defeated=false;
     u.tokensSpawned=false;
+    // Fixed per-zone stat band — GRUNTS ONLY. Aces and bosses are explicitly excluded, keeping
+    // their own hand-tuned fixed stats regardless of which zone they're encountered in.
+    // Fixed per-zone stat band — GRUNTS ONLY, and explicitly NOT tokens (e.g. Pluma) even though
+    // they share tier:'grunt' — a token is a disposable boss-mechanic spawn with deliberately tiny
+    // stats, not a real standalone grunt encounter, and would be broken by a full zone-band roll.
+    if(u.tier==='grunt'&&!u.isToken) applyGruntStatBand(u,currentZoneNumber());
+    if(u.tier==='ace') applyAceStatBand(u,currentZoneNumber());
     return u;
   }).filter(Boolean);
 
@@ -2531,6 +2546,84 @@ const RARITY_WEIGHT={Common:100,Uncommon:58,Rare:5,Epic:8,Legendary:5};
 //   Zones 5-7: Rare becomes a strong presence, Uncommon still shows up, Common fully removed,
 //     Legendary gets a real non-trivial chance (capped at 2 per reward screen).
 //   Zones 8-9: high Rare AND Legendary chance, Uncommon shrinks further, Common stays removed.
+// Fixed per-zone grunt stat bands (HP/ATK/DEF only — SPD stays each unit's own fixed value, since
+// turn order and several units' identities depend on it). Every zone's min equals the PREVIOUS
+// zone's max, by explicit design — no overlap, no gap, a clean continuous ramp. Grunts ONLY: aces
+// and bosses keep their own hand-tuned fixed stats, entirely outside this system.
+const GRUNT_STAT_BANDS={
+  2:{hp:[130,155],atk:[25,32],def:[18,24]},
+  3:{hp:[155,180],atk:[32,39],def:[24,30]},
+  4:{hp:[180,205],atk:[39,46],def:[30,36]},
+  5:{hp:[205,230],atk:[46,53],def:[36,42]},
+  6:{hp:[230,255],atk:[53,60],def:[42,48]},
+  7:{hp:[255,280],atk:[60,67],def:[48,54]},
+  8:{hp:[280,305],atk:[67,74],def:[54,60]},
+  9:{hp:[305,330],atk:[74,81],def:[60,66]}
+};
+// Deterministic per-(unit id, zone number) hash, mapped to a stable 0..1 float — same unit id +
+// same zone number ALWAYS produces the same roll, so "a Dom in zone 4" always has the same stats
+// no matter how many times it's encountered, while "a Dom in zone 6" can roll differently. This is
+// a simple string hash (not cryptographic — doesn't need to be), good enough for stable, repeatable
+// stat assignment across a whole zone.
+function deterministicUnitRoll(unitId,zoneNum){
+  const str=unitId+'|'+zoneNum;
+  let h=0;
+  for(let i=0;i<str.length;i++){
+    h=(h<<5)-h+str.charCodeAt(i);
+    h|=0; // force 32-bit int
+  }
+  return (h>>>0)/4294967295; // unsigned, normalized to 0..1
+}
+// Applies the fixed zone band to a grunt's HP/ATK/DEF in place, using baseId (not the unique
+// instanceId) for the deterministic roll, since baseId is what's actually shared across every
+// copy of "a Dom" — instanceId is unique per spawn and would defeat the whole point of "the same
+// unit always has the same stats in a given zone".
+function applyGruntStatBand(unit,zoneNum){
+  const band=GRUNT_STAT_BANDS[zoneNum];
+  if(!band) return; // zone 1 (Earth) and any zone outside 2-9 keep the unit's own hand-set stats
+  const rollFor=(stat)=>{
+    const r=deterministicUnitRoll(unit.baseId+'|'+stat,zoneNum);
+    const [lo,hi]=band[stat];
+    return Math.round(lo+r*(hi-lo));
+  };
+  unit.hp=rollFor('hp');unit.maxHp=unit.hp;
+  unit.atk=rollFor('atk');
+  unit.def=rollFor('def');
+}
+
+// Fixed per-zone ACE stat bands (HP/ATK/DEF only — SPD untouched, same rationale as grunts).
+// Deliberately sits above that SAME zone's grunt band at every step (e.g. zone 2 ace floor 165 HP
+// vs grunt ceiling 155 HP), so an ace always feels like a real step up from the grunts around it.
+// Zone 2 uses the original (narrower) spread; zone 3 onward uses a deliberately WIDER spread per
+// explicit request — bigger HP/ATK/DEF range within each zone from zone 3 forward. Every zone's
+// min still equals the previous zone's max — no overlap, no gap. Zone 1 (Earth) is excluded, same
+// as grunts: Earth's 3 aces keep their own hand-set stats regardless.
+const ACE_STAT_BANDS={
+  2:{hp:[165,195],atk:[30,38],def:[20,27]},
+  3:{hp:[195,240],atk:[38,50],def:[27,37]},
+  4:{hp:[240,285],atk:[50,62],def:[37,47]},
+  5:{hp:[285,330],atk:[62,74],def:[47,57]},
+  6:{hp:[330,375],atk:[74,86],def:[57,67]},
+  7:{hp:[375,420],atk:[86,98],def:[67,77]},
+  8:{hp:[420,465],atk:[98,110],def:[77,87]},
+  9:{hp:[465,510],atk:[110,122],def:[87,97]}
+};
+// Same shape as applyGruntStatBand — uses baseId (not instanceId) so every copy of "Lalah's
+// Elmeth" gets identical stats within the same zone, and reuses the same deterministicUnitRoll
+// hash function (it's generic on whatever id string is passed in, no ace-specific change needed).
+function applyAceStatBand(unit,zoneNum){
+  const band=ACE_STAT_BANDS[zoneNum];
+  if(!band) return; // zone 1 (Earth) and any zone outside 2-9 keep the unit's own hand-set stats
+  const rollFor=(stat)=>{
+    const r=deterministicUnitRoll(unit.baseId+'|ace|'+stat,zoneNum);
+    const [lo,hi]=band[stat];
+    return Math.round(lo+r*(hi-lo));
+  };
+  unit.hp=rollFor('hp');unit.maxHp=unit.hp;
+  unit.atk=rollFor('atk');
+  unit.def=rollFor('def');
+}
+
 const RARITY_BAND_WEIGHTS={
   1:{Common:100,Uncommon:35,Rare:0,Epic:0,Legendary:0},
   2:{Common:55,Uncommon:60,Rare:25,Epic:12,Legendary:10},
@@ -2570,13 +2663,13 @@ function currentZoneIndex(){
 const ZONE_COST_WEIGHTS={
   1:{1:55,2:42,3:3},
   2:{1:35,2:50,3:15},
-  3:{1:35,2:50,3:15},
-  4:{1:30,2:48,3:22},
-  5:{1:12,2:50,3:33,4:5},
-  6:{1:12,2:50,3:33,4:5},
-  7:{2:12,3:60,4:28},
-  8:{2:8,3:50,4:42},
-  9:{2:8,3:45,4:47}
+  3:{1:25,2:45,3:30},
+  4:{1:12,2:28,3:48,4:12},
+  5:{1:8,2:22,3:50,4:20},
+  6:{1:5,2:18,3:48,4:29},
+  7:{2:12,3:48,4:40},
+  8:{2:6,3:44,4:50},
+  9:{2:4,3:38,4:58}
 };
 // 1-based zone number for the CURRENT run zone — Earth is always zone 1; every zone visited after
 // Zones eligible to be randomly picked as "the next zone" — every zone except Earth (which is
@@ -3111,6 +3204,7 @@ function showDiceCheckEncounter(run,zone,forcedConstraint){
   let selectedUnitId=null;
 
   const render=()=>{
+    try{
     let h=`<div class="overlay-section" style="padding:0"><div style="background:${catColor(candidate.category)};border-radius:8px;padding:1rem;margin-bottom:.6rem;display:flex;flex-direction:column;gap:.3rem">
       <div class="reward-card-name" style="text-align:left">${candidate.name}</div>
       <div class="reward-card-sub" style="text-align:left">${candidate.series} · ${catDisplayName(candidate.category)} · Cost ${candidate.cost}</div>
@@ -3135,8 +3229,18 @@ function showDiceCheckEncounter(run,zone,forcedConstraint){
       btn.addEventListener('click',()=>{ selectedUnitId=btn.dataset.id; render(); });
     });
     $('dc-bar').style.display='block';
+    $('btn-dc-roll').style.display='block';
     $('btn-dc-roll').disabled=!selectedUnitId;
     $('btn-dc-roll').style.opacity=selectedUnitId?'1':'.4';
+    }catch(err){
+      // Surfaces the actual error instead of leaving the screen silently half-built with no
+      // visible roll button — this is the missing piece needed to catch the real cause live,
+      // since every isolated reproduction attempt so far has come back clean.
+      console.error('[DiceCheck render error]',err);
+      $('dc-body').innerHTML=`<div class="overlay-section" style="padding:1rem"><div class="overlay-value" style="color:#ff6a6a">Something went wrong displaying this encounter (${err.message}). Tap Skip to continue — this has been logged to the console.</div></div>`;
+      $('dc-bar').style.display='block';
+      $('btn-dc-roll').style.display='none';
+    }
   };
   render();
 
@@ -3857,16 +3961,15 @@ function updateCaptainNameDisplay(){
 }
 $('btn-how').addEventListener('click',()=>{
   openOverlay('How to Play',`
-    <div class="overlay-section"><div class="overlay-label">The Run</div><div class="overlay-value">Draft 3 Mobile Suits, then fight your way through a sequence of 10 zones — Earth is always your first, the other 9 (UC Space, SEED, 00, AGE, IBO, WFM, Wing, After War X, and a final convergence zone) come in random order. Each zone is 10 stages long: stage 5 is an Ace fight, stage 10 is a Boss. Clear a zone and you fully heal, manage your roster, and move to the next.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Built so far</div><div class="overlay-value" style="font-size:.82rem">Earth, UC Space, AGE, and IBO are fully playable today. The rest are designed but not yet in the game — you'll only ever encounter the 4 above for now.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Combat Basics</div><div class="overlay-value">3 of your units fight 2-3 enemies at once, turn order set by SPD. Each turn: Basic Attack (free, builds Energy), Special (costs Energy, stronger), or Ultimate (free once the shared gauge hits 100%, very strong) — plus Items if you're carrying any.</div></div>
-    <div class="overlay-label" style="margin-top:.3rem">Categories &amp; Type Advantage</div><div class="overlay-value">Every unit is Melee (M), Ranged (R), or Agility/Mobility (A). Melee beats Agility, Agility beats Ranged, Ranged beats Melee — a hit with the advantage deals ×1.5 damage, a hit at a disadvantage only ×0.67. Matching the right unit to the right enemy matters a lot.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Resources</div><div class="overlay-value">Energy (max 8, shared by your team) is spent on Specials and refills from Basic Attacks. The Ult gauge (0–100%, also shared) builds every turn and gets a bigger boost on crits — once it's full, any of your units can unleash their Ultimate for free.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Recruiting New Units</div><div class="overlay-value">Roughly 1 in 3 normal stages offers a recruitment encounter instead of a fight — either a Station (pick 1 of 3 units outright) or a dice-check (beat a roll to win a single offered unit). You start with a roster of 46+ units to pull from across every series, and stronger/rarer units show up more often the deeper into a run you go.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Garage &amp; Storage</div><div class="overlay-value">You can only field 3 units at a time, but you can hold up to 4 more in storage (7 total per run). Swap freely between your active squad and storage at every zone transition — recruiting a unit you don't have room for active just banks it for later.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Upgrades &amp; Items</div><div class="overlay-value">Spend currency at zone transitions on permanent per-unit HP tiers or squad-wide Damage/Defense tiers. Reward screens after every stage offer items: Common/Uncommon consumables and stat buffs are common early; Rare and Legendary items (run-changing effects) get noticeably more likely the deeper you go, and Ace/Boss fights always reward better loot.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Talk &amp; Recruit Bosses</div><div class="overlay-value">With the Newtype Gene Legendary, you can attempt to Talk down a boss instead of finishing the fight — succeed and you recruit them. A few bosses (like IBO's Hashmal) have no pilot and can never be talked down.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Helpful Taps</div><div class="overlay-value">Tap blue unit names or gold skill names in the combat log to see their stats and details. The "Actives" button up top lists every permanent or run-changing effect you currently have active.</div></div>`);
+    <div class="overlay-section"><div class="overlay-label">Your Squad</div><div class="overlay-value">3 units fight at once. You also have 4 storage slots for units you've recruited but aren't using right now — swap freely between active and storage at every zone transition in the Garage.</div></div>
+    <div class="overlay-section"><div class="overlay-label">A Run</div><div class="overlay-value">10 zones, 10 stages each. Stage 5 = Ace fight, Stage 10 = Boss. Clear a zone and you fully heal before moving on. (Only Earth, UC Space, AGE, and IBO exist in the game so far — the rest are planned.)</div></div>
+    <div class="overlay-section"><div class="overlay-label">In a Fight</div><div class="overlay-value">Turn order is set by SPD. Each turn, pick Basic (free, builds Energy), Special (costs Energy), Ultimate (free once the shared gauge hits 100%), or an Item if you're carrying one.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Type Advantage</div><div class="overlay-value">Melee beats Agility, Agility beats Ranged, Ranged beats Melee. The advantage deals ×1.5 damage; the disadvantage only ×0.67 — tap the RPS button anytime to check.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Recruiting</div><div class="overlay-value">Some stages offer a new unit instead of a fight — either pick 1 of 3 outright, or beat a dice-check for a single offered unit. Stronger units show up more often the deeper you go.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Between Zones</div><div class="overlay-value">Spend currency on permanent upgrades — per-unit HP, or squad-wide Damage/Defense — before entering the next zone.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Items & Rarity</div><div class="overlay-value">Rewards appear after every stage. Rare and Legendary items get more common the deeper into a run you are, and Ace/Boss fights always reward better loot.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Talking Down Bosses</div><div class="overlay-value">The Newtype Gene item lets you Talk instead of fight on a boss turn — succeed and you recruit them instead. A few bosses have no pilot and can't be talked down.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Tap to Inspect</div><div class="overlay-value">Tap any blue unit name or gold skill name in the combat log for details. Tap "Actives" up top to see every permanent effect you currently have running.</div></div>`);
 });
 $('btn-restart').addEventListener('click',()=>show('title'));
 $('btn-vic-ok').addEventListener('click',()=>show('title'));
