@@ -1844,6 +1844,7 @@ function buildEncounter(zone,floor,isBoss,isAce){
     // stats, not a real standalone grunt encounter, and would be broken by a full zone-band roll.
     if(u.tier==='grunt'&&!u.isToken) applyGruntStatBand(u,currentZoneNumber());
     if(u.tier==='ace') applyAceStatBand(u,currentZoneNumber());
+    if(u.tier==='boss') applyBossStatBand(u,zone.id==='final'?'final':currentZoneNumber());
     return u;
   }).filter(Boolean);
 
@@ -2622,6 +2623,38 @@ function applyAceStatBand(unit,zoneNum){
   unit.hp=rollFor('hp');unit.maxHp=unit.hp;
   unit.atk=rollFor('atk');
   unit.def=rollFor('def');
+}
+
+// Fixed per-zone BOSS stats — unlike grunts/aces, these are exact values, not a random range. A
+// boss fight is meant to feel precisely as strong as its zone dictates, with zero variance run to
+// run. Covers EVERY zone including Earth (1) and the Final Zone — bosses don't get the "zone 1 is
+// exempt" treatment grunts/aces have, since even the very first boss fight should reflect this
+// table once the run is live. ATK/DEF anchored on Ramba Ral's Gouf Custom's existing real Earth
+// stats (38/22) and stretched up through the Final Zone's doc-fixed 1000 HP for Re:RISE.
+// IMPORTANT: this is the boss's ENEMY-fight stat table only. Once a boss is successfully recruited,
+// its PLAYER-unit stats are completely independent, hand-authored values (see each boss's own
+// recruitCost/playerStats in its data) — never derived from this table at all.
+const BOSS_STAT_BANDS={
+  1:{hp:300,atk:38,def:22},
+  2:{hp:370,atk:48,def:26},
+  3:{hp:450,atk:58,def:30},
+  4:{hp:525,atk:69,def:34},
+  5:{hp:590,atk:79,def:38},
+  6:{hp:650,atk:89,def:42},
+  7:{hp:710,atk:99,def:46},
+  8:{hp:830,atk:110,def:50},
+  9:{hp:900,atk:120,def:54},
+  final:{hp:1000,atk:130,def:58}
+};
+// Applies the FIXED zone value directly — no roll, no per-id hash, since every boss in the same
+// zone slot gets identical stats by design. zoneKey can be a zone number (1-9) or the literal
+// string 'final' for the Final Zone's boss specifically.
+function applyBossStatBand(unit,zoneKey){
+  const fixed=BOSS_STAT_BANDS[zoneKey];
+  if(!fixed) return; // unknown zone key — keep the unit's own hand-set stats as a safe fallback
+  unit.hp=fixed.hp;unit.maxHp=unit.hp;
+  unit.atk=fixed.atk;
+  unit.def=fixed.def;
 }
 
 const RARITY_BAND_WEIGHTS={
