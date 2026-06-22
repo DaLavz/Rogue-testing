@@ -140,6 +140,74 @@
       ],
       "bossFloor": 10,
       "doubleAceChance": 0.25
+    },
+    {
+      "id": "zero_zero",
+      "name": "00",
+      "seriesName": "00",
+      "flavorName": "Celestial Being",
+      "totalFloors": 10,
+      "background": "space",
+      "trait": {
+        "id": "gn_particle_saturation",
+        "name": "GN Particle Saturation",
+        "description": "Every enemy gains +10% SPD per round, stacking. Killing any enemy resets the stacks to 0.",
+        "effectType": "enemy_spd_stack_reset_on_kill",
+        "perRoundPercent": 0.1
+      },
+      "gruntPool": [
+        "flag",
+        "enact",
+        "ahead",
+        "gnx",
+        "gadessa"
+      ],
+      "acePool": [
+        "ali_enact_custom",
+        "bring_gadessa_custom",
+        "andrei_ahead_smultron"
+      ],
+      "bossId": "graham_susanowo",
+      "bossRecruitable": true,
+      "aceFloors": [
+        5
+      ],
+      "bossFloor": 10,
+      "doubleAceChance": 0.25
+    },
+    {
+      "id": "wfm",
+      "name": "WFM",
+      "seriesName": "WFM",
+      "flavorName": "Witch from Mercury",
+      "totalFloors": 10,
+      "background": "space",
+      "trait": {
+        "id": "gund_arm_data_storm",
+        "name": "GUND-ARM Data Storm",
+        "description": "Any unit entering a floor at full HP takes 20 flat damage immediately. Healing before entering a new floor (e.g. with Field Technician) prevents it.",
+        "effectType": "full_hp_floor_start_damage",
+        "flatDamage": 20
+      },
+      "gruntPool": [
+        "dilanza",
+        "zowort",
+        "darilbalde",
+        "gundvolva",
+        "beguir_beu"
+      ],
+      "acePool": [
+        "guel_darilbalde_custom",
+        "prospera_beguir_pente",
+        "lauda_dilanza_sol"
+      ],
+      "bossId": "shaddiq_michaelis",
+      "bossRecruitable": true,
+      "aceFloors": [
+        5
+      ],
+      "bossFloor": 10,
+      "doubleAceChance": 0.25
     }
   ],
   "playerUnits": [
@@ -1064,7 +1132,11 @@
           "value": 0.85,
           "duration": 2
         }
-      }
+      },
+      "introLines": [
+        "\"I can feel your mind reaching for mine... it won't save you.\"",
+        "\"Newtypes were never meant to fight like this. I'm sorry.\""
+      ]
     },
     {
       "id": "haman_qubeley",
@@ -1120,7 +1192,11 @@
           "value": 0.85,
           "duration": 3
         }
-      }
+      },
+      "introLines": [
+        "\"Zeon's glory is mine to reclaim, not yours to interfere with!\"",
+        "\"Kneel, or be crushed beneath the Qubeley's shadow.\""
+      ]
     },
     {
       "id": "full_frontal_sinanju",
@@ -1167,7 +1243,11 @@
         "target": "single",
         "multiplier": 2.6,
         "defPierce": 1.0
-      }
+      },
+      "introLines": [
+        "\"You face the will of a dead man given new purpose. Tremble.\"",
+        "\"This unit was built for one thing — your annihilation.\""
+      ]
     },
     {
       "id": "sazabi",
@@ -1233,7 +1313,8 @@
       "introLines": [
         "\"Newtype or not, you cannot win against thirty years of hatred!\"",
         "\"I am Char Aznable! I will end this — for Lalah, for everyone!\""
-      ]
+      ],
+      "recruitCost": 3
     },
     {
       "id": "gaza_c_token",
@@ -1468,7 +1549,11 @@
         "type": "damage",
         "target": "single",
         "multiplier": 2.3
-      }
+      },
+      "introLines": [
+        "\"Hmph. Vagan blood runs hotter than anything you Earth Federation scum can muster.\"",
+        "\"Don't mistake my caution for fear — it's simply how the strong survive.\""
+      ]
     },
     {
       "id": "yurin_farsia",
@@ -1516,7 +1601,11 @@
         "type": "damage",
         "target": "single",
         "multiplier": 2.2
-      }
+      },
+      "introLines": [
+        "\"I won't apologize for what I'm about to do to you.\"",
+        "\"Every scar I carry is a reason to make sure you carry more.\""
+      ]
     },
     {
       "id": "girard_thieleva",
@@ -1563,7 +1652,11 @@
         "type": "damage",
         "target": "single",
         "multiplier": 2.3
-      }
+      },
+      "introLines": [
+        "\"Strike me down if you can — I only grow stronger for the trouble.\"",
+        "\"Pain is just data. And I have plenty of room left to collect more.\""
+      ]
     },
     {
       "id": "zeheart_legilis",
@@ -1630,7 +1723,8 @@
       "introLines": [
         "\"For the Vagans who came before me... I will not fall here!\"",
         "\"Earth Federation, witness the resolve of those you cast aside!\""
-      ]
+      ],
+      "recruitCost": 3
     },
     {
       "id": "graze",
@@ -1839,7 +1933,11 @@
         "type": "damage",
         "target": "single",
         "multiplier": 2.3
-      }
+      },
+      "introLines": [
+        "\"Ambition without the strength to back it is nothing but noise.\"",
+        "\"I didn't claim this name to lose it to the likes of you.\""
+      ]
     },
     {
       "id": "julieta_reginlaze_julia",
@@ -1886,7 +1984,11 @@
         "type": "damage",
         "target": "single",
         "multiplier": 2.3
-      }
+      },
+      "introLines": [
+        "\"Discipline wins wars. Sentiment loses them. Remember that as you fall.\"",
+        "\"I've trained too long to be undone by an amateur's luck.\""
+      ]
     },
     {
       "id": "iok_reginlaze_custom",
@@ -1933,7 +2035,11 @@
         "type": "damage",
         "target": "single",
         "multiplier": 2.3
-      }
+      },
+      "introLines": [
+        "\"H-hey! Don't look at me like that, I'm in charge here!\"",
+        "\"Th-this is just a tactical retreat! ...forward! Tactical forward retreat!\""
+      ]
     },
     {
       "id": "hashmal",
@@ -2000,6 +2106,10 @@
           "targetMode": "highest_spd",
           "description": "Hashmal's autonomous systems escalate to full output, the Pluma swarm surging anew."
         }
+      ],
+      "introLines": [
+        "\"...UNIT DESIGNATION HASHMAL. THREAT DETECTED. ENGAGING.\"",
+        "\"...PLUMA SWARM DEPLOYED. RESISTANCE: FUTILE.\""
       ]
     },
     {
@@ -2023,6 +2133,762 @@
         "target": "single",
         "multiplier": 1.0
       }
+    },
+    {
+      "id": "flag",
+      "name": "Flag",
+      "fullName": "MSF-007 Flag",
+      "series": "00",
+      "tier": "grunt",
+      "family": "flag",
+      "category": "Mobility",
+      "hp": 200,
+      "maxHp": 200,
+      "atk": 35,
+      "def": 22,
+      "spd": 36,
+      "basic": {
+        "name": "Linear Rifle Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "GN Field Burst",
+        "description": "1.7x ATK on one target + applies DEF Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "enact",
+      "name": "Enact",
+      "fullName": "AEU-09 Enact",
+      "series": "00",
+      "tier": "grunt",
+      "family": "enact",
+      "category": "Ranged",
+      "hp": 195,
+      "maxHp": 195,
+      "atk": 38,
+      "def": 20,
+      "spd": 32,
+      "basic": {
+        "name": "GN Beam Rifle Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Linear Cannon Volley",
+        "description": "0.65x ATK on all 3 player units.",
+        "type": "damage",
+        "target": "all",
+        "multiplier": 0.65,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "ahead",
+      "name": "Ahead",
+      "fullName": "SVMS-01 Union Flag (Ahead)",
+      "series": "00",
+      "tier": "grunt",
+      "family": "ahead",
+      "category": "Melee",
+      "hp": 210,
+      "maxHp": 210,
+      "atk": 37,
+      "def": 26,
+      "spd": 28,
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "GN Vulcan Burst",
+        "description": "1.8x ATK on one target + applies ATK Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "gnx",
+      "name": "GN-X",
+      "fullName": "GNX-704T GN-X",
+      "series": "00",
+      "tier": "grunt",
+      "family": "gnx",
+      "category": "Ranged",
+      "hp": 205,
+      "maxHp": 205,
+      "atk": 39,
+      "def": 24,
+      "spd": 30,
+      "basic": {
+        "name": "GN Beam Pistol Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "GN Shield Bash",
+        "description": "1.8x ATK on one target + applies DEF Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "gadessa",
+      "name": "Gadessa",
+      "fullName": "GNX-609T Gadessa",
+      "series": "00",
+      "tier": "grunt",
+      "family": "gadessa",
+      "category": "Ranged",
+      "hp": 230,
+      "maxHp": 230,
+      "atk": 40,
+      "def": 28,
+      "spd": 18,
+      "basic": {
+        "name": "GN Mega Launcher Shot",
+        "description": "Standard hit on a single target — the heaviest 00 grunt.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Mega Launcher Barrage",
+        "description": "1.9x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "ali_enact_custom",
+      "name": "Ali Al-Saachez's Enact Custom",
+      "fullName": "AEU Enact Custom (Agrissa)",
+      "series": "00",
+      "tier": "ace",
+      "family": "ace_enact",
+      "category": "Melee",
+      "hp": 260,
+      "maxHp": 260,
+      "atk": 42,
+      "def": 26,
+      "spd": 38,
+      "passive": {
+        "name": "Killer's Instinct",
+        "description": "+15% ATK against any target currently below 50% HP.",
+        "type": "low_hp_target_dmg_bonus",
+        "threshold": 0.5,
+        "value": 1.15
+      },
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Custom Vulcan Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Saachez's Reckoning",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "bring_gadessa_custom",
+      "name": "Bring Stabity's Gadessa Custom",
+      "fullName": "GNX-609T Gadessa (Custom)",
+      "series": "00",
+      "tier": "ace",
+      "family": "ace_gadessa",
+      "category": "Ranged",
+      "hp": 275,
+      "maxHp": 275,
+      "atk": 40,
+      "def": 30,
+      "spd": 22,
+      "passive": {
+        "name": "Compounding Affliction",
+        "description": "DEF Down applied by this unit's Special STACKS instead of refreshing — each hit adds another -15% DEF on top of the last, up to 3 stacks.",
+        "type": "stacking_def_down_on_special",
+        "stackValue": 0.85,
+        "maxStacks": 3
+      },
+      "basic": {
+        "name": "GN Mega Launcher Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Custom Launcher Barrage",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns (always lands).",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Stabity's Final Volley",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "andrei_ahead_smultron",
+      "name": "Andrei Smirnov's Ahead Smultron",
+      "fullName": "SVMS-01 Ahead Smultron",
+      "series": "00",
+      "tier": "ace",
+      "family": "ace_ahead",
+      "category": "Melee",
+      "hp": 280,
+      "maxHp": 280,
+      "atk": 44,
+      "def": 32,
+      "spd": 26,
+      "passive": {
+        "name": "Phase 2 Reinforcement",
+        "description": "Spawns an Ahead grunt token at the Phase 2 transition.",
+        "type": "token_spawn",
+        "tokenId": "ahead",
+        "tokenCount": 1,
+        "phase2Respawn": true
+      },
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Smultron Charge Cleave",
+        "description": "1.8x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Smirnov's Last Stand",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      },
+      "phases": [
+        {
+          "threshold": 0.5,
+          "description": "Andrei Smirnov calls for reinforcements — another Ahead joins the fight!"
+        }
+      ]
+    },
+    {
+      "id": "graham_susanowo",
+      "name": "Graham Aker's Susanowo",
+      "fullName": "MSJ-06II-SP Susanowo",
+      "series": "00",
+      "tier": "boss",
+      "family": "susanowo_boss",
+      "category": "Melee",
+      "isBoss": true,
+      "hp": 370,
+      "maxHp": 370,
+      "atk": 50,
+      "def": 28,
+      "spd": 40,
+      "recruitCost": 4,
+      "passive": {
+        "name": "Way of the Sword",
+        "description": "+20% damage on single-target attacks only — zero bonus on AoE. Phase 1 targets the highest-SPD enemy, seeking the worthiest duel.",
+        "type": "single_target_only_dmg_bonus",
+        "value": 1.2
+      },
+      "basic": {
+        "name": "GN Bits Wired Slash",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Wired Claw Crush",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 5,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Susanowo Annihilation Strike",
+        "description": "2.4x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.4
+      },
+      "phases": [
+        {
+          "threshold": 0.5,
+          "targetMode": "highest_spd",
+          "description": "Graham Aker seeks the worthiest opponent on the field — his blade now seeks only the fastest."
+        }
+      ],
+      "introLines": [
+        "\"A worthy blade deserves a worthy duel. Show me yours!\"",
+        "\"I am Graham Aker — and I will not lose to anyone but a true rival!\""
+      ]
+    },
+    {
+      "id": "dilanza",
+      "name": "Dilanza",
+      "fullName": "MD-0028C Dilanza",
+      "series": "WFM",
+      "tier": "grunt",
+      "family": "dilanza",
+      "category": "Melee",
+      "hp": 200,
+      "maxHp": 200,
+      "atk": 36,
+      "def": 24,
+      "spd": 30,
+      "basic": {
+        "name": "Heat Lance Strike",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Lance Sweep",
+        "description": "1.7x ATK on one target + applies DEF Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.8,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "zowort",
+      "name": "Zowort",
+      "fullName": "MD-0030 Zowort",
+      "series": "WFM",
+      "tier": "grunt",
+      "family": "zowort",
+      "category": "Ranged",
+      "hp": 195,
+      "maxHp": 195,
+      "atk": 38,
+      "def": 20,
+      "spd": 32,
+      "basic": {
+        "name": "Beam Rifle Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Suppressive Volley",
+        "description": "0.65x ATK on all 3 player units.",
+        "type": "damage",
+        "target": "all",
+        "multiplier": 0.65,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "darilbalde",
+      "name": "Darilbalde",
+      "fullName": "MD-0032 Darilbalde",
+      "series": "WFM",
+      "tier": "grunt",
+      "family": "darilbalde",
+      "category": "Melee",
+      "hp": 215,
+      "maxHp": 215,
+      "atk": 39,
+      "def": 27,
+      "spd": 26,
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard hit on a single target — harder-hitting than Dilanza.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Crushing Cleave",
+        "description": "1.8x ATK on one target + applies ATK Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "gundvolva",
+      "name": "Gundvolva",
+      "fullName": "MDX-001 Gundvolva",
+      "series": "WFM",
+      "tier": "grunt",
+      "family": "gundvolva",
+      "category": "Mobility",
+      "hp": 190,
+      "maxHp": 190,
+      "atk": 37,
+      "def": 18,
+      "spd": 44,
+      "basic": {
+        "name": "GUND-ARM Vulcan Burst",
+        "description": "Standard hit on a single target — experimental, very fast.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Erratic Strike",
+        "description": "1.7x ATK on one target + applies SPD Down for 1 turn.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "spd_down",
+          "value": 0.85,
+          "duration": 1
+        }
+      }
+    },
+    {
+      "id": "beguir_beu",
+      "name": "Beguir-Beu",
+      "fullName": "MDX-0011 Beguir-Beu",
+      "series": "WFM",
+      "tier": "grunt",
+      "family": "beguir_beu",
+      "category": "Ranged",
+      "hp": 235,
+      "maxHp": 235,
+      "atk": 40,
+      "def": 28,
+      "spd": 16,
+      "basic": {
+        "name": "GUND-ARM Cannon Shot",
+        "description": "Standard hit on a single target — the heaviest WFM grunt.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Heavy Cannon Barrage",
+        "description": "1.9x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4
+      }
+    },
+    {
+      "id": "guel_darilbalde_custom",
+      "name": "Guel Jeturk's Darilbalde Custom",
+      "fullName": "MD-0032 Darilbalde (Custom)",
+      "series": "WFM",
+      "tier": "ace",
+      "family": "ace_darilbalde",
+      "category": "Melee",
+      "hp": 265,
+      "maxHp": 265,
+      "atk": 41,
+      "def": 30,
+      "spd": 30,
+      "passive": {
+        "name": "Wounded Pride",
+        "description": "+20% ATK and +15% DEF once this unit drops below 50% HP.",
+        "type": "hp_threshold_transform",
+        "threshold": 0.5,
+        "transformMods": {
+          "atkMod": 1.2,
+          "defMod": 1.15
+        }
+      },
+      "basic": {
+        "name": "Beam Saber Slash",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Custom Crushing Cleave",
+        "description": "1.8x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Jeturk's Resolve",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "prospera_beguir_pente",
+      "name": "Prospera Mercury's Beguir-Pente",
+      "fullName": "MDX-0013 Beguir-Pente",
+      "series": "WFM",
+      "tier": "ace",
+      "family": "ace_beguir_pente",
+      "category": "Mobility",
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 39,
+      "def": 32,
+      "spd": 28,
+      "passive": {
+        "name": "The Witch's Calculation",
+        "description": "This unit's Special always applies its debuff, with no resist chance. Also takes 15% reduced damage from player Ultimates.",
+        "type": "ult_dmg_reduction",
+        "value": 0.85
+      },
+      "basic": {
+        "name": "GUND-ARM Vulcan Burst",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Calculated Strike",
+        "description": "1.7x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.7,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Mercury's Endgame",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "lauda_dilanza_sol",
+      "name": "Lauda Nobliss's Dilanza Sol",
+      "fullName": "MD-0028C Dilanza Sol",
+      "series": "WFM",
+      "tier": "ace",
+      "family": "ace_dilanza",
+      "category": "Melee",
+      "hp": 260,
+      "maxHp": 260,
+      "atk": 40,
+      "def": 28,
+      "spd": 32,
+      "passive": {
+        "name": "Brotherhood of Mercury",
+        "description": "+12% ATK and +10% DEF while any other WFM-origin unit is alive alongside him.",
+        "type": "ally_series_alive_stat_bonus",
+        "requiredSeries": "WFM",
+        "atkMod": 1.12,
+        "defMod": 1.1
+      },
+      "basic": {
+        "name": "Heat Lance Strike",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Sol Lance Sweep",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Nobliss's Vow",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "shaddiq_michaelis",
+      "name": "Shaddiq Zenelli's Michaelis",
+      "fullName": "MDX-0017 Michaelis",
+      "series": "WFM",
+      "tier": "boss",
+      "family": "michaelis_boss",
+      "category": "Ranged",
+      "isBoss": true,
+      "hp": 370,
+      "maxHp": 370,
+      "atk": 50,
+      "def": 26,
+      "spd": 24,
+      "recruitCost": 4,
+      "passive": {
+        "name": "Six Fingers of Betrayal",
+        "description": "Spawns 2 Beguir-Beu tokens at fight start. Gains +8% ATK permanently for each token destroyed — kill them to clear the field, or leave them to deny his stacking power.",
+        "type": "token_spawn",
+        "spawnTrigger": "immediate",
+        "tokenId": "beguir_beu_token",
+        "tokenCount": 2,
+        "atkPerTokenKilled": 0.08
+      },
+      "basic": {
+        "name": "GUND-ARM Cannon Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      },
+      "special": {
+        "name": "Betrayal's Edge",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 5,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Zenelli's Final Gambit",
+        "description": "2.4x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.4
+      },
+      "introLines": [
+        "\"Power is just another tool to be spent. Watch how I spend mine.\"",
+        "\"Delling Rembran taught me well — betrayal is simply foresight.\""
+      ]
+    },
+    {
+      "id": "beguir_beu_token",
+      "name": "Beguir-Beu",
+      "fullName": "MDX-0011 Beguir-Beu (Deployed)",
+      "series": "WFM",
+      "tier": "grunt",
+      "family": "beguir_beu",
+      "category": "Ranged",
+      "isToken": true,
+      "hp": 90,
+      "maxHp": 90,
+      "atk": 22,
+      "def": 14,
+      "spd": 16,
+      "basic": {
+        "name": "GUND-ARM Cannon Shot",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0
+      }
     }
   ],
   "items": [
@@ -2031,7 +2897,7 @@
       "name": "Field Technician",
       "category": "heal_reward",
       "rarity": "Uncommon",
-      "description": "Restores 500 HP to one unit of your choice — enough to fully revive a unit that was defeated. The only other way to bring a unit back besides SEED Mode. Reward only — never appears in the shop.",
+      "description": "Also revives a defeated unit.",
       "effect": {
         "type": "heal_one",
         "value": 500
@@ -2683,10 +3549,10 @@
       "series": "UC",
       "cost": 3,
       "category": "Mobility",
-      "hp": 265,
-      "maxHp": 265,
-      "atk": 40,
-      "def": 26,
+      "hp": 305,
+      "maxHp": 305,
+      "atk": 46,
+      "def": 30,
       "spd": 56,
       "passive": {
         "name": "Bio-Sensor Resonance",
@@ -3037,10 +3903,10 @@
       "series": "00",
       "cost": 3,
       "category": "Ranged",
-      "hp": 250,
-      "maxHp": 250,
-      "atk": 22,
-      "def": 27,
+      "hp": 288,
+      "maxHp": 288,
+      "atk": 34,
+      "def": 31,
       "spd": 24,
       "passive": {
         "name": "Seraphim Support Array",
@@ -3087,10 +3953,10 @@
       "series": "UC",
       "cost": 4,
       "category": "Ranged",
-      "hp": 280,
-      "maxHp": 280,
-      "atk": 40,
-      "def": 28,
+      "hp": 322,
+      "maxHp": 322,
+      "atk": 46,
+      "def": 33,
       "spd": 34,
       "passive": {
         "name": "Psycoframe Resonance",
@@ -3100,18 +3966,18 @@
       },
       "basic": {
         "name": "Fin Funnel Spread",
-        "description": "0.9x ATK on all enemies.",
+        "description": "1.0x ATK on all enemies.",
         "type": "damage",
         "target": "all",
-        "multiplier": 0.9,
+        "multiplier": 1.0,
         "energyGain": 2
       },
       "special": {
         "name": "Fin Funnel Barrage",
-        "description": "1.5x ATK on all enemies.",
+        "description": "1.9x ATK on all enemies.",
         "type": "damage",
         "target": "all",
-        "multiplier": 1.5,
+        "multiplier": 1.9,
         "energyCost": 5
       },
       "ultimate": {
@@ -3133,10 +3999,10 @@
       "series": "UC",
       "cost": 4,
       "category": "Ranged",
-      "hp": 270,
-      "maxHp": 270,
-      "atk": 38,
-      "def": 25,
+      "hp": 310,
+      "maxHp": 310,
+      "atk": 44,
+      "def": 30,
       "spd": 44,
       "passive": {
         "name": "Crit Synergy Targeting",
@@ -3180,10 +4046,10 @@
       "series": "00",
       "cost": 4,
       "category": "Ranged",
-      "hp": 290,
-      "maxHp": 290,
-      "atk": 39,
-      "def": 32,
+      "hp": 334,
+      "maxHp": 334,
+      "atk": 45,
+      "def": 38,
       "spd": 22,
       "passive": {
         "name": "Tactical AI Targeting",
@@ -3231,10 +4097,10 @@
       "series": "UC",
       "cost": 3,
       "category": "Ranged",
-      "hp": 260,
-      "maxHp": 260,
-      "atk": 37,
-      "def": 27,
+      "hp": 299,
+      "maxHp": 299,
+      "atk": 43,
+      "def": 31,
       "spd": 30,
       "passive": {
         "name": "Hyper Mega Pre-Charge",
@@ -3277,10 +4143,10 @@
       "series": "UC",
       "cost": 3,
       "category": "Melee",
-      "hp": 235,
-      "maxHp": 235,
-      "atk": 35,
-      "def": 24,
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 40,
+      "def": 28,
       "spd": 38,
       "passive": {
         "name": "Anti-Beam Skirmisher",
@@ -3324,10 +4190,10 @@
       "series": "UC",
       "cost": 3,
       "category": "Ranged",
-      "hp": 240,
-      "maxHp": 240,
-      "atk": 33,
-      "def": 30,
+      "hp": 276,
+      "maxHp": 276,
+      "atk": 38,
+      "def": 34,
       "spd": 28,
       "passive": {
         "name": "Theoretical Mobile Suit Transform",
@@ -3370,10 +4236,10 @@
       "series": "UC",
       "cost": 4,
       "category": "Mobility",
-      "hp": 275,
-      "maxHp": 275,
-      "atk": 36,
-      "def": 26,
+      "hp": 316,
+      "maxHp": 316,
+      "atk": 41,
+      "def": 31,
       "spd": 50,
       "passive": {
         "name": "Minovsky Craft Aura",
@@ -3516,10 +4382,10 @@
       "series": "AGE",
       "cost": 3,
       "category": "Mobility",
-      "hp": 230,
-      "maxHp": 230,
-      "atk": 36,
-      "def": 22,
+      "hp": 264,
+      "maxHp": 264,
+      "atk": 41,
+      "def": 25,
       "spd": 46,
       "passive": {
         "name": "Ambush Specialist",
@@ -3562,10 +4428,10 @@
       "series": "AGE",
       "cost": 3,
       "category": "Melee",
-      "hp": 245,
-      "maxHp": 245,
-      "atk": 30,
-      "def": 26,
+      "hp": 282,
+      "maxHp": 282,
+      "atk": 34,
+      "def": 30,
       "spd": 32,
       "passive": {
         "name": "Pacifist Protocol",
@@ -3613,10 +4479,10 @@
       "series": "AGE",
       "cost": 4,
       "category": "Mobility",
-      "hp": 270,
-      "maxHp": 270,
-      "atk": 38,
-      "def": 27,
+      "hp": 310,
+      "maxHp": 310,
+      "atk": 44,
+      "def": 32,
       "spd": 42,
       "passive": {
         "name": "Burst Mode Activation",
@@ -3761,10 +4627,10 @@
       "series": "IBO",
       "cost": 3,
       "category": "Melee",
-      "hp": 250,
-      "maxHp": 250,
-      "atk": 35,
-      "def": 27,
+      "hp": 288,
+      "maxHp": 288,
+      "atk": 40,
+      "def": 31,
       "spd": 32,
       "passive": {
         "name": "Escalated Counter",
@@ -3809,10 +4675,10 @@
       "series": "IBO",
       "cost": 3,
       "category": "Melee",
-      "hp": 245,
-      "maxHp": 245,
-      "atk": 32,
-      "def": 28,
+      "hp": 282,
+      "maxHp": 282,
+      "atk": 37,
+      "def": 32,
       "spd": 30,
       "passive": {
         "name": "Pain Tolerance",
@@ -3855,10 +4721,10 @@
       "series": "IBO",
       "cost": 3,
       "category": "Mobility",
-      "hp": 235,
-      "maxHp": 235,
-      "atk": 36,
-      "def": 24,
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 41,
+      "def": 28,
       "spd": 40,
       "passive": {
         "name": "Debuff Exploiter",
@@ -3901,10 +4767,10 @@
       "series": "IBO",
       "cost": 3,
       "category": "Melee",
-      "hp": 240,
-      "maxHp": 240,
-      "atk": 34,
-      "def": 26,
+      "hp": 276,
+      "maxHp": 276,
+      "atk": 39,
+      "def": 30,
       "spd": 34,
       "passive": {
         "name": "Ult Momentum",
@@ -3948,10 +4814,10 @@
       "series": "IBO",
       "cost": 4,
       "category": "Melee",
-      "hp": 285,
-      "maxHp": 285,
-      "atk": 41,
-      "def": 30,
+      "hp": 328,
+      "maxHp": 328,
+      "atk": 47,
+      "def": 35,
       "spd": 36,
       "passive": {
         "name": "Max Aggression",
@@ -4100,10 +4966,10 @@
       "series": "00",
       "cost": 3,
       "category": "Mobility",
-      "hp": 235,
-      "maxHp": 235,
-      "atk": 36,
-      "def": 22,
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 41,
+      "def": 25,
       "spd": 52,
       "passive": {
         "name": "Pure Speed",
@@ -4146,10 +5012,10 @@
       "series": "00",
       "cost": 3,
       "category": "Melee",
-      "hp": 250,
-      "maxHp": 250,
-      "atk": 37,
-      "def": 26,
+      "hp": 288,
+      "maxHp": 288,
+      "atk": 43,
+      "def": 30,
       "spd": 36,
       "passive": {
         "name": "Twin Drive System",
@@ -4194,10 +5060,10 @@
       "series": "00",
       "cost": 3,
       "category": "Ranged",
-      "hp": 240,
-      "maxHp": 240,
-      "atk": 35,
-      "def": 25,
+      "hp": 276,
+      "maxHp": 276,
+      "atk": 40,
+      "def": 29,
       "spd": 32,
       "passive": {
         "name": "GN Shot Intercept",
@@ -4240,10 +5106,10 @@
       "series": "00",
       "cost": 3,
       "category": "Mobility",
-      "hp": 245,
-      "maxHp": 245,
-      "atk": 34,
-      "def": 25,
+      "hp": 282,
+      "maxHp": 282,
+      "atk": 39,
+      "def": 29,
       "spd": 40,
       "passive": {
         "name": "Stable Synergy",
@@ -4286,10 +5152,10 @@
       "series": "00",
       "cost": 4,
       "category": "Melee",
-      "hp": 280,
-      "maxHp": 280,
-      "atk": 41,
-      "def": 29,
+      "hp": 322,
+      "maxHp": 322,
+      "atk": 47,
+      "def": 34,
       "spd": 38,
       "passive": {
         "name": "Fully Stabilized Twin Drive",
@@ -4332,10 +5198,10 @@
       "series": "00",
       "cost": 4,
       "category": "Melee",
-      "hp": 285,
-      "maxHp": 285,
-      "atk": 44,
-      "def": 30,
+      "hp": 328,
+      "maxHp": 328,
+      "atk": 51,
+      "def": 35,
       "spd": 30,
       "passive": {
         "name": "Adapted Combat Frame",
@@ -4366,6 +5232,390 @@
       },
       "ultimate": {
         "name": "Susanowo Annihilation Strike",
+        "description": "2.4x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.4
+      }
+    },
+    {
+      "id": "gundam_aerial",
+      "name": "Gundam Aerial",
+      "series": "WFM",
+      "cost": 2,
+      "category": "Mobility",
+      "hp": 210,
+      "maxHp": 210,
+      "atk": 32,
+      "def": 24,
+      "spd": 36,
+      "passive": {
+        "name": "Quiet Comeback",
+        "description": "GUND-BIT-augmented attacks deal +15% damage once this unit drops below 50% HP.",
+        "type": "hp_threshold_transform",
+        "threshold": 0.5,
+        "transformMods": {
+          "atkMod": 1.15
+        }
+      },
+      "basic": {
+        "name": "GUND-BIT Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "GUND-BIT Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Mercury's Fang",
+        "description": "2.2x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2
+      }
+    },
+    {
+      "id": "gundam_aerial_rebuild",
+      "name": "Gundam Aerial Rebuild",
+      "series": "WFM",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 280,
+      "maxHp": 280,
+      "atk": 40,
+      "def": 28,
+      "spd": 38,
+      "passive": {
+        "name": "Rebuilt Resolve",
+        "description": "Passively grants +5% to the shared Ult gauge every round.",
+        "type": "ult_gauge_per_round",
+        "value": 5
+      },
+      "basic": {
+        "name": "GUND-BIT Slash",
+        "description": "Standard melee hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Rebuild Burst",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Eri's Resolve",
+        "description": "2.2x ATK on one target + grants the whole team +10% ATK for 2 turns.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.2,
+        "teamBuff": {
+          "type": "atk_up",
+          "value": 1.1,
+          "duration": 2
+        }
+      }
+    },
+    {
+      "id": "gundam_lfrith",
+      "name": "Gundam Lfrith",
+      "series": "WFM",
+      "cost": 2,
+      "category": "Ranged",
+      "hp": 220,
+      "maxHp": 220,
+      "atk": 38,
+      "def": 22,
+      "spd": 34,
+      "passive": {
+        "name": "Permet Score Gamble",
+        "description": "20% chance of +50% damage on any attack, but a separate 10% chance of 0 energy gain from that same Basic Attack.",
+        "type": "high_variance_gamble",
+        "bonusDmgChance": 0.2,
+        "bonusDmgValue": 1.5,
+        "zeroEnergyChance": 0.1
+      },
+      "basic": {
+        "name": "GN Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Overcharged Volley",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Permet Overload",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gundam_dilanza_hound",
+      "name": "Gundam Dilanza Hound",
+      "series": "WFM",
+      "cost": 2,
+      "category": "Ranged",
+      "hp": 215,
+      "maxHp": 215,
+      "atk": 37,
+      "def": 24,
+      "spd": 30,
+      "passive": {
+        "name": "Marksman's Patience",
+        "description": "Deals +18% damage on Basic Attacks against a target that hasn't been hit by anyone yet this round.",
+        "type": "first_hit_dmg_bonus",
+        "value": 1.18
+      },
+      "basic": {
+        "name": "Long Beam Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Piercing Volley",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Hound's Mark",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gundam_pharact",
+      "name": "Gundam Pharact",
+      "series": "WFM",
+      "cost": 3,
+      "category": "Ranged",
+      "hp": 270,
+      "maxHp": 270,
+      "atk": 42,
+      "def": 26,
+      "spd": 32,
+      "passive": {
+        "name": "Cold Precision",
+        "description": "Special always targets the lowest-DEF living enemy, dealing +25% damage if that target is already DEF-debuffed.",
+        "type": "lowest_def_target_special",
+        "debuffedBonus": 1.25
+      },
+      "basic": {
+        "name": "GN Sniper Rifle Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Precision Strike",
+        "description": "1.9x ATK on the lowest-DEF enemy, +25% more if already DEF-debuffed.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.9,
+        "energyCost": 4
+      },
+      "ultimate": {
+        "name": "Glacial Verdict",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gundam_calibarn",
+      "name": "Gundam Calibarn",
+      "series": "WFM",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 275,
+      "maxHp": 275,
+      "atk": 39,
+      "def": 27,
+      "spd": 36,
+      "passive": {
+        "name": "Escalating Permet",
+        "description": "+4% ATK per round, doubling to +8%/round starting round 5 — terrifying in long fights.",
+        "type": "escalating_stacking_aura",
+        "earlyRate": 0.04,
+        "lateRate": 0.08,
+        "lateRoundThreshold": 5
+      },
+      "basic": {
+        "name": "Permet Beam Slash",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Permet Surge Strike",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Calibarn's Reckoning",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "gundam_schwarzette",
+      "name": "Gundam Schwarzette",
+      "series": "WFM",
+      "cost": 3,
+      "category": "Mobility",
+      "hp": 278,
+      "maxHp": 278,
+      "atk": 38,
+      "def": 29,
+      "spd": 34,
+      "passive": {
+        "name": "GUND-ARM Synergy",
+        "description": "Gains +2 energy whenever another GUND-ARM-system ally (Aerial, Lfrith, or Calibarn) uses its Special.",
+        "type": "ally_special_energy_bonus",
+        "triggerIds": [
+          "gundam_aerial",
+          "gundam_aerial_rebuild",
+          "gundam_lfrith",
+          "gundam_calibarn"
+        ],
+        "value": 2
+      },
+      "basic": {
+        "name": "GUND-ARM Beam Saber",
+        "description": "Standard hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Synergy Strike",
+        "description": "1.8x ATK on one target + applies ATK Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "atk_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Schwarzette's Resonance",
+        "description": "2.3x ATK on one target, heavy single-target damage.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 2.3
+      }
+    },
+    {
+      "id": "michaelis",
+      "name": "Michaelis",
+      "series": "WFM",
+      "cost": 4,
+      "category": "Ranged",
+      "hp": 318,
+      "maxHp": 318,
+      "atk": 47,
+      "def": 30,
+      "spd": 28,
+      "passive": {
+        "name": "Adapted Survivor",
+        "description": "Gains +10% ATK permanently the first time this unit drops below 50% HP in a fight.",
+        "type": "hp_threshold_transform",
+        "threshold": 0.5,
+        "transformMods": {
+          "atkMod": 1.1
+        }
+      },
+      "basic": {
+        "name": "GUND-ARM Cannon Shot",
+        "description": "Standard ranged hit on a single target.",
+        "type": "damage",
+        "target": "single",
+        "multiplier": 1.0,
+        "energyGain": 2
+      },
+      "special": {
+        "name": "Betrayal's Edge",
+        "description": "1.8x ATK on one target + applies DEF Down for 2 turns.",
+        "type": "damage_debuff",
+        "target": "single",
+        "multiplier": 1.8,
+        "energyCost": 4,
+        "effect": {
+          "type": "def_down",
+          "value": 0.85,
+          "duration": 2
+        }
+      },
+      "ultimate": {
+        "name": "Zenelli's Reckoning",
         "description": "2.4x ATK on one target, heavy single-target damage.",
         "type": "damage",
         "target": "single",
