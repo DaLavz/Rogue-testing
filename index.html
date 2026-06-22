@@ -55,6 +55,14 @@ button:active{transform:scale(0.97)}
 .slot-cat{font-size:.6rem;color:var(--text-muted)}
 .slot-remove{position:absolute;top:2px;right:4px;font-size:.75rem;color:var(--red);background:none;padding:0;line-height:1}
 .draft-roster{flex:1;overflow-y:auto;padding:.75rem 1rem}
+.draft-filter-bar{margin-bottom:.6rem}
+.draft-search-input{width:100%;box-sizing:border-box;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:var(--radius-md);padding:.6rem .75rem;color:var(--text-primary);font-size:16px;margin-bottom:.5rem}
+.draft-search-input::placeholder{color:var(--text-dim)}
+.draft-cat-filters{display:flex;gap:.4rem;flex-wrap:wrap}
+.draft-cat-btn{flex:1;min-width:64px;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:var(--radius-sm);padding:.45rem .3rem;color:var(--text-muted);font-size:.78rem;font-weight:600;cursor:pointer;text-align:center;transition:background .15s,color .15s,border-color .15s}
+.draft-cat-btn.active{background:var(--cat-color,var(--gold));color:#fff;border-color:var(--cat-color,var(--gold))}
+.draft-cat-btn[data-cat="all"].active{background:var(--gold);color:var(--bg-void);border-color:var(--gold)}
+.draft-no-results{padding:1.2rem .5rem;text-align:center;color:var(--text-dim);font-size:.85rem}
 .draft-roster h3{font-size:.8rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;font-family:var(--font-mono)}
 .unit-card{display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:.5rem;cursor:pointer;transition:border-color .15s,background .15s}
 .unit-card:hover,.unit-card.selected{border-color:var(--gold);background:var(--bg-card)}
@@ -373,6 +381,15 @@ button:active{transform:scale(0.97)}
   </div>
   <div class="draft-roster">
     <h3>Available Units</h3>
+    <div class="draft-filter-bar">
+      <input type="text" id="draft-search" class="draft-search-input" placeholder="Search by name or series…" autocomplete="off">
+      <div class="draft-cat-filters">
+        <button class="draft-cat-btn active" data-cat="all">All</button>
+        <button class="draft-cat-btn" data-cat="Melee" style="--cat-color:#1f6e30">Melee</button>
+        <button class="draft-cat-btn" data-cat="Ranged" style="--cat-color:#3a7bd5">Ranged</button>
+        <button class="draft-cat-btn" data-cat="Mobility" style="--cat-color:#e08a2e">Agility</button>
+      </div>
+    </div>
     <div id="draft-list"></div>
   </div>
   <div class="draft-confirm-bar">
@@ -1084,6 +1101,11 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       attacker.hp=Math.max(0,attacker.hp-counterDmg);
       if(t.passive.hpCost) t.hp=Math.max(0,t.hp-t.passive.hpCost);
       log(`→ <span class="log-system">${nm(t,counterIsEnemy)} counters! <span class="log-damage">-${counterDmg} HP</span> → ${nm(attacker,!counterIsEnemy)}</span>${t.passive.hpCost?` <em>(-${t.passive.hpCost} HP self-cost)</em>`:''}`);
+      // The counter-hit was previously a silent combat-state mutation with NO visual feedback at
+      // all — queued here through the exact same pendingFx system every other hit uses, so it
+      // renders correctly via the normal playPendingFx() flush instead of being invisible.
+      if(!C.pendingFx) C.pendingFx=[];
+      C.pendingFx.push({uid:attacker.id,category:t.category,isCrit:cIsCrit,damage:counterDmg});
       if(attacker.hp<=0&&!attacker.defeated){attacker.defeated=true;log(`<strong>${nm(attacker,!counterIsEnemy)}</strong> is defeated.`);}
     }
     // Vagan Corrosive Coating (AGE zone trait) — any ENEMY Basic Attack has a 25% chance to apply
@@ -1424,6 +1446,21 @@ function applyStackingAuras(C){
 
 async function runRound(C){
   if(C.waitingForPlayer) return;
+  // Permanent debug guard for the duplicate-enemy bug — compares this round's enemyUnits.length
+  // against what it was at the START of the previous round. Any unexplained growth gets logged
+  // with full unit data, since manual reproduction attempts have been too intermittent to catch
+  // reliably by hand. Dump via: copy(JSON.stringify(window.__enemyCountLog))
+  if(!window.__enemyCountLog) window.__enemyCountLog=[];
+  const prevCount=C._lastKnownEnemyCount;
+  const nowCount=C.enemyUnits.length;
+  if(prevCount!=null&&nowCount>prevCount){
+    window.__enemyCountLog.push({
+      round:C.round,prevCount,nowCount,
+      allEnemies:C.enemyUnits.map(e=>({id:e.id,baseId:e.baseId,name:e.name,passive:e.passive?.type||null,hp:e.hp})),
+      t:Math.round(performance.now())
+    });
+  }
+  C._lastKnownEnemyCount=nowCount;
   lockActionBar();
   clearTrait(C);
   applyTrait(C);
@@ -2418,6 +2455,12 @@ function playPendingFx(C){
 }
 
 function hitFX(uid,isPlayer,category,isCrit,dmg){
+  // Lightweight, always-on call history — capped at the last 30 calls, so it's cheap to keep
+  // running permanently rather than something that needs to be toggled on before reproducing a bug.
+  // Dump it from the console with: copy(JSON.stringify(window.__hitFXLog))
+  if(!window.__hitFXLog) window.__hitFXLog=[];
+  window.__hitFXLog.push({uid,category,isCrit,dmg,t:Math.round(performance.now())});
+  if(window.__hitFXLog.length>30) window.__hitFXLog.shift();
   const el=$('rect-'+uid);if(!el) return;
   el.classList.remove('shake','flash');void el.offsetWidth;
   el.classList.add('shake');if(isCrit) el.classList.add('flash');
@@ -3663,7 +3706,6 @@ function applyHealUses(itemIdx,amount,target,qty){
 function initDraft(){
   show('draft');S.draft.slots=[null,null,null];
   updateSlots();
-  const list=$('draft-list');list.innerHTML='';
   // Meta-progression locker shows ONE card per distinct unit identity, never one per duplicate
   // copy — a unit's "identity" is its recruitedFromPool/recruitedFrom link if it has one, or its
   // own id otherwise (starters, and any unit with no recruit-origin tag).
@@ -3675,7 +3717,41 @@ function initDraft(){
     seenIdentities.add(identity);
     distinctUnits.push(u);
   });
-  distinctUnits.forEach(u=>{
+  // Computed once per draft screen visit, not re-derived on every keystroke — the filter/search
+  // bar below just re-renders FROM this list, it never recomputes the duplicate-identity logic.
+  S.draft.allUnits=distinctUnits;
+  S.draft.activeCatFilter='all';
+  $('draft-search').value='';
+  renderDraftList();
+
+  document.querySelectorAll('.draft-cat-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      document.querySelectorAll('.draft-cat-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      S.draft.activeCatFilter=btn.dataset.cat;
+      renderDraftList();
+    };
+  });
+  $('draft-search').oninput=()=>renderDraftList();
+}
+
+// Re-renders #draft-list from S.draft.allUnits, applying the current category filter and search
+// text. Both the category buttons and the search input call this directly rather than rebuilding
+// the underlying distinct-unit list, since that list never changes during a single draft visit.
+function renderDraftList(){
+  const list=$('draft-list');list.innerHTML='';
+  const cat=S.draft.activeCatFilter||'all';
+  const query=($('draft-search').value||'').trim().toLowerCase();
+  const filtered=S.draft.allUnits.filter(u=>{
+    if(cat!=='all'&&u.category!==cat) return false;
+    if(query&&!u.name.toLowerCase().includes(query)&&!u.series.toLowerCase().includes(query)) return false;
+    return true;
+  });
+  if(!filtered.length){
+    list.innerHTML=`<div class="draft-no-results">No units match — try a different filter or search term.</div>`;
+    return;
+  }
+  filtered.forEach(u=>{
     const card=document.createElement('div');card.className='unit-card';card.dataset.uid=u.id;
     const icon=document.createElement('div');icon.className='unit-card-icon';
     icon.style.background=catColor(u.category);icon.textContent=catLabel(u.category);
@@ -3686,6 +3762,7 @@ function initDraft(){
     card.addEventListener('click',()=>draftToggle(u.id));
     list.appendChild(card);
   });
+  updateDraftCards();
 }
 
 function draftToggle(uid){
@@ -4092,6 +4169,16 @@ function buyTeamUpgrade(stat){
 // Small, screen-agnostic purchase feedback: briefly pulses the currency readout on whichever
 // screen is currently active, so any successful buy (per-unit, team, or future ones) gets a
 // visible confirmation without needing a flash effect baked into each individual row's markup.
+// Console helper for the hit-effect debugging — run dumpHitFXLog() in the browser console right
+// after seeing the shake/flash bug happen, and copy the printed output back for review. Shows the
+// last 30 hitFX calls with their target, category, crit status, damage, and a timestamp (ms since
+// page load) so overlapping/duplicate calls on the same unit are easy to spot.
+function dumpHitFXLog(){
+  const log=window.__hitFXLog||[];
+  console.log(JSON.stringify(log));
+  return log;
+}
+
 function flashCurrency(){
   document.querySelectorAll('.currency-flash-target').forEach(el=>{
     el.classList.remove('upgrade-row-flash');
