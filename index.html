@@ -458,13 +458,13 @@ button:active{transform:scale(0.97)}
 </div>
 
 <!-- DICE CHECK ENCOUNTER -->
-<div id="screen-dicecheck" class="screen" style="overflow-y:auto">
+<div id="screen-dicecheck" class="screen">
   <div class="reward-header">
     <h2>Roaming Encounter</h2>
     <p id="dc-intro">A pilot signals for a moment's truce...</p>
   </div>
-  <div class="reward-cards" id="dc-body" style="overflow-y:auto;flex:1"></div>
-  <div class="reward-confirm-bar" id="dc-bar" style="display:none">
+  <div class="reward-cards" id="dc-body" style="overflow-y:auto;flex:1;min-height:0"></div>
+  <div class="reward-confirm-bar" id="dc-bar" style="display:none;flex-shrink:0">
     <button class="btn-primary" id="btn-dc-roll">Roll the Dice</button>
     <button class="btn-secondary" id="btn-dc-skip" style="width:100%;margin-top:.5rem">Skip — Walk Away</button>
   </div>
@@ -3076,8 +3076,13 @@ function normalizedStatBonus(unit,stat){
 // DC scales gently with how many zones the player has already cleared — zone index 1 (the second
 // zone overall, e.g. UC Space) is the easiest non-Earth DC; each zone after nudges it up a bit.
 function getDiceCheckDC(run){
-  const zoneIdx=run.visitedZones.length-1; // 1 for the 2nd zone, 2 for the 3rd, etc.
-  return Math.min(80,45+Math.max(0,zoneIdx-1)*8); // 45 at zone 2, +8 per zone after that, capped at 80
+  const zoneNum=run.visitedZones.length; // 1 for the 1st zone (Earth), 2 for the 2nd, etc.
+  // Grounded directly in the real numbers: a d100 roll plus up to a +30 stat bonus tops out at
+  // 130 total. The previous curve (45-85) let even a mid-bonus unit clear early zones on most
+  // rolls — confirmed too easy. Verified via simulation before landing here: even the player's
+  // BEST possible unit (bonus 25-30) only clears zone 1 about 63% of the time, dropping to ~23%
+  // by zone 9 — genuinely risky throughout, without ever being mathematically unwinnable.
+  return Math.min(105,65+(zoneNum-1)*5);
 }
 
 const STAT_LABELS={hp:'HP',atk:'Attack',def:'Defense',spd:'Speed'};
@@ -3529,15 +3534,17 @@ function useConsumable(idx){
     return;
   }
   if(eff.type==='extra_self_turn'){
-    // Propellant Tank — single-unit version of Bit Communication's team-wide extra turn. Queues
-    // just the user itself onto the same extra-turn-queue mechanism, reusing the exact same
-    // draining logic (drainExtraTurnQueue) rather than building a separate one-off path.
-    const userId=C.activeUnit.id;
-    C.extraTurnQueue=[...(C.extraTurnQueue||[]),userId];
-    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — an immediate extra turn!</span>`);
+    // Propellant Tank — works like an Ultimate: a free action that does NOT consume the user's
+    // own turn at all. Previously this called resumeRound() after queuing the extra turn, which
+    // advanced past the user entirely — they'd lose their CURRENT turn, then have to wait a full
+    // round cycle before the queued extra turn actually arrived. Now there's no queue involved for
+    // the user itself: just close the item overlay and refresh the action bar so this exact same
+    // unit can immediately act again, right now, with a genuine second action this turn.
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — acts again immediately!</span>`);
     S.inventory.splice(idx,1);
     closeOverlay();
-    resumeRound(C);
+    renderField(C);renderRes(C);
+    updateActionBar(C.activeUnit,C);
     return;
   }
   if(eff.type==='next_upgrade_discount'){
@@ -3570,17 +3577,20 @@ function useConsumable(idx){
     return;
   }
   if(eff.type==='extra_team_turn'){
-    // Queues a genuine second turn for every currently-alive active player unit, processed AFTER
-    // the round's normal turn order finishes. Deliberately NOT implemented by appending duplicate
-    // ids into currentOrder itself — resumeRound finds its position via indexOf(activeUnit.id),
-    // which only ever finds the FIRST occurrence of an id, so a duplicate id elsewhere in the
-    // array would desync that lookup and cause turns to replay incorrectly (including enemies').
-    const aliveIds=C.playerUnits.filter(p=>p.hp>0&&!p.defeated).map(p=>p.id);
+    // Queues a genuine second turn for every OTHER currently-alive active player unit, processed
+    // AFTER the round's normal turn order finishes — this part is unchanged and correct. What's
+    // fixed here is the USER's own turn: previously they were included in the same queue and lost
+    // their current turn just like everyone else, meaning they specifically had to wait a full
+    // round cycle before their own extra turn ever arrived, even though the rest of the team's
+    // queued turns correctly fired right after the round ended. Now the user is excluded from the
+    // queue and instead gets an immediate second action this turn, exactly like an Ultimate.
+    const aliveIds=C.playerUnits.filter(p=>p.hp>0&&!p.defeated&&p.id!==C.activeUnit.id).map(p=>p.id);
     C.extraTurnQueue=[...(C.extraTurnQueue||[]),...aliveIds];
-    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — the whole team gets an extra turn this round!</span>`);
+    log(`<span class="log-system">${C.activeUnit.name} uses ${item.name} — acts again immediately, and the rest of the team gets an extra turn this round too!</span>`);
     S.inventory.splice(idx,1);
     closeOverlay();
-    resumeRound(C); // costs the turn that activated it, same as every other consumable
+    renderField(C);renderRes(C);
+    updateActionBar(C.activeUnit,C);
     return;
   }
   if(eff.type==='trans_am'){
