@@ -654,6 +654,7 @@ function reconcileUnlockedUnitsWithLiveData(){
       const liveEnemy=byId(u.recruitedFrom,DATA.enemyUnits);
       if(liveEnemy){
         liveSource={...liveEnemy,
+          passive:liveEnemy.playerPassive||liveEnemy.passive,
           atk:Math.round(liveEnemy.atk*0.9),def:Math.round(liveEnemy.def*0.9),spd:Math.round(liveEnemy.spd*0.9),
           maxHp:Math.round(liveEnemy.maxHp*0.88)
         };
@@ -1035,6 +1036,24 @@ function aiAction(enemy,C){
   return {ability,target};
 }
 
+// Ally tokens — spawned on the PLAYER's side (e.g. Shagia's Ashtaron, recruited from the After
+// War X boss). They act automatically each round rather than waiting for manual input, since
+// there's no 4th action-bar slot for them. Targets whichever enemy their source unit (the boss
+// they were deployed alongside) is currently engaging — checks THIS round's target first (if the
+// source has already acted this round), falling back to last round's target, then just the first
+// living enemy if neither exists yet (round 1, or the source has been defeated). This is also what
+// lets the "coordinated pincer" bonus damage (checked elsewhere) actually fire when both are alive
+// and have genuinely focused the same target the same round.
+function allyTokenAction(token,C){
+  const enemies=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+  if(!enemies.length) return null;
+  const partner=C.playerUnits.find(p=>p.id===token.spawnedByUnitId);
+  const partnerTargetId=partner&&(partner.attackedTargetThisRound||partner.lastAttackTargetId);
+  let target=partnerTargetId?enemies.find(e=>e.id===partnerTargetId):null;
+  if(!target) target=enemies[0];
+  return {ability:'basic',target};
+}
+
 /* ── EXECUTE ABILITY ── */
 // Wraps execAbility to add Olba Frost's "Special hits twice while my Virsago token is alive"
 // mechanic, without needing to duplicate this check at all 3 enemy-AI call sites. Checks the
@@ -1308,9 +1327,10 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     // Olba, whichever spawned it) already targeted this round, the hit gets a bonus. Finds the
     // source by id-matching baseId against any living unit whose token_spawn passive specifies
     // coordinatedPincerBonus and lists this token's baseId — works for either source without
-    // hardcoding which one spawned it.
+    // hardcoding which one spawned it. Searches BOTH rosters (not just C.enemyUnits) since Shagia
+    // can now also be a recruited, player-controlled unit with this exact same ally token alongside him.
     if(attacker.baseId==='ashtaron_token'){
-      const sourceUnit=C.enemyUnits.find(e=>!e.defeated&&e.hp>0&&e.passive?.type==='token_spawn'&&e.passive.coordinatedPincerBonus&&e.passive.tokenId===attacker.baseId);
+      const sourceUnit=[...C.playerUnits,...C.enemyUnits].find(e=>!e.defeated&&e.hp>0&&e.passive?.type==='token_spawn'&&e.passive.coordinatedPincerBonus&&e.passive.tokenId===attacker.baseId);
       if(sourceUnit&&sourceUnit.attackedTargetThisRound===t.id){
         effMult=effMult*(1+sourceUnit.passive.coordinatedPincerBonus);
       }
@@ -2092,7 +2112,7 @@ async function runRound(C){
     dots.forEach(m=>log(m));
     renderField(C);
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);if(C.enemyUnits.includes(unit)) resetGnSaturationOnKill(C);continue;}
-    const isPlayer=C.playerUnits.includes(unit);
+    const isPlayer=C.playerUnits.includes(unit)&&!unit.isAllyToken;
     if(isPlayer){
       checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);tickSatelliteCharge(unit,C);tickFullBurst(unit,C);unit.hasActedThisFight=true;
       setActive(unit.id);
@@ -2105,9 +2125,9 @@ async function runRound(C){
       setActive(unit.id);
       await delay(380);
       checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);checkHpThresholdTransform(unit,C);
-      const act=aiAction(unit,C);
+      const act=unit.isAllyToken?allyTokenAction(unit,C):aiAction(unit,C);
       if(act){
-        execAbilityWithDoubleHit(unit,act.ability,[act.target],C,true);
+        execAbilityWithDoubleHit(unit,act.ability,[act.target],C,C.enemyUnits.includes(unit));
         renderField(C);
         playPendingFx(C);
         renderRes(C);
@@ -2160,7 +2180,7 @@ async function resumeRound(C){
     const dots=tickDot(unit);dots.forEach(m=>log(m));
     renderField(C);
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);if(C.enemyUnits.includes(unit)) resetGnSaturationOnKill(C);continue;}
-    const isPlayer=C.playerUnits.includes(unit);
+    const isPlayer=C.playerUnits.includes(unit)&&!unit.isAllyToken;
     if(isPlayer){
       checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);tickSatelliteCharge(unit,C);tickFullBurst(unit,C);unit.hasActedThisFight=true;
       setActive(unit.id);
@@ -2173,8 +2193,8 @@ async function resumeRound(C){
       setActive(unit.id);
       await delay(380);
       checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);checkHpThresholdTransform(unit,C);
-      const act=aiAction(unit,C);
-      if(act){execAbilityWithDoubleHit(unit,act.ability,[act.target],C,true);renderField(C);playPendingFx(C);renderRes(C);await delay(450);}
+      const act=unit.isAllyToken?allyTokenAction(unit,C):aiAction(unit,C);
+      if(act){execAbilityWithDoubleHit(unit,act.ability,[act.target],C,C.enemyUnits.includes(unit));renderField(C);playPendingFx(C);renderRes(C);await delay(450);}
     }
   }
   // Normal rest-of-round loop finished — drain any queued extra turns before actually ending the round.
@@ -2199,7 +2219,7 @@ async function drainExtraTurnQueue(C){
     const uid=C.extraTurnQueue.shift();
     const unit=[...C.playerUnits,...C.enemyUnits].find(u=>u.id===uid);
     if(!unit||unit.hp<=0||unit.defeated) continue;
-    const isPlayer=C.playerUnits.includes(unit);
+    const isPlayer=C.playerUnits.includes(unit)&&!unit.isAllyToken;
     if(isPlayer){
       C.inExtraTurnPhase=true; // tells resumeRound which logic path to continue with after this unit acts
       // Grants this queued unit 2 real actions too (same mechanism Propellant Tank uses) — set
@@ -2215,9 +2235,9 @@ async function drainExtraTurnQueue(C){
       lockActionBar();
       setActive(unit.id);
       await delay(380);
-      const act=aiAction(unit,C);
+      const act=unit.isAllyToken?allyTokenAction(unit,C):aiAction(unit,C);
       if(act){
-        execAbilityWithDoubleHit(unit,act.ability,[act.target],C,true);
+        execAbilityWithDoubleHit(unit,act.ability,[act.target],C,C.enemyUnits.includes(unit));
         renderField(C);
         playPendingFx(C);
         renderRes(C);
@@ -2268,7 +2288,7 @@ function onWin(C){
         name:recruited.name,series:recruited.series,cost:recruitCost,category:recruited.category,
         hp:Math.round(recruited.maxHp*0.88),maxHp:Math.round(recruited.maxHp*0.88),
         atk:Math.round(recruited.atk*0.9),def:Math.round(recruited.def*0.9),spd:Math.round(recruited.spd*0.9),
-        passive:recruited.passive,basic:recruited.basic,special:recruited.special,ultimate:recruited.ultimate
+        passive:recruited.playerPassive||recruited.passive,basic:recruited.basic,special:recruited.special,ultimate:recruited.ultimate
       };
       S.unlockedUnits.push(asPlayer);
       DATA.playerUnits.push(asPlayer);
@@ -2437,6 +2457,30 @@ function startFloor(run){
     }
     return u;
   }).filter(Boolean);
+
+  // Player-side immediate token spawn (e.g. Shagia's Ashtaron, recruited from the After War X
+  // boss fight) — mirrors the enemy-side immediate-trigger spawn in buildEncounter just below,
+  // but targets pUnits instead of the enemy roster. Re-spawns fresh every single floor the source
+  // unit is active in the squad — deliberately no "only once per zone" tracking, since the whole
+  // point is for this to recur every stage, not just once. The spawned unit is flagged
+  // isAllyToken so the round loop (further down) routes its turn to AI auto-action instead of
+  // the manual action bar — there's no 4th action-bar slot for it.
+  for(const u of [...pUnits]){
+    if(u.passive?.type==='token_spawn'&&u.passive.spawnTrigger!=='hp_threshold'){
+      const tb=byId(u.passive.tokenId,DATA.enemyUnits);
+      if(tb){
+        for(let t=0;t<(u.passive.tokenCount||1);t++){
+          const tok=clone(tb);
+          tok.instanceId=tb.id+'_ally_t'+t+'_'+Math.random().toString(36).substr(2,4);
+          tok.id=tok.instanceId;tok.baseId=tb.id;
+          tok.atkMod=1;tok.defMod=1;tok.spdMod=1;tok.statuses=[];tok.defeated=false;
+          tok.isAllyToken=true;tok.spawnedByUnitId=u.id;
+          pUnits.push(tok);
+        }
+        u.tokensSpawned=true;
+      }
+    }
+  }
 
   const isBoss=f===zone.bossFloor;
   const isAce=getEffectiveAceFloors(run,zone).includes(f);
