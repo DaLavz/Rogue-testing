@@ -141,10 +141,6 @@ button:active{transform:scale(0.97)}
 .unit-rect.targetable:hover{border-color:var(--gold)!important;box-shadow:0 0 10px rgba(200,168,75,.3)}
 .unit-rect.targeted{border-color:var(--gold)!important;box-shadow:0 0 14px rgba(200,168,75,.5)}
 .unit-rect.defeated{opacity:.25;filter:grayscale(1);pointer-events:none}
-.unit-rect.shake{animation:unitshake .3s ease}
-@keyframes unitshake{0%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}100%{transform:translateX(0)}}
-.unit-rect.flash{animation:unitflash .25s ease}
-@keyframes unitflash{0%{filter:brightness(1)}40%{filter:brightness(2.5)}100%{filter:brightness(1)}}
 .unit-rect.active-turn{border-color:#fff!important;box-shadow:0 0 10px rgba(255,255,255,.3)}
 .unit-rect.active-turn::after{content:'▼';position:absolute;top:-22px;font-size:.9rem;color:#fff;animation:bounce .6s ease-in-out infinite alternate}
 @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-3px)}}
@@ -172,14 +168,15 @@ button:active{transform:scale(0.97)}
 .status-icon.spd-up{background:#2a1a5a;color:#d47fff}
 .status-icon.dot{background:#4a2a00;color:#ff9933}
 
-.spark-container{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:10}
-.spark{position:absolute;width:4px;height:4px;border-radius:50%;animation:sparkfly .4s ease-out forwards}
-@keyframes sparkfly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
-.dmg-pop{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-size:1.1rem;font-weight:700;pointer-events:none;z-index:20;animation:dmgrise .8s ease-out forwards;white-space:nowrap}
-.dmg-pop.crit{color:var(--gold);font-size:1.4rem}
-.dmg-pop.normal{color:#fff}
-.dmg-pop.heal{color:#6bff6b}
-@keyframes dmgrise{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-36px)}}
+/* Hit feedback — floating number + outward sparks. Both are plain children appended directly to
+   the hit unit's own .unit-rect (which is already position:relative/overflow:visible), so they can
+   only ever render inside that one unit's square. Nothing here is a class toggle on .unit-rect
+   itself, and nothing here is ever applied via a global/multi-element selector. */
+.hit-num{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:#fff;pointer-events:none;z-index:20;white-space:nowrap;animation:hitnumrise .8s ease-out forwards}
+.hit-num.crit{color:var(--gold);font-size:1.4rem}
+@keyframes hitnumrise{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-36px)}}
+.hit-spark{position:absolute;top:50%;left:50%;width:4px;height:4px;border-radius:50%;pointer-events:none;z-index:19;animation:hitsparkfly .4s ease-out forwards}
+@keyframes hitsparkfly{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(calc(-50% + var(--hx)),calc(-50% + var(--hy))) scale(0)}}
 
 .combat-log-wrap{flex:1;min-height:60px;margin:.3rem .5rem;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:var(--radius-md);overflow-y:auto;background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.07) 3px,rgba(0,0,0,.07) 4px)}
 .combat-log{padding:.5rem .6rem;font-family:var(--font-mono);font-size:.8rem;line-height:1.55;min-height:100%}
@@ -340,12 +337,12 @@ button:active{transform:scale(0.97)}
 <!-- TITLE -->
 <div id="screen-title" class="screen active">
   <div class="title-main">Rogue<br>Gundam</div>
-  <div class="title-sub">— PHASE 2 —</div>
   <div id="title-captain-row" style="text-align:center;margin:.3rem 0 .6rem;display:none">
     <span style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-muted)">Captain <span id="title-captain-name" style="color:var(--gold);font-weight:700"></span></span>
     <button id="btn-rename-captain" style="background:none;border:none;color:var(--blue);font-size:.72rem;text-decoration:underline;cursor:pointer;margin-left:.5rem">change</button>
   </div>
   <div class="title-buttons">
+    <button class="btn-primary" id="btn-continue-run" style="display:none">Continue</button>
     <button class="btn-primary" id="btn-new-run" disabled>New Run</button>
     <button class="btn-secondary" id="btn-how">How to Play</button>
     <div id="title-status" style="text-align:center;font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted);margin-top:.4rem">Loading data…</div>
@@ -565,6 +562,50 @@ const S = { run:null, combat:null, draft:{slots:[null,null,null]}, inventory:[],
 
 /* ── PERSISTENCE (localStorage save) ── */
 const SAVE_KEY='rogueGundamSave_v1';
+// Run-continue save — a SEPARATE key from the meta-progression save above, since this captures
+// an in-progress run specifically (only 1 slot, overwritten every stage, deleted entirely on
+// victory/defeat or starting a fresh run). S.run is saved generically/wholesale rather than
+// picking specific fields, since it has organically grown many fields over many sessions
+// (seedModeUnitId, ageSystemeStacks, fleetReconPending, etc.) and hand-picking risks silently
+// dropping something added later. startFloor(run) is sufficient to fully rebuild the combat
+// state from this data alone — confirmed it has no other hidden dependency on S.combat already
+// existing — so there's no need to separately snapshot mid-combat state at all.
+const RUN_SAVE_KEY='rogueGundamRunSave_v1';
+function saveRunProgress(){
+  try{
+    const data={
+      run:S.run, inventory:S.inventory, currency:S.currency, activePassives:S.activePassives,
+      playerUnitsSnapshot:S.run.playerUnitIds.map(id=>byId(id,DATA.playerUnits)).filter(Boolean),
+      recruitedUnitsSnapshot:(S.run.recruitedThisRun||[]).map(id=>byId(id,DATA.playerUnits)).filter(Boolean)
+    };
+    localStorage.setItem(RUN_SAVE_KEY,JSON.stringify(data));
+  }catch(e){ console.warn('Run save failed',e); }
+}
+function hasRunInProgress(){
+  try{ return !!localStorage.getItem(RUN_SAVE_KEY); }catch(e){ return false; }
+}
+function deleteRunProgress(){
+  try{ localStorage.removeItem(RUN_SAVE_KEY); }catch(e){ console.warn('Run delete failed',e); }
+}
+function loadRunProgress(){
+  try{
+    const raw=localStorage.getItem(RUN_SAVE_KEY);
+    if(!raw) return false;
+    const data=JSON.parse(raw);
+    S.run=data.run;
+    S.inventory=data.inventory||[];
+    S.currency=data.currency||0;
+    S.activePassives=data.activePassives||[];
+    // Recruited/drafted units are frozen snapshots, same reasoning as the meta-save's
+    // unlockedUnits handling — merge them into DATA.playerUnits so they're selectable again,
+    // since that array is rebuilt fresh on every page load and won't already contain them.
+    for(const u of [...(data.playerUnitsSnapshot||[]),...(data.recruitedUnitsSnapshot||[])]){
+      if(!DATA.playerUnits.find(p=>p.id===u.id)) DATA.playerUnits.push(u);
+    }
+    startFloor(S.run);
+    return true;
+  }catch(e){ console.warn('Run load failed',e); deleteRunProgress(); return false; }
+}
 function saveGame(){
   try{
     const data={
@@ -749,7 +790,7 @@ function rps(atkCat,defCat,attackerIsEnemy){
 }
 
 /* ── CRIT CHANCE ── */
-function critChance(u){ return clamp(0.05+u.spd/100+(u.critBonusThisRound||0)+(u.storageCritBonus||0),0.05,0.40); }
+function critChance(u){ return clamp(0.05+u.spd/100+(u.critBonusThisRound||0)+(u.storageCritBonus||0)+(u.openerCritBonus||0),0.05,0.40); }
 
 /* ── DAMAGE ── */
 function hasCombatModifier(id){
@@ -766,12 +807,32 @@ function calcDmg(atk,def,mult,pierce,isCrit,abilityKey){
       return {damage:0,isCrit:false,rpsMult:1,negated:true};
     }
   }
+  // Phase Shift Armor (SEED zone trait) — 15% chance to negate Melee/Ranged damage against ANY
+  // enemy in this zone (not a per-unit passive — checked zone-wide via S.combat.zoneId), but
+  // Mobility damage bypasses it entirely (excluded by category, mirroring vsCategory's exclusion
+  // logic above but inverted: this only triggers for the two listed categories, not "everything
+  // except one"). Stops working after round 3 ("PS drains to 0%" per the doc) — checked against
+  // S.combat.round directly, since calcDmg doesn't otherwise receive the round number as a parameter.
+  if(S.combat&&S.combat.zoneId==='seed'&&S.combat.enemyUnits&&S.combat.enemyUnits.includes(def)&&S.combat.round<=3){
+    if((atk.category==='Melee'||atk.category==='Ranged')&&Math.random()<0.15){
+      return {damage:0,isCrit:false,rpsMult:1,negated:true};
+    }
+  }
   const a=atk.atk*(atk.atkMod||1);
   const d=def.def*(def.defMod||1)*(1-(pierce||0));
   const raw=a-d*cfg.defMultiplier;
   const floored=Math.max(raw,a*cfg.damageFloorPercent);
   const attackerIsEnemy=S.combat&&S.combat.enemyUnits&&S.combat.enemyUnits.includes(atk);
-  const rpsMult=rps(atk.category,def.category,attackerIsEnemy);
+  // Always Advantaged (Re:RISE) — when the ATTACKER has the alwaysAdvantagedAttacker flag set
+  // (a SEPARATE field from passive.type, since Re:RISE's primary type stays
+  // temp_def_up_on_threshold so checkHpThresholdTransform still recognizes that mechanic), every
+  // hit is treated as having the RPS advantage, regardless of the real category matchup.
+  // Deliberately ONE-DIRECTIONAL: only checked against atk (the attacker), never def — Re:RISE
+  // still genuinely takes extra damage from whatever real counters his own category when HE is
+  // being hit, since this flag never touches that side of the calculation at all.
+  const rpsMult=atk.passive?.alwaysAdvantagedAttacker
+    ?(attackerIsEnemy?ENEMY_RPS_ADVANTAGE_MULT:DATA.rpsChart.advantageMultiplier)
+    :rps(atk.category,def.category,attackerIsEnemy);
   const critMult=isCrit?cfg.critMultiplier:1;
   const v=1+randF(-cfg.varianceRange,cfg.varianceRange);
   let finalDamage=Math.max(1,Math.round(floored*mult*rpsMult*critMult*v));
@@ -838,6 +899,7 @@ function applyStatus(target,eff){
   else if(t==='atk_down_dot'){applyStatus(target,{type:'atk_down',value:eff.atkDownValue,duration:eff.duration});applyStatus(target,{type:'dot',value:eff.dotValue,duration:eff.duration});}
   else if(t==='atk_def_up'){applyStatus(target,{type:'atk_up',value:eff.value,duration:eff.duration});applyStatus(target,{type:'def_up',value:eff.value,duration:eff.duration});}
   else if(t==='atk_spd_up'){applyStatus(target,{type:'atk_up',value:eff.value,duration:eff.duration});applyStatus(target,{type:'spd_up',value:eff.value,duration:eff.duration});}
+  else if(t==='dodge_status') push(t,null,eff.value,eff.duration,'👻','dodge-status');
   rebuildMods(target);
 }
 
@@ -944,10 +1006,42 @@ function aiAction(enemy,C){
       if(enemy.ultimate&&C.enemyUlt>=100&&hpPct<Math.min(.85,.6+aggro)) ability='ultimate';
     }
   }
+  // ZERO System Overload (Quatre's Wing Zero) — forces targeting onto whichever player unit
+  // currently has the highest HP, overriding whatever the tier-based logic above selected.
+  if(enemy.passive?.type==='zero_system_forced_target_highest_hp'){
+    target=players.reduce((b,p)=>p.hp>b.hp?p:b,players[0]);
+  }
+  // ZERO System Duel (Zechs's Epyon) — locks onto whichever player unit dealt the MOST damage to
+  // this boss LAST round specifically, tracked via C.damageDealtToEpyonLastRound (a per-round
+  // snapshot, reset and rebuilt in runRound the same way other "last round" trackers work here).
+  // Falls back to the tier-based target above if no damage was dealt yet (e.g. round 1).
+  if(enemy.passive?.type==='zero_system_locks_top_damage_dealer'&&C.damageDealtToEpyonLastRound){
+    const entries=Object.entries(C.damageDealtToEpyonLastRound);
+    if(entries.length){
+      const topDealerId=entries.reduce((best,cur)=>cur[1]>best[1]?cur:best,entries[0])[0];
+      const topDealer=players.find(p=>p.id===topDealerId);
+      if(topDealer) target=topDealer;
+    }
+  }
   return {ability,target};
 }
 
 /* ── EXECUTE ABILITY ── */
+// Wraps execAbility to add Olba Frost's "Special hits twice while my Virsago token is alive"
+// mechanic, without needing to duplicate this check at all 3 enemy-AI call sites. Checks the
+// SAME ability+targets a second time, only for Special, only while genuinely verifying the
+// token is still alive right now (not just "was spawned at some point") — a token that's since
+// died correctly stops granting the double-hit.
+function execAbilityWithDoubleHit(attacker,abilityKey,targets,C,isEnemy){
+  execAbility(attacker,abilityKey,targets,C,isEnemy);
+  if(abilityKey==='special'&&attacker.passive?.type==='token_spawn'&&attacker.passive.specialDoubleHitWhileTokenAlive){
+    const tokenAlive=C.enemyUnits.some(e=>e.baseId===attacker.passive.tokenId&&!e.defeated&&e.hp>0);
+    if(tokenAlive&&targets.some(t=>t.hp>0&&!t.defeated)){
+      log(`<span class="log-system">${attacker.name}'s Special strikes again — the Virsago token empowers the blow!</span>`);
+      execAbility(attacker,abilityKey,targets,C,isEnemy);
+    }
+  }
+}
 function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
   const baseAb=(abilityKey==='basic'&&attacker.burstModeActive&&attacker.passive?.burstBasic)?attacker.passive.burstBasic:attacker[abilityKey];
   if(!baseAb) return;
@@ -963,6 +1057,26 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       C.firstSpecialUsed[attacker.id]=true;
       ab={...ab,multiplier:attacker.passive.boostedMultiplier};
     }
+  }
+  // Revenge of Char (Sazabi) — the FIRST Special use this fight dynamically gets a SPD Down
+  // effect attached (the Special's base data has no effect by default), tracked via the same
+  // once-per-fight flag pattern as first_special_precharge above, just injecting an effect
+  // object instead of swapping the multiplier.
+  if(abilityKey==='special'&&attacker.passive?.type==='first_special_applies_spd_down'){
+    if(!C.firstSpecialSpdDownUsed) C.firstSpecialSpdDownUsed={};
+    if(!C.firstSpecialSpdDownUsed[attacker.id]){
+      C.firstSpecialSpdDownUsed[attacker.id]=true;
+      ab={...ab,effect:{type:'spd_down',value:attacker.passive.spdDownValue,duration:attacker.passive.spdDownDuration}};
+    }
+  }
+  // Dwindling Reserves (Gundam Heavyarms) — tracks a per-fight use counter on the unit itself
+  // (specialUseCount), overriding ab.energyCost BEFORE the energy block below reads it: the
+  // first `earlyUses` uses cost `earlyCost`, every use after that costs `lateCost`. Counter
+  // increments here, at the moment the Special is actually committed to, not when it resolves.
+  if(abilityKey==='special'&&attacker.passive?.type==='ammo_curve_special_cost'){
+    attacker.specialUseCount=(attacker.specialUseCount||0)+1;
+    const cost=attacker.specialUseCount<=attacker.passive.earlyUses?attacker.passive.earlyCost:attacker.passive.lateCost;
+    ab={...ab,energyCost:cost};
   }
   const cfg=DATA.combatConfig;
   let tlist=[];
@@ -981,6 +1095,30 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       // NOTE: nm() isn't available yet at this point in execAbility (it's declared further down
       // in the function, and const declarations aren't hoisted) — use the plain unit name instead.
       log(`<span class="log-system">⚠ ${attacker.name} panics and fires on his own ally!</span>`);
+    }
+  }
+  // Active Cloak (Gundam Deathscythe) — checked on the TARGET's passive (tlist[0]), not the
+  // attacker's, since this is specifically about Deathscythe being hard to target, not about
+  // enemy behavior. Redirects to a different living player unit if one's available; if
+  // Deathscythe is the only player unit left alive, the attack proceeds against him normally.
+  if(isEnemy&&ab.target==='single'&&tlist[0]&&tlist[0].passive?.type==='stealth_redirect_chance'&&Math.random()<tlist[0].passive.value){
+    const otherPlayerUnits=C.playerUnits.filter(p=>p.id!==tlist[0].id&&p.hp>0&&!p.defeated);
+    if(otherPlayerUnits.length){
+      log(`<span class="log-system">⚠ ${attacker.name}'s attack is thrown off — ${tlist[0].name} vanishes into the shadows!</span>`);
+      tlist=[pick(otherPlayerUnits)];
+    }
+  }
+  // Hell's Cloak (Gundam Deathscythe Hell) — round 1 is a GUARANTEED redirect (100%, fully
+  // untargetable), every round after uses the configured fallbackChance instead. Distinct from
+  // the base Deathscythe's flat-rate stealth_redirect_chance above.
+  if(isEnemy&&ab.target==='single'&&tlist[0]&&tlist[0].passive?.type==='guaranteed_round1_stealth_then_chance'){
+    const procChance=C.round===1?1:tlist[0].passive.fallbackChance;
+    if(Math.random()<procChance){
+      const otherPlayerUnits=C.playerUnits.filter(p=>p.id!==tlist[0].id&&p.hp>0&&!p.defeated);
+      if(otherPlayerUnits.length){
+        log(`<span class="log-system">⚠ ${attacker.name}'s attack is thrown off — ${tlist[0].name} vanishes into the shadows!</span>`);
+        tlist=[pick(otherPlayerUnits)];
+      }
     }
   }
 
@@ -1016,6 +1154,16 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(attacker.passive?.type==='high_variance_gamble'&&Math.random()<attacker.passive.zeroEnergyChance){
       gain=0;
       log(`<span class="log-system">${attacker.name}'s Permet score falters — no energy gained!</span>`);
+    }
+    // Opportunist's Charge (Gundam Virsago) — checks the REAL target's debuff status directly
+    // against targets[0] (already available here for a single-target Basic). A previous version
+    // of this used a flag meant to be set inside the per-target loop below and read here, but
+    // that loop runs AFTER this energy block, not before — confirmed by checking the actual line
+    // order, not assumed — so the flag was never actually set in time. Fixed by checking the
+    // target directly instead of relying on loop-order timing at all.
+    if(attacker.passive?.type==='debuffed_target_basic_energy_bonus'&&targets[0]){
+      const targetIsDebuffed=targets[0].statuses&&targets[0].statuses.some(s=>['atk_down','def_down','spd_down'].includes(s.type));
+      if(targetIsDebuffed) gain+=attacker.passive.value;
     }
     if(!isEnemy) C.playerEnergy=Math.min(cfg.energyMax,C.playerEnergy+gain);
     else C.enemyEnergy=Math.min(cfg.energyMax,C.enemyEnergy+gain);
@@ -1053,8 +1201,33 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
 
   for(const t of tlist){
     if(t.hp<=0) continue;
-    // dodge check
-    if(isEnemy&&t.passive?.type==='dodge'&&Math.random()<t.passive.value){log(`→ ${nm(t,!isEnemy)} <em>dodges!</em>`);continue;}
+    // dodge check — works for EITHER side. Previously gated on isEnemy (the ATTACKER'S side),
+    // which meant a player unit with this passive correctly dodged enemy attacks, but an ENEMY
+    // unit with the same passive (Lalah Elmeth, Desil Khronos) never actually dodged a player's
+    // attack at all — confirmed as a real bug via direct test before this fix.
+    if(t.passive?.type==='dodge'&&Math.random()<t.passive.value){log(`→ ${nm(t,!isEnemy)} <em>dodges!</em>`);continue;}
+    // High-Risk ZERO System (Wing Gundam Zero) — a dodge check with its own per-fight successful-
+    // dodge counter (zeroSystemDodgeCount). Once that counter hits dodgesForOverload, triggers a
+    // ONE-TIME permanent stat overload (zeroSystemOverloaded flag prevents re-triggering) — the
+    // ATK/DEF change is applied directly to baseAtkMod/baseDefMod so it persists for the rest of
+    // the fight, then rebuildMods() is called immediately so the change actually takes effect.
+    if(t.passive?.type==='dodge_with_overload_threshold'&&Math.random()<t.passive.dodgeChance){
+      log(`→ ${nm(t,!isEnemy)} <em>dodges!</em>`);
+      t.zeroSystemDodgeCount=(t.zeroSystemDodgeCount||0)+1;
+      if(t.zeroSystemDodgeCount>=t.passive.dodgesForOverload&&!t.zeroSystemOverloaded){
+        t.zeroSystemOverloaded=true;
+        t.baseAtkMod=(t.baseAtkMod!=null?t.baseAtkMod:1)*t.passive.overloadAtkMod;
+        t.baseDefMod=(t.baseDefMod!=null?t.baseDefMod:1)*t.passive.overloadDefMod;
+        rebuildMods(t);
+        log(`<span class="log-phase">⚡ ${nm(t,!isEnemy)}'s ZERO System overloads! Permanent stat surge for the rest of the fight.</span>`);
+      }
+      continue;
+    }
+    // Mirage Colloid (Blitz Gundam) — checks for the dodge_status status type specifically
+    // (distinct from the passive-based dodge checks above, since this is a temporary,
+    // player-activated effect, not a permanent unit passive).
+    const colloidStatus=t.statuses&&t.statuses.find(s=>s.type==='dodge_status');
+    if(colloidStatus&&Math.random()<colloidStatus.value){log(`→ ${nm(t,!isEnemy)} <em>vanishes behind Mirage Colloid!</em>`);continue;}
     // special negate
     if(abilityKey==='special'&&t.passive?.type==='special_negate'&&Math.random()<t.passive.chance){log(`→ ${nm(t,!isEnemy)} <em>negates the special!</em>`);continue;}
     // Pacifist Protocol (e.g. AGE-3) — on Basic Attack only, a chance to apply a random debuff to
@@ -1079,6 +1252,27 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(attacker.passive?.type==='acts_first_dmg_bonus'&&C.firstActorThisRoundId===attacker.id){
       effMult=effMult*attacker.passive.value;
     }
+    // The Patience of a General (Tallgeese III) — bonus damage if this unit is genuinely last in
+    // THIS round's pre-built order (lowest SPD on the team), mirroring acts_first_dmg_bonus above
+    // but checked against the opposite end of currentOrder.
+    if(attacker.passive?.type==='acted_last_this_round_bonus'&&C.lastActorThisRoundId===attacker.id){
+      effMult=effMult*attacker.passive.value;
+    }
+    // The Patient General (Treize's Tallgeese III) — bonus damage if this unit was last in the
+    // PREVIOUS round's order specifically, not this round's — reads lastActorLastRoundId, the
+    // round-boundary swap of the field above, set fresh each round in runRound.
+    if(attacker.passive?.type==='acted_last_previous_round_bonus'&&C.lastActorLastRoundId===attacker.id){
+      effMult=effMult*attacker.passive.value;
+    }
+    // Counter-Aggression / Escalated Aggression (Shenlong / Altron) — bonus damage against any
+    // target that has already acted at least once THIS FIGHT (t.hasActedThisFight, set the first
+    // time that unit ever takes a turn). Shenlong's version is Basic-only (appliesToBasicOnly);
+    // Altron's escalated version applies to every ability type.
+    if(attacker.passive?.type==='acted_this_fight_dmg_bonus'&&t.hasActedThisFight){
+      if(!attacker.passive.appliesToBasicOnly||abilityKey==='basic'){
+        effMult=effMult*attacker.passive.value;
+      }
+    }
     // Adapted Combat Frame (Susanowo) — bonus damage on single-target attacks ONLY, zero bonus on
     // any AoE hit. Checked against the ABILITY's own target type, not tlist.length, since a
     // single-target ability hitting one enemy and an AoE ability that happens to only have one
@@ -1100,6 +1294,18 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       const targetHasDefDown=t.statuses&&t.statuses.some(s=>s.type==='def_down');
       if(targetHasDefDown) effMult=effMult*attacker.passive.debuffedBonus;
     }
+    // Frost Brothers' Coordination (Shagia's boss form) / For My Brother (Olba's ace form) —
+    // when the ASHTARON TOKEN (attacker here) hits the same target its SOURCE unit (the boss or
+    // Olba, whichever spawned it) already targeted this round, the hit gets a bonus. Finds the
+    // source by id-matching baseId against any living unit whose token_spawn passive specifies
+    // coordinatedPincerBonus and lists this token's baseId — works for either source without
+    // hardcoding which one spawned it.
+    if(attacker.baseId==='ashtaron_token'){
+      const sourceUnit=C.enemyUnits.find(e=>!e.defeated&&e.hp>0&&e.passive?.type==='token_spawn'&&e.passive.coordinatedPincerBonus&&e.passive.tokenId===attacker.baseId);
+      if(sourceUnit&&sourceUnit.attackedTargetThisRound===t.id){
+        effMult=effMult*(1+sourceUnit.passive.coordinatedPincerBonus);
+      }
+    }
     // Marksman's Patience (Gundam Dilanza Hound) — bonus damage on Basic Attacks against a target
     // that hasn't been hit by ANYONE yet this round. Checked against C.targetedThisRound BEFORE
     // this hit itself gets registered into that set later in this same function — reading it here
@@ -1107,6 +1313,14 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(attacker.passive?.type==='first_hit_dmg_bonus'&&abilityKey==='basic'){
       const targetAlreadyHitThisRound=C.targetedThisRound&&C.targetedThisRound.has(t.id);
       if(!targetAlreadyHitThisRound) effMult=effMult*attacker.passive.value;
+    }
+    // Relentless Focus (Ennil El's Jenice Kai) — +25% damage if this unit attacks the SAME target
+    // it attacked LAST round specifically (not this round — that distinction matters, since
+    // within-round target tracking already exists for a different mechanic above). Tracked via a
+    // simple lastAttackTargetId field, updated at the very end of this loop body after the bonus
+    // check, so this round's hit doesn't accidentally count as already matching itself.
+    if(attacker.passive?.type==='same_target_consecutive_round_bonus'&&attacker.lastAttackTargetId===t.id){
+      effMult=effMult*attacker.passive.value;
     }
     // Permet Score Gamble (Gundam Lfrith) — 20% chance of +50% damage on ANY attack (Basic,
     // Special, or Ultimate), genuinely independent from the separate zero-energy-chance roll in
@@ -1122,6 +1336,16 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     if(attacker.passive?.type==='low_hp_target_dmg_bonus'){
       const targetIsLowHp=(t.hp/t.maxHp)<(attacker.passive.threshold!=null?attacker.passive.threshold:0.5);
       if(targetIsLowHp) effMult=effMult*attacker.passive.value;
+    }
+    // Satellite System (Gundam X / X Divider / Double X) — once tickSatelliteCharge has flagged
+    // the charge as ready, THIS Special use consumes it: applies the bonus multiplier, then resets
+    // both the ready flag and the turn counter back to 0, so the next charge cycle starts fresh
+    // from zero rather than instantly re-triggering on the very next turn.
+    if(attacker.passive?.type==='charge_special_bonus'&&abilityKey==='special'&&attacker.satelliteChargeReady){
+      effMult=effMult*(1+attacker.passive.bonus);
+      attacker.satelliteChargeReady=false;
+      attacker.satelliteChargeTurns=0;
+      log(`<span class="log-system">${attacker.name} unleashes the fully-charged Satellite System!</span>`);
     }
     // Lock-On Targeting (Flauros) — bonus DEF pierce on the 2nd consecutive Basic Attack against
     // the SAME target. Tracked via a simple "last target" field on the attacker itself, reset
@@ -1139,11 +1363,70 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
     const prev=t.hp;
     t.hp=Math.max(0,t.hp-damage);
     if(C.targetedThisRound) C.targetedThisRound.add(t.id);
+    // Ally-low-HP reactive triggers (Infinite Justice's DEF gain, Sandrock's energy gain) — fires
+    // once per ally PER THRESHOLD-CROSSING (not every hit while already below it), checked right
+    // after t's HP actually changes, since that's the only moment this can newly become true.
+    // Sandrock's version (secondaryEffect:'ally_low_hp_energy') was a REAL pre-existing gap found
+    // while building this — the field existed in data with zero matching code anywhere.
+    if(t.hp<prev){
+      const tTeam=C.playerUnits.includes(t)?C.playerUnits:C.enemyUnits;
+      const reactiveAllies=tTeam.filter(a=>a!==t&&!a.defeated&&a.hp>0&&(a.passive?.type==='ally_low_hp_def_gain'||a.passive?.secondaryEffect==='ally_low_hp_energy'));
+      for(const ally of reactiveAllies){
+        const threshold=ally.passive.threshold!=null?ally.passive.threshold:0.4;
+        const wasAbove=prev/t.maxHp>=threshold;
+        const nowBelow=t.hp/t.maxHp<threshold;
+        if(wasAbove&&nowBelow){
+          if(ally.passive.type==='ally_low_hp_def_gain'){
+            ally.baseDefMod=(ally.baseDefMod!=null?ally.baseDefMod:1)*ally.passive.defMod;
+            rebuildMods(ally);
+            log(`<span class="log-phase">${ally.name} steels itself — ${nm(t,!isEnemy)} dropped below ${Math.round(threshold*100)}% HP!</span>`);
+          } else if(ally.passive.secondaryEffect==='ally_low_hp_energy'){
+            const isAllyEnemySide=C.enemyUnits.includes(ally);
+            if(!isAllyEnemySide) C.playerEnergy=Math.min(DATA.combatConfig.energyMax,C.playerEnergy+2);
+            else C.enemyEnergy=Math.min(DATA.combatConfig.energyMax,C.enemyEnergy+2);
+            log(`<span class="log-system">${ally.name} surges with protective focus — +2 energy!</span>`);
+          }
+        }
+      }
+    }
+    // ZERO System Duel (Zechs's Epyon) — accumulates how much damage THIS player unit dealt to
+    // any enemy with this passive type, THIS round. Snapshotted into damageDealtToEpyonLastRound
+    // at the round boundary in runRound (same pattern as targetedThisRound/targetedLastRound),
+    // read by aiAction to decide who Epyon locks onto next round. Generic by passive type, not
+    // hardcoded to one specific enemy id, in case a future unit reuses this same mechanic.
+    if(!isEnemy&&t.passive?.type==='zero_system_locks_top_damage_dealer'){
+      if(!C.damageDealtToEpyonThisRound) C.damageDealtToEpyonThisRound={};
+      C.damageDealtToEpyonThisRound[attacker.id]=(C.damageDealtToEpyonThisRound[attacker.id]||0)+damage;
+    }
+    // Beam Shield Reflect (Gundam X Divider) — checked on the TARGET's own passive (t, not
+    // attacker), since this triggers when X Divider is the one being hit, not when it's attacking.
+    // Reflects a percentage of the damage IT just took back at the original attacker, applied
+    // directly to attacker.hp with its own defeat check, separate from the main per-target loop's
+    // own defeat handling later in this function.
+    if(t.passive?.type==='dmg_reflect_chance'&&!t.defeated&&t.hp>0&&Math.random()<t.passive.procChance){
+      const reflectDmg=Math.max(1,Math.round(damage*t.passive.reflectPercent));
+      attacker.hp=Math.max(0,attacker.hp-reflectDmg);
+      log(`<span class="log-system">${nm(t,!isEnemy)}'s beam shield reflects <span class="log-damage">${reflectDmg}</span> back at ${nm(attacker,isEnemy)}!</span>`);
+      if(attacker.hp<=0&&!attacker.defeated){attacker.defeated=true;log(`<strong>${nm(attacker,isEnemy)}</strong> is defeated.`);}
+    }
+    // Relentless Focus (Ennil El's Jenice Kai) — records THIS round's target on the attacker
+    // itself, separate from lastAttackTargetId (which only ever reflects what was recorded as of
+    // the START of this round — see the round-boundary swap in endRound). Recording here, reading
+    // lastAttackTargetId in the damage-bonus block above, keeps "last round" meaning a genuinely
+    // different round rather than matching a second hit within the same round.
+    attacker.attackedTargetThisRound=t.id;
     // Pain Tolerance (Gusion Rebake) — bonus energy whenever hit by an enemy Special specifically
     // (not Basic, not Ultimate). Checked here, right where the hit actually lands.
     if(isEnemy&&abilityKey==='special'&&t.passive?.type==='gains_energy_on_enemy_special'){
       C.playerEnergy=Math.min(DATA.combatConfig.energyMax,C.playerEnergy+t.passive.value);
       log(`→ <span class="log-system">${nm(t,false)} grits through the hit — +${t.passive.value} energy!</span>`);
+    }
+    // Rage-Fueled (Duel Gundam) — a real, temporary atk_up status (not a permanent stat field
+    // change) whenever hit by an enemy Special specifically, correctly expiring after the
+    // configured duration via the normal applyStatus pipeline.
+    if(isEnemy&&abilityKey==='special'&&t.passive?.type==='gains_atk_on_enemy_special'){
+      applyStatus(t,{type:'atk_up',mod:'atkMod',value:t.passive.value,duration:t.passive.duration});
+      log(`→ <span class="log-system">${nm(t,false)} channels rage from the blow — ${statusLabel('atk_up')}!</span>`);
     }
     // Counter-Puncher family (Barbatos line) — the unit that just took this hit has a chance to
     // fire back immediately with a free counter-Basic, at a (possibly boosted) multiplier, before
@@ -1196,6 +1479,11 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       if(isCrit&&attacker.passive?.type==='energy_boost_and_ult_crit_bonus'){
         ug=attacker.passive.ultCritBonus;
       }
+      // Fastest Ult-Charger (Strike Freedom) — same pattern as 00 Raiser's crit-Ult-bonus above,
+      // just a different override value (the doc's +30% instead of the normal +20%).
+      if(isCrit&&attacker.passive?.type==='crit_ult_gauge_bonus'){
+        ug=attacker.passive.value;
+      }
       // Ahab Wave Interference (IBO zone trait) — player's own Ult charge rate is reduced 30%,
       // EXCEPT once only 1 living enemy remains (drops to no penalty), and fully negated if the
       // player holds the "Innovator Awakening" legendary (checked generically by item id, so this
@@ -1242,10 +1530,35 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       }
     }
   }
+  // Suppression Fire (Gundam Leopard) — checked ONCE per Basic Attack call (not per target — this
+  // is a single proc, not a per-hit chance), after the main attack has fully resolved. Fires a
+  // free second shot at a reduced multiplier against a random OTHER living enemy (excluding
+  // whichever target the main attack just hit, so it always represents genuine suppression of a
+  // different unit, not a double-hit on the same one).
+  if(attacker.passive?.type==='basic_proc_second_shot'&&abilityKey==='basic'&&Math.random()<attacker.passive.procChance){
+    const mainTargetIds=new Set(tlist.map(x=>x.id));
+    const otherTargets=(isEnemy?C.playerUnits:C.enemyUnits).filter(e=>e.hp>0&&!e.defeated&&!mainTargetIds.has(e.id));
+    if(otherTargets.length){
+      const secondTarget=pick(otherTargets);
+      const {damage:secondDmg,negated:secondNegated}=calcDmg(attacker,secondTarget,attacker.passive.secondShotMultiplier,0,false);
+      if(!secondNegated){
+        secondTarget.hp=Math.max(0,secondTarget.hp-secondDmg);
+        log(`→ <span class="log-system">${attacker.name}'s suppression fire catches ${nm(secondTarget,!isEnemy)} too — <span class="log-damage">${secondDmg}</span>!</span>`);
+        if(!C.pendingFx) C.pendingFx=[];
+        C.pendingFx.push({uid:secondTarget.id,category:attacker.category,isCrit:false,damage:secondDmg});
+        if(secondTarget.hp<=0&&!secondTarget.defeated){secondTarget.defeated=true;log(`<strong>${nm(secondTarget,!isEnemy)}</strong> is defeated.`);if(C.enemyUnits.includes(secondTarget)) resetGnSaturationOnKill(C);}
+      }
+    }
+  }
   // self buff (fires once regardless of target count — including target:"self" abilities with no
   // damage targets). Was Ultimate-only; now also works on Specials, for support units whose core
   // kit action is a buff rather than damage.
-  if(!isEnemy&&(abilityKey==='ultimate'||abilityKey==='special')&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
+  // FIXED: this previously only ever worked for player-side units (gated on !isEnemy), which
+  // would have silently broken Sazabi's Ultimate self-buff while he's fought as the actual enemy
+  // boss - it would only have correctly applied AFTER being recruited, never during the real
+  // fight. Same class of bug as the earlier dodge-mechanic fix this session; there's no reason a
+  // self-buff should only work for one side.
+  if((abilityKey==='ultimate'||abilityKey==='special')&&ab.selfBuff){applyStatus(attacker,ab.selfBuff);log(`→ ${statusLabel(ab.selfBuff.type)} → ${nm(attacker,isEnemy)}`);}
   // team heal (whole active party) — e.g. Flauros's Field Repair Bits, Gusion Rebake's Field
   // Medic Protocol, Lupus Rex's Field Repair Surge. Fires independently of teamBuff below, so a
   // single ability can do both (heal AND buff) when the data specifies healValue alongside teamBuff.
@@ -1282,9 +1595,24 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
       const targetIsPlayerUnit=C.playerUnits.includes(t);
       if(targetIsPlayerUnit&&t.id===S.run.seedModeUnitId&&!S.run.seedModeUsed){
         S.run.seedModeUsed=true;
-        t.hp=Math.round(t.maxHp*0.3);
+        t.hp=Math.round(t.maxHp*0.5);
         log(`<span class="log-phase">⚡ SEED Mode activates! ${nm(t,false)} refuses to fall!</span>`);
         continue; // skip the defeat entirely for this unit
+      }
+      // Birdmode Sacrifice (Wing Gundam) — SIMPLIFIED from the doc's "player chooses Self-
+      // Destruct or normal death" framing. execAbility is not async, and true mid-resolution
+      // player input here would require restructuring the core combat-resolution control flow —
+      // a meaningfully larger, riskier change than the rest of this mechanic justifies. Instead,
+      // the self-destruct ALWAYS triggers automatically on defeat, preserving the actual payoff
+      // (200 flat AoE damage to every living enemy, ignoring DEF entirely) without the choice.
+      if(targetIsPlayerUnit&&t.passive?.type==='self_destruct_on_defeat'){
+        const livingEnemies=C.enemyUnits.filter(e=>!e.defeated&&e.hp>0);
+        log(`<span class="log-phase">💥 ${nm(t,false)} self-destructs!</span>`);
+        livingEnemies.forEach(e=>{
+          e.hp=Math.max(0,e.hp-t.passive.flatAoeDamage);
+          log(`→ ${nm(e,true)} takes <span class="log-damage">${t.passive.flatAoeDamage}</span> (DEF ignored) [${e.hp+t.passive.flatAoeDamage}→${e.hp}]`);
+          if(e.hp<=0&&!e.defeated){e.defeated=true;log(`<strong>${nm(e,true)}</strong> is defeated.`);resetGnSaturationOnKill(C);}
+        });
       }
       t.defeated=true;log(`<strong>${nm(t,!isEnemy)}</strong> is defeated.`);
       // GN Particle Saturation (00 zone) — resets the SPD-stack count to 0 the instant any ENEMY
@@ -1360,6 +1688,25 @@ function execAbility(attacker,abilityKey,targets,C,isEnemy,useAoeVariant){
 /* ── ZONE TRAIT ── */
 function applyTrait(C){
   const zone=DATA.zones.find(z=>z.id===C.zoneId);
+  if(zone?.trait?.id==='satellite_cannon_threat'){
+    // Satellite Cannon Threat (After War X zone) — 25 flat damage to EVERY living player unit,
+    // but only on every Nth round (default 3rd), reduced by 1 per 10 DEF (rounded down), with a
+    // floor of 1 damage so high DEF alone can never fully negate it. Checked here in applyTrait
+    // (called once per round from runRound) rather than tied to floor-start like GUND-ARM Data
+    // Storm, since this is explicitly a recurring mid-fight threat, not a per-floor-entry one.
+    const t=zone.trait;
+    if(C.round%(t.everyNRounds||3)===0){
+      C.playerUnits.forEach(p=>{
+        if(p.defeated||p.hp<=0) return;
+        const reduction=Math.floor((p.def*(p.defMod||1))/10)*(t.defReductionPer10||1);
+        const dmg=Math.max(1,(t.flatDamage||25)-reduction);
+        p.hp=Math.max(0,p.hp-dmg);
+        log(`<span class="log-system">⚠ Satellite Cannon strikes ${p.name} for <span class="log-damage">${dmg}</span>!</span>`);
+        if(p.hp<=0){p.defeated=true;log(`<strong>${p.name}</strong> is defeated.`);}
+      });
+    }
+    return;
+  }
   if(zone?.trait?.id==='gn_particle_saturation'){
     // GN Particle Saturation (00 zone) — +10% SPD per round, stacking, applied to EVERY living
     // enemy. C.gnSaturationStacks persists across rounds (reset to 0 by resetGnSaturation below,
@@ -1374,6 +1721,20 @@ function applyTrait(C){
     });
     return;
   }
+  if(zone?.trait?.id==='oz_military_coordination'){
+    // OZ Military Coordination (Wing zone) — flat +12% DEF to EVERY living enemy while 2+ are
+    // alive, removed entirely (not scaled down gradually like zaku_squad_tactics) the instant the
+    // count drops to 1 or 0. No stacking, no per-round growth — purely a binary on/off check,
+    // matching the doc's "kill one enemy to remove the bonus entirely" framing exactly.
+    const aliveCount=C.enemyUnits.filter(e=>!e.defeated&&e.hp>0).length;
+    const bonus=aliveCount>=2?1.12:1;
+    C.enemyUnits.forEach(e=>{
+      if(e.defeated||e.hp<=0) return;
+      e.ozCoordinationMod=bonus;
+      e.defMod=(e.defMod||1)*bonus;
+    });
+    return;
+  }
   if(zone?.trait?.id!=='zaku_squad_tactics') return;
   const alive=C.enemyUnits.filter(e=>!e.defeated&&e.hp>0&&e.family==='zaku');
   if(alive.length<2){alive.forEach(e=>{e.zoneMod=1;});return;}
@@ -1384,6 +1745,7 @@ function clearTrait(C){
   C.enemyUnits.forEach(e=>{
     if(e.zoneMod){e.atkMod=(e.atkMod||1)/e.zoneMod;e.zoneMod=1;}
     if(e.gnSaturationMod){e.spdMod=(e.spdMod||1)/e.gnSaturationMod;e.gnSaturationMod=null;}
+    if(e.ozCoordinationMod){e.defMod=(e.defMod||1)/e.ozCoordinationMod;e.ozCoordinationMod=null;}
   });
 }
 // Called wherever an enemy defeat is processed (3 separate sites — the main execAbility defeats
@@ -1455,7 +1817,7 @@ function checkTokenSpawnTrigger(enemy,C){
 function checkHpThresholdTransform(unit,C){
   if(!unit.passive) return;
   const t=unit.passive.type;
-  if(t!=='hp_threshold_transform'&&t!=='low_hp_power_surge') return;
+  if(t!=='hp_threshold_transform'&&t!=='low_hp_power_surge'&&t!=='temp_def_up_on_threshold'&&t!=='temp_stat_burst_on_threshold') return;
   if(unit.transformTriggered) return;
   const hpPct=unit.hp/unit.maxHp;
   const threshold=unit.passive.threshold!=null?unit.passive.threshold:0.3;
@@ -1472,6 +1834,18 @@ function checkHpThresholdTransform(unit,C){
     if(unit.passive.atkBonus!=null) unit.baseAtkMod=(unit.baseAtkMod!=null?unit.baseAtkMod:1)*unit.passive.atkBonus;
     if(unit.passive.spdBonus!=null) unit.baseSpdMod=(unit.baseSpdMod!=null?unit.baseSpdMod:1)*unit.passive.spdBonus;
     if(unit.passive.dmgTakenPenalty!=null) unit.dmgTakenMod=(unit.dmgTakenMod||1)*unit.passive.dmgTakenPenalty;
+  } else if(t==='temp_def_up_on_threshold'){
+    // Planetary Armor Reconfiguration (Re:RISE) — a genuinely TEMPORARY status (def_up for a
+    // configured duration via the normal applyStatus pipeline), not a permanent baseDefMod change
+    // like the two variants above. Still only ever fires once per fight (transformTriggered),
+    // matching the doc's "automatic, not a phase trigger" framing exactly.
+    applyStatus(unit,{type:'def_up',mod:'defMod',value:unit.passive.defUpValue||1.2,duration:unit.passive.defUpDuration||3});
+  } else if(t==='temp_stat_burst_on_threshold'){
+    // SEED Comeback (Destiny Gundam) — TWO simultaneous temporary statuses (atk_up AND spd_up),
+    // both for the same fixed duration, applied via two separate applyStatus calls since each
+    // status type is tracked independently and won't interfere with the other.
+    applyStatus(unit,{type:'atk_up',mod:'atkMod',value:unit.passive.atkMod,duration:unit.passive.duration});
+    applyStatus(unit,{type:'spd_up',mod:'spdMod',value:unit.passive.spdMod,duration:unit.passive.duration});
   }
   log(`<span class="log-phase">⚡ ${unit.name}'s ${unit.passive.name} activates!</span>`);
   rebuildMods(unit);
@@ -1488,6 +1862,34 @@ function tickBurstMode(unit,C){
     unit.hp=Math.max(1,unit.hp-cost);
     log(`<span class="log-phase">${unit.name}'s Burst Mode ends — <span class="log-damage">-${cost} HP</span> backlash.</span>`);
     if(C.activeUnit&&C.activeUnit.id===unit.id) updateActionBar(unit,C);
+  }
+}
+// Full Burst Mode (Freedom Gundam) — same countdown pattern as tickBurstMode above, but NO HP
+// cost on ending, since the doc frames this purely as a duration window (2 turns of AoE), not a
+// backlash-style mechanic like AGE-FX's Burst Mode.
+function tickFullBurst(unit,C){
+  if(!unit.fullBurstActive) return;
+  unit.fullBurstTurnsLeft--;
+  if(unit.fullBurstTurnsLeft<=0){
+    unit.fullBurstActive=false;
+    log(`<span class="log-phase">${unit.name}'s Full Burst Mode ends.</span>`);
+    if(C.activeUnit&&C.activeUnit.id===unit.id) updateActionBar(unit,C);
+  }
+}
+// Satellite System charge (Gundam X / Gundam X Divider / Gundam Double X) — ticks once per THIS
+// unit's own turn (not once per round), building toward passive.chargeTurns. Once fully charged,
+// flags satelliteChargeReady=true for the unit's next Special use to consume; that consumption and
+// reset happen in execAbility's Special-resolution path, not here — this function only ever counts
+// up and flips the ready flag, never reads or clears it. "Lost if defeated before firing" is
+// already correctly satisfied for free: a defeated unit's fields are simply irrelevant once dead,
+// with nothing anywhere reviving a stale charge.
+function tickSatelliteCharge(unit,C){
+  if(unit.passive?.type!=='charge_special_bonus') return;
+  if(unit.satelliteChargeReady) return; // already fully charged, waiting to be spent — don't keep counting past the threshold
+  unit.satelliteChargeTurns=(unit.satelliteChargeTurns||0)+1;
+  if(unit.satelliteChargeTurns>=unit.passive.chargeTurns){
+    unit.satelliteChargeReady=true;
+    log(`<span class="log-phase">${unit.name}'s Satellite System is fully charged!</span>`);
   }
 }
 
@@ -1582,6 +1984,30 @@ function applyStackingAuras(C){
     src.baseDefMod=hasAlly?src.passive.defMod:1;
     rebuildMods(src);
   }
+  // Aggressive Opener (Gundam Airmaster) — flat +10% crit chance (read by critChance() via the
+  // openerCritBonus field, same shape as storageCritBonus) and +10% SPD, active ONLY for the
+  // first roundsActive rounds of the fight, correctly reverting once that window closes rather
+  // than persisting or re-triggering later.
+  const openerUnits=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='opening_rounds_buff');
+  for(const src of openerUnits){
+    const withinWindow=C.round<=src.passive.roundsActive;
+    src.baseSpdMod=withinWindow?src.passive.spdMod:1;
+    src.openerCritBonus=withinWindow?src.passive.critBonus:0;
+    rebuildMods(src);
+  }
+  // The Fate of Humanity (Rau Le Creuset's Providence Gundam) — regenerates a random amount
+  // within the configured min/max range every round, automatically, for the entire fight.
+  // Capped at maxHp; explicitly excludes anyone already defeated (a dead unit doesn't passively
+  // come back from a HoT-style tick — that's what SEED Mode/Field Technician are for).
+  const regenUnits=[...C.playerUnits,...C.enemyUnits].filter(u=>!u.defeated&&u.hp>0&&u.passive?.type==='hp_regen_per_round');
+  for(const src of regenUnits){
+    const healAmount=src.passive.regenMin+Math.round(Math.random()*(src.passive.regenMax-src.passive.regenMin));
+    const before=src.hp;
+    src.hp=Math.min(src.maxHp,src.hp+healAmount);
+    if(src.hp>before){
+      log(`<span class="log-heal">${src.name} regenerates <span class="log-heal">+${src.hp-before} HP</span> (${src.passive.name}).</span>`);
+    }
+  }
 }
 
 async function runRound(C){
@@ -1610,12 +2036,31 @@ async function runRound(C){
   // round's hit-set into "last round" before clearing it for the round about to start.
   C.targetedLastRound=C.targetedThisRound||new Set();
   C.targetedThisRound=new Set();
+  // ZERO System Duel (Zechs's Epyon) — same round-boundary swap pattern as targetedLastRound
+  // above, just for the per-player-unit damage accumulator instead of a target-id set.
+  C.damageDealtToEpyonLastRound=C.damageDealtToEpyonThisRound||{};
+  C.damageDealtToEpyonThisRound={};
   const all=[...C.playerUnits,...C.enemyUnits].filter(u=>u.hp>0&&!u.defeated);
+  // Relentless Focus (Ennil El's Jenice Kai) — same round-boundary swap pattern as the
+  // targetedThisRound/targetedLastRound lines above, just per-unit instead of a single shared set.
+  // Every living unit's lastAttackTargetId is refreshed from whatever they recorded last round,
+  // BEFORE attackedTargetThisRound gets cleared for the round that's about to start.
+  for(const u of all){
+    u.lastAttackTargetId=u.attackedTargetThisRound||null;
+    u.attackedTargetThisRound=null;
+  }
   C.currentOrder=buildOrder(all);
   // Marks the unit that's genuinely first to act this round (e.g. for Avalanche Exia's
   // acts-first damage bonus) — read once at the moment the unit actually takes its turn, not
   // assumed from currentOrder[0] alone, since a defeated/skipped entry could shift who's truly first.
   C.firstActorThisRoundId=C.currentOrder[0]||null;
+  // Same idea for whoever's LAST in the pre-built order (Tallgeese III's "acted last this round"
+  // bonus) — this deliberately uses the pre-built order position, not a genuinely-confirmed-last-
+  // after-defeats version, matching the doc's framing of "lowest SPD, engineerable via team
+  // planning" exactly. lastActorLastRoundId is the round-boundary swap (Treize's bonus needs
+  // PREVIOUS round's last-actor, not this round's).
+  C.lastActorLastRoundId=C.lastActorThisRoundId||null;
+  C.lastActorThisRoundId=C.currentOrder[C.currentOrder.length-1]||null;
   // Cherudim's GN Shot Intercept resets fresh every round — one intercept opportunity per round, never carried over.
   for(const u of all) if(u.passive?.type==='ally_dmg_intercept_per_round') u.interceptUsedThisRound=false;
   // Stable Synergy (Arios Gundam) — flat +5% to the shared Ult gauge every round, no RNG involved
@@ -1640,7 +2085,7 @@ async function runRound(C){
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);if(C.enemyUnits.includes(unit)) resetGnSaturationOnKill(C);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
-      checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);
+      checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);tickSatelliteCharge(unit,C);tickFullBurst(unit,C);unit.hasActedThisFight=true;
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -1653,7 +2098,7 @@ async function runRound(C){
       checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);checkHpThresholdTransform(unit,C);
       const act=aiAction(unit,C);
       if(act){
-        execAbility(unit,act.ability,[act.target],C,true);
+        execAbilityWithDoubleHit(unit,act.ability,[act.target],C,true);
         renderField(C);
         playPendingFx(C);
         renderRes(C);
@@ -1708,7 +2153,7 @@ async function resumeRound(C){
     if(unit.hp<=0){unit.defeated=true;log(`<strong>${unit.name}</strong> is defeated.`);if(C.enemyUnits.includes(unit)) resetGnSaturationOnKill(C);continue;}
     const isPlayer=C.playerUnits.includes(unit);
     if(isPlayer){
-      checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);
+      checkHpThresholdTransform(unit,C);tickBurstMode(unit,C);tickSatelliteCharge(unit,C);tickFullBurst(unit,C);unit.hasActedThisFight=true;
       setActive(unit.id);
       C.waitingForPlayer=true;
       C.activeUnit=unit;
@@ -1720,7 +2165,7 @@ async function resumeRound(C){
       await delay(380);
       checkPhase(unit,C);checkTokenSpawnTrigger(unit,C);checkHpThresholdTransform(unit,C);
       const act=aiAction(unit,C);
-      if(act){execAbility(unit,act.ability,[act.target],C,true);renderField(C);playPendingFx(C);renderRes(C);await delay(450);}
+      if(act){execAbilityWithDoubleHit(unit,act.ability,[act.target],C,true);renderField(C);playPendingFx(C);renderRes(C);await delay(450);}
     }
   }
   // Normal rest-of-round loop finished — drain any queued extra turns before actually ending the round.
@@ -1763,7 +2208,7 @@ async function drainExtraTurnQueue(C){
       await delay(380);
       const act=aiAction(unit,C);
       if(act){
-        execAbility(unit,act.ability,[act.target],C,true);
+        execAbilityWithDoubleHit(unit,act.ability,[act.target],C,true);
         renderField(C);
         playPendingFx(C);
         renderRes(C);
@@ -1780,7 +2225,7 @@ function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 function checkEnd(C){
   const pa=C.playerUnits.some(p=>p.hp>0);
   const ea=C.enemyUnits.some(e=>e.hp>0&&!e.defeated);
-  if(!pa){setTimeout(()=>show('gameover'),600);return true;}
+  if(!pa){deleteRunProgress();setTimeout(()=>show('gameover'),600);return true;}
   if(!ea){setTimeout(()=>onWin(C),600);return true;}
   return false;
 }
@@ -1836,7 +2281,7 @@ function onWin(C){
           showZoneTransition([finalZone]);
         } else {
           $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
-          show('victory');
+          deleteRunProgress();show('victory');
         }
       } else {
         showZoneTransition(remaining);
@@ -1863,6 +2308,7 @@ function startRun(ids){
   // init HP tracking to full
   ids.forEach(id=>{const base=byId(id,DATA.playerUnits);if(base) S.run.unitHp[id]=base.maxHp;});
   S.inventory=[];S.currency=0;S.activePassives=[];
+  saveRunProgress();
   startFloor(S.run);
 }
 
@@ -2223,8 +2669,6 @@ function buildUnitEl(u,isEnemy,C){
     div.appendChild(ultBtn);
   }
 
-  const sc=document.createElement('div');sc.className='spark-container';sc.id='sparks-'+u.id;div.appendChild(sc);
-
   div.addEventListener('click',e=>{
     const liveC=S.combat;
     const liveU=(isEnemy?liveC.enemyUnits:liveC.playerUnits).find(x=>x.id===u.id)||u;
@@ -2356,6 +2800,29 @@ function updateActionBar(u,C){
     bb.addEventListener('click',()=>activateBurstMode(u,C));
     $('row-main').appendChild(bb);
   } else if(!canBurst&&bb) bb.remove();
+
+  // Mirage Colloid button (Blitz Gundam) — same once-per-fight player-activated pattern as Burst
+  // Mode above, just applying a temporary miss-chance status instead of swapping Basic's ability.
+  const canColloid=u.passive?.type==='player_activated_miss_chance'&&!u.mirageColloidUsed;
+  let mc=$('btn-colloid');
+  if(canColloid&&!mc){
+    mc=document.createElement('button');mc.id='btn-colloid';mc.className='action-btn btn-talk';
+    mc.innerHTML='Mirage Colloid<span class="btn-cost">'+u.passive.duration+' turns</span>';
+    mc.addEventListener('click',()=>activateMirageColloid(u,C));
+    $('row-main').appendChild(mc);
+  } else if(!canColloid&&mc) mc.remove();
+
+  // Full Burst Mode button (Freedom Gundam) — same once-per-fight pattern, sets a flag read by
+  // execAbility's AoE-conversion check (added alongside this) rather than swapping Basic's data
+  // outright, since this affects BOTH Basic and Special, not just Basic like Burst Mode.
+  const canFullBurst=u.passive?.type==='player_activated_aoe_burst'&&!u.fullBurstUsed&&!u.fullBurstActive;
+  let fb=$('btn-fullburst');
+  if(canFullBurst&&!fb){
+    fb=document.createElement('button');fb.id='btn-fullburst';fb.className='action-btn btn-talk';
+    fb.innerHTML='Full Burst<span class="btn-cost">'+u.passive.duration+' turns</span>';
+    fb.addEventListener('click',()=>activateFullBurst(u,C));
+    $('row-main').appendChild(fb);
+  } else if(!canFullBurst&&fb) fb.remove();
 }
 
 function activateBurstMode(u,C){
@@ -2364,6 +2831,23 @@ function activateBurstMode(u,C){
   u.burstModeActive=true;
   u.burstModeTurnsLeft=u.passive.duration||3;
   log(`<span class="log-phase">⚡ ${u.name} activates Burst Mode!</span>`);
+  updateActionBar(u,C);
+}
+
+function activateMirageColloid(u,C){
+  if(u.mirageColloidUsed) return;
+  u.mirageColloidUsed=true;
+  applyStatus(u,{type:'dodge_status',mod:null,value:u.passive.missChance,duration:u.passive.duration});
+  log(`<span class="log-phase">⚡ ${u.name} vanishes behind Mirage Colloid!</span>`);
+  updateActionBar(u,C);
+}
+
+function activateFullBurst(u,C){
+  if(u.fullBurstUsed||u.fullBurstActive) return;
+  u.fullBurstUsed=true;
+  u.fullBurstActive=true;
+  u.fullBurstTurnsLeft=u.passive.duration||2;
+  log(`<span class="log-phase">⚡ ${u.name} enters Full Burst Mode!</span>`);
   updateActionBar(u,C);
 }
 
@@ -2480,7 +2964,30 @@ function selectTarget(uid,C,overrideAction){
       targets=[lowestDef];
     }
   }
-  execAbility(u,action,targets,C,false);
+  // Twin Satellite System (Gundam Double X) — once fully charged (satelliteChargeReady, set by
+  // tickSatelliteCharge the same way Gundam X's single-target version works), the Special uses
+  // its aoeVariant sub-object (target:'all', multiplier already including the +60% bonus baked
+  // in) via the SAME mechanism Strike Gundam-style flexible specials already use. The original
+  // approach of just widening the `targets` array was a real bug — execAbility's own tlist
+  // construction only ever reads targets[0] when ab.target==='single', regardless of how many
+  // entries the array actually has, since it trusts the ability's own declared target field, not
+  // the array length. confirmed via direct test before this fix (only 1 of 3 enemies took damage
+  // despite passing all 3 in).
+  const useAoe=action==='special'&&u.passive?.type==='charge_special_bonus'&&u.passive.becomesAoeOnCharge&&u.satelliteChargeReady;
+  if(useAoe){
+    targets=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+    u.satelliteChargeReady=false; // consumed here directly, since the aoeVariant path bypasses
+    u.satelliteChargeTurns=0;     // execAbility's normal single-target consumption block entirely
+  }
+  // Full Burst Mode (Freedom Gundam) — while active (fullBurstActive, set by activateFullBurst),
+  // BOTH Basic and Special widen to hit all enemies via the SAME aoeVariant mechanism confirmed
+  // correct for Double X above. Unlike Double X's one-time charge, this stays active for
+  // multiple turns (fullBurstTurnsLeft, ticked down elsewhere) and covers both ability types.
+  const useFullBurstAoe=u.fullBurstActive&&(action==='basic'||action==='special')&&u[action]?.aoeVariant;
+  if(useFullBurstAoe){
+    targets=C.enemyUnits.filter(e=>e.hp>0&&!e.defeated);
+  }
+  execAbility(u,action,targets,C,false,useAoe||useFullBurstAoe);
   resumeRound(C);
 }
 
@@ -2646,12 +3153,23 @@ function doTalk(C){
       const d=Math.round(boss.atk*.8);
       C.activeUnit.hp=Math.max(0,C.activeUnit.hp-d);
       log(`Failed — ${boss.name} retaliates for <span class="log-damage">${d}</span> damage.`);
+      // Re:RISE-specific twist (talkFailureGrantsUlt passive flag) — reads the Newtype pulse as
+      // combat data, making a failed attempt at this exact HP range genuinely risky on THIS fight
+      // specifically, per the doc's explicit design intent.
+      if(boss.passive?.talkFailureGrantsUlt){
+        C.enemyUlt=Math.min(100,C.enemyUlt+boss.passive.talkFailureGrantsUlt);
+        log(`<span class="log-phase">${boss.name} reads the Newtype pulse as combat data — Ult charge surges!</span>`);
+      }
       renderField(C);
     }
   } else {
     const d=Math.round(boss.atk*.8);
     C.activeUnit.hp=Math.max(0,C.activeUnit.hp-d);
     log(`${boss.name} isn't ready to listen — retaliates for <span class="log-damage">${d}</span> damage.`);
+    if(boss.passive?.talkFailureGrantsUlt){
+      C.enemyUlt=Math.min(100,C.enemyUlt+boss.passive.talkFailureGrantsUlt);
+      log(`<span class="log-phase">${boss.name} reads the Newtype pulse as combat data — Ult charge surges!</span>`);
+    }
     renderField(C);
   }
 
@@ -2675,32 +3193,39 @@ function playPendingFx(C){
 }
 
 function hitFX(uid,isPlayer,category,isCrit,dmg){
-  // Lightweight, always-on call history — capped at the last 30 calls, so it's cheap to keep
-  // running permanently rather than something that needs to be toggled on before reproducing a bug.
-  // Dump it from the console with: copy(JSON.stringify(window.__hitFXLog))
-  if(!window.__hitFXLog) window.__hitFXLog=[];
-  window.__hitFXLog.push({uid,category,isCrit,dmg,t:Math.round(performance.now())});
-  if(window.__hitFXLog.length>30) window.__hitFXLog.shift();
-  const el=$('rect-'+uid);if(!el) return;
-  el.classList.remove('shake','flash');void el.offsetWidth;
-  el.classList.add('shake');if(isCrit) el.classList.add('flash');
-  const pop=document.createElement('div');
-  pop.className='dmg-pop '+(isCrit?'crit':'normal');
-  pop.textContent=(isCrit?'★ ':'')+dmg;
-  el.appendChild(pop);setTimeout(()=>pop.remove(),900);
-  const sc=$('sparks-'+uid);if(!sc) return;
-  // Spark palette by attacker category, matching the unit-square colors: Melee=green "impact", Ranged=blue "bullet", Agility(Mobility)=orange "slash"
-  let cols=['#2d8a3e','#4ade6a','#a8ffb8']; // melee default (green)
-  if(category==='Ranged') cols=['#3a7bd5','#8dc8ff','#ffffff'];
-  else if(category==='Mobility') cols=['#e08a2e','#ffc06a','#ffffff'];
-  const sparkCount=isCrit?9:5;
-  for(let i=0;i<sparkCount;i++){
-    const s=document.createElement('div');s.className='spark';
-    const ang=rand(0,360),dist=rand(14,isCrit?42:32);
-    s.style.setProperty('--tx',Math.cos(ang*Math.PI/180)*dist+'px');
-    s.style.setProperty('--ty',Math.sin(ang*Math.PI/180)*dist+'px');
-    s.style.background=pick(cols);s.style.left='50%';s.style.top='50%';
-    sc.appendChild(s);setTimeout(()=>s.remove(),450);
+  // Rebuilt from scratch (previous version had a "every unit flashes after turn 1" bug that
+  // couldn't be pinned down). This version is deliberately minimal: it looks up exactly ONE
+  // element by its exact id and only ever appends fresh, self-removing children to THAT element.
+  // There is no classList.add/remove on .unit-rect anywhere in here, no querySelectorAll, and no
+  // shared container — each call is fully isolated to the one unit it's given.
+  const el=document.getElementById('rect-'+uid);
+  if(!el) return;
+
+  // Floating damage number
+  const num=document.createElement('div');
+  num.className='hit-num'+(isCrit?' crit':'');
+  num.textContent=(isCrit?'★ ':'')+dmg;
+  el.appendChild(num);
+  const removeNum=()=>{ if(num.isConnected) num.remove(); };
+  num.addEventListener('animationend',removeNum);
+  setTimeout(removeNum,1000); // backstop in case animationend doesn't fire for any reason
+
+  // Outward sparks — color keyed to the attacker's category (Melee=green, Ranged=blue, Mobility=orange)
+  let colors=['#2d8a3e','#4ade6a','#a8ffb8'];
+  if(category==='Ranged') colors=['#3a7bd5','#8dc8ff','#ffffff'];
+  else if(category==='Mobility') colors=['#e08a2e','#ffc06a','#ffffff'];
+  const count=isCrit?9:5;
+  for(let i=0;i<count;i++){
+    const spark=document.createElement('div');
+    spark.className='hit-spark';
+    const angle=Math.random()*360,dist=isCrit?rand(28,44):rand(18,32);
+    spark.style.setProperty('--hx',Math.cos(angle*Math.PI/180)*dist+'px');
+    spark.style.setProperty('--hy',Math.sin(angle*Math.PI/180)*dist+'px');
+    spark.style.background=pick(colors);
+    el.appendChild(spark);
+    const removeSpark=()=>{ if(spark.isConnected) spark.remove(); };
+    spark.addEventListener('animationend',removeSpark);
+    setTimeout(removeSpark,500);
   }
 }
 
@@ -2854,6 +3379,12 @@ const BOSS_STAT_BANDS={
 // zone slot gets identical stats by design. zoneKey can be a zone number (1-9) or the literal
 // string 'final' for the Final Zone's boss specifically.
 function applyBossStatBand(unit,zoneKey){
+  // Re:RISE is currently exempted (exemptFromBossBand flag on its own data) — its stats were
+  // deliberately scaled DOWN from the doc's full endgame numbers (1000/130/58) to be reachable
+  // with only the 8 zones currently built, rather than the eventual full 9-zone+Final game state
+  // the shared 'final' band is tuned for. Keyed by a flag rather than hardcoding this unit's id,
+  // in case a future boss needs the same kind of temporary scaling exception.
+  if(unit.exemptFromBossBand) return;
   const fixed=BOSS_STAT_BANDS[zoneKey];
   if(!fixed) return; // unknown zone key — keep the unit's own hand-set stats as a safe fallback
   unit.hp=fixed.hp;unit.maxHp=unit.hp;
@@ -2952,7 +3483,7 @@ function pickUnitFromGlobalPoolByZone(run,forcedConstraint){
       if(roll<=0){chosenCost=c;break;}
     }
   }
-  const allCosts=[1,2,3,4];
+  const allCosts=[1,2,3,4,5];
   // Graceful fallback: if the rolled (or forced) cost tier has no real units in it YET (e.g.
   // cost-4 content hasn't been added for this zone tier as of this build), step DOWN to the next
   // cheaper tier that actually has candidates, rather than wasting the whole encounter on an empty
@@ -3232,7 +3763,8 @@ function advanceAfterReward(){
     return next;
   }).filter(p=>p.floorsLeft>0);
   S.run.currentFloor++;
-  if(S.run.currentFloor>10){
+  const currentZoneTotalFloors=(DATA.zones.find(z=>z.id===S.run.zoneId)||{}).totalFloors||10;
+  if(S.run.currentFloor>currentZoneTotalFloors){
     const remaining=getRemainingRandomizableZones(S.run);
     if(remaining.length===0){
       const finalZone=DATA.zones.find(z=>z.id==='final');
@@ -3241,12 +3773,13 @@ function advanceAfterReward(){
         return;
       }
       $('vic-text').textContent='You have cleared every available zone! (More zones coming soon.)';
-      show('victory');
+      deleteRunProgress();show('victory');
       return;
     }
     showZoneTransition(remaining);
     return;
   }
+  saveRunProgress();
   startFloor(S.run);
 }
 
@@ -3304,6 +3837,7 @@ function enterNextZone(){
   S.run.stationDone=false;
   delete S.run._pendingNextZone;
   rollDoubleAceVariant(S.run);
+  saveRunProgress();
   startFloor(S.run);
 }
 
@@ -3515,7 +4049,17 @@ function resolveDiceCheck(run,candidate,stat,dc,unitId){
     $('btn-dc-skip').textContent='Continue';
     $('btn-dc-skip').onclick=()=>showSwapPicker(run,candidate);
   } else {
+    // Losing the check costs the rolling unit 5% of their max HP — a real risk for putting someone
+    // forward, but floored at 1 so a failed roll can never outright defeat them on its own (that
+    // still happens through ordinary combat damage, just not through this).
+    const dmg=Math.round(u.maxHp*0.05);
+    const curHp=(run.unitHp&&run.unitHp[unitId]!=null)?run.unitHp[unitId]:u.maxHp;
+    const newHp=Math.max(1,curHp-dmg);
+    const actualLoss=curHp-newHp;
+    if(run.unitHp) run.unitHp[unitId]=newHp;
+
     h+=`<div class="overlay-section"><div class="overlay-value">${candidate.name} isn't convinced and slips away — but leaves behind ⬡ 150 G for your trouble.</div></div>`;
+    h+=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem;color:var(--text-muted)">${u.name} took a beating in the standoff: <strong style="color:var(--red)">-${actualLoss} HP</strong> (${newHp}/${u.maxHp}).</div></div>`;
     $('dc-body').innerHTML=h;
     $('dc-bar').style.display='block';
     $('btn-dc-roll').style.display='none';
@@ -3700,7 +4244,7 @@ function showFleetReconPicker(onDone){
 
 function showFleetReconCostPicker(category,onDone){
   let h=`<div class="overlay-section"><div class="overlay-value" style="font-size:.85rem">Choose the COST tier — higher costs are rarer, stronger units.</div></div>`;
-  [1,2,3,4].forEach(cost=>{
+  [1,2,3,4,5].forEach(cost=>{
     h+=`<button class="fleetrecon-cost-btn" data-cost="${cost}" style="display:block;width:100%;text-align:left;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:6px;padding:.6rem .7rem;margin-bottom:.45rem;cursor:pointer;color:var(--text-primary);font-weight:600">
       Cost ${cost}
     </button>`;
@@ -4165,8 +4709,17 @@ $('btn-draft-go').addEventListener('click',()=>{
 
 /* ── NAV BUTTONS ── */
 $('btn-new-run').addEventListener('click',()=>{
+  deleteRunProgress();
   if(!S.playerName){ show('name-entry'); $('captain-name-input').focus(); return; }
   initDraft();
+});
+$('btn-continue-run').addEventListener('click',()=>{
+  if(!loadRunProgress()){
+    // Save was corrupt or somehow gone by the time this was clicked - fail gracefully back to
+    // the title screen with the button hidden, rather than leaving the player on a broken state.
+    $('btn-continue-run').style.display='none';
+    return;
+  }
 });
 $('btn-rename-captain').addEventListener('click',()=>{
   show('name-entry');
@@ -4196,13 +4749,15 @@ function updateCaptainNameDisplay(){
 $('btn-how').addEventListener('click',()=>{
   openOverlay('How to Play',`
     <div class="overlay-section"><div class="overlay-label">Your Squad</div><div class="overlay-value">3 units fight at once. You also have 4 storage slots for units you've recruited but aren't using right now — swap freely between active and storage at every zone transition in the Garage.</div></div>
-    <div class="overlay-section"><div class="overlay-label">A Run</div><div class="overlay-value">10 zones, 10 stages each. Stage 5 = Ace fight, Stage 10 = Boss. Clear a zone and you fully heal before moving on. (Only Earth, UC Space, AGE, and IBO exist in the game so far — the rest are planned.)</div></div>
+    <div class="overlay-section"><div class="overlay-label">Storage Isn't Wasted</div><div class="overlay-value">Every unit sitting in storage gives your 3 active units a small ATK/DEF and crit boost, scaled by that unit's cost. A full storage of strong units adds up — recruiting and holding onto good units helps even when you can't field them.</div></div>
+    <div class="overlay-section"><div class="overlay-label">A Run</div><div class="overlay-value">9 zones, 10 stages each, then a Final Zone boss. Stage 5 = Ace fight, Stage 10 = Boss. Clear a zone and you fully heal before moving on.</div></div>
     <div class="overlay-section"><div class="overlay-label">In a Fight</div><div class="overlay-value">Turn order is set by SPD. Each turn, pick Basic (free, builds Energy), Special (costs Energy), Ultimate (free once the shared gauge hits 100%), or an Item if you're carrying one.</div></div>
     <div class="overlay-section"><div class="overlay-label">Type Advantage</div><div class="overlay-value">Melee beats Agility, Agility beats Ranged, Ranged beats Melee. The advantage deals ×1.5 damage; the disadvantage only ×0.67 — tap the RPS button anytime to check.</div></div>
     <div class="overlay-section"><div class="overlay-label">Recruiting</div><div class="overlay-value">Some stages offer a new unit instead of a fight — either pick 1 of 3 outright, or beat a dice-check for a single offered unit. Stronger units show up more often the deeper you go.</div></div>
     <div class="overlay-section"><div class="overlay-label">Between Zones</div><div class="overlay-value">Spend currency on permanent upgrades — per-unit HP, or squad-wide Damage/Defense — before entering the next zone.</div></div>
-    <div class="overlay-section"><div class="overlay-label">Items & Rarity</div><div class="overlay-value">Rewards appear after every stage. Rare and Legendary items get more common the deeper into a run you are, and Ace/Boss fights always reward better loot.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Items & Rarity</div><div class="overlay-value">Rewards appear after every stage. Rare and Legendary items get more common the deeper into a run you are, and Ace/Boss fights always reward better loot. A few items (like Haro Support Unit) activate the moment you pick them — no need to use them from your bag.</div></div>
     <div class="overlay-section"><div class="overlay-label">Talking Down Bosses</div><div class="overlay-value">The Newtype Gene item lets you Talk instead of fight on a boss turn — succeed and you recruit them instead. A few bosses have no pilot and can't be talked down.</div></div>
+    <div class="overlay-section"><div class="overlay-label">Saving</div><div class="overlay-value">Your run auto-saves at the start of every stage. Close the app anytime — "Continue" on the title screen picks up right where you left off. Starting a New Run erases it.</div></div>
     <div class="overlay-section"><div class="overlay-label">Tap to Inspect</div><div class="overlay-value">Tap any blue unit name or gold skill name in the combat log for details. Tap "Actives" up top to see every permanent effect you currently have running.</div></div>`);
 });
 $('btn-restart').addEventListener('click',()=>show('title'));
@@ -4769,6 +5324,7 @@ async function loadData(){
     loadGame(); // merge any persisted recruited units now that DATA exists
     updateCaptainNameDisplay();
     $('btn-new-run').disabled=false;
+    $('btn-continue-run').style.display=hasRunInProgress()?'block':'none';
     $('title-status').textContent='';
   }catch(e){
     console.error('Failed to load rogue-data.json',e);
