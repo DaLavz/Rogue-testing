@@ -328,6 +328,15 @@ button:active{transform:scale(0.97)}
 
   .unit-rect.enemy-unit{width:104px;height:94px}
   .unit-rect.player-unit{width:112px;height:100px}
+
+  /* Shop & Upgrade-screen item squares — base rule below is a flat 3-column grid sized off
+     viewport width, which looks right on a phone but balloons into huge squares on a wide desktop
+     window (each column = viewport-width/3, no cap). Reflows into as many ~120px columns as fit
+     within a capped, centered 900px-wide strip instead — same squares stay a sane, consistent size
+     regardless of how wide the browser window actually is, and far more of them fit on screen at
+     once (fixing "not all shop items appear" as a side effect of the same cap).
+     Mobile (below this breakpoint) is completely untouched — this only applies at 640px+. */
+  .item-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));max-width:900px;width:100%;margin:0 auto;gap:.7rem}
   .unit-rect.token-unit{width:76px;height:66px}
 }
 </style>
@@ -3067,6 +3076,17 @@ function showActivesInfo(){
     sections.push(`<div class="overlay-section"><div class="overlay-label">${transAmItem?transAmItem.name:'Trans-Am'}</div><div class="overlay-value" style="font-size:.85rem">${transAmItem?transAmItem.description:''}<br>${phaseLabel}</div></div>`);
   }
 
+  // Haro Support Unit — shown only while the discount is genuinely pending (not yet consumed at
+  // an Upgrade shop visit). This auto-activates on pickup just like Jupiter Fleet Manifest and
+  // Fleet Recon Directive below, but was previously missing its own Actives entry entirely — it's
+  // a run-level modifier (S.run.nextUpgradeDiscount), not a combat modifier, so it never showed up
+  // anywhere once picked up.
+  if(S.run.nextUpgradeDiscount){
+    const haroItem=DATA.items.find(it=>it.id==='haro_support_unit');
+    const pct=Math.round(S.run.nextUpgradeDiscount*100);
+    sections.push(`<div class="overlay-section"><div class="overlay-label">${haroItem?haroItem.name:'Haro Support Unit'}</div><div class="overlay-value" style="font-size:.85rem">${haroItem?haroItem.description:''}<br><strong style="color:var(--gold)">Active — your next Upgrade shop visit is ${pct}% cheaper.</strong></div></div>`);
+  }
+
   // Jupiter Fleet Manifest — shown only while the doubled-bonus flag for the NEXT upgrade shop
   // is genuinely pending, since it's a one-shop-visit effect, not a permanent modifier.
   if(S.run.jupiterFleetActive){
@@ -3567,9 +3587,12 @@ const ITEM_WEIGHT_OVERRIDE={newtype_gene:2.6};
 // specifically should stay reasonably likely even in the higher zone bands where every OTHER
 // Uncommon item's relative share is shrinking. Keyed by item id, multiplies on top of whatever the
 // zone-band table already gives that item's raw rarity.
+// Bumped across the board (was a flat 1 for zones 1-4, topping out at 2.2 by zone 8-9) — heals
+// should show up noticeably more often everywhere, not just hold steady in the late game.
 const HEAL_ZONE_WEIGHT_OVERRIDE={
-  field_technician:{1:1,2:1,3:1,4:1,5:1.6,6:1.6,7:1.8,8:2.2,9:2.2},
-  ms_repair_kit:{1:1,2:1,3:1,4:1,5:1.6,6:1.6,7:1.8,8:2.2,9:2.2}
+  field_technician:{1:1.5,2:1.5,3:1.5,4:1.5,5:2.2,6:2.2,7:2.4,8:2.8,9:2.8},
+  ms_repair_kit:{1:1.5,2:1.5,3:1.5,4:1.5,5:2.2,6:2.2,7:2.4,8:2.8,9:2.8},
+  repair_drone_swarm:{1:1.5,2:1.5,3:1.5,4:1.5,5:2.2,6:2.2,7:2.4,8:2.8,9:2.8}
 };
 
 function weightedPick(items){
@@ -3674,7 +3697,7 @@ function generateRewardPool(){
   const legendaryCap=legendaryCapForZone(zoneNum);
   let legendaryCount=picked.filter(p=>p.rarity==='Legendary').length;
   let guard=0;
-  while(picked.length<3&&guard<200){
+  while(picked.length<4&&guard<200){
     guard++;
     const cand=weightedPick(nonCurrency);
     if(!cand) break;
@@ -3848,13 +3871,16 @@ function enterNextZone(){
 // have fewer encounter opportunities. Compensated by better rewards after each of the 2 ace fights.
 function rollDoubleAceVariant(run){
   const zone=DATA.zones.find(z=>z.id===run.zoneId);
+  // Some zones (e.g. the single-floor Final Zone) have no aceFloors at all — nothing to vary, so
+  // just leave doubleAceZone false and bail out before touching zone.aceFloors.length.
+  if(!zone||!zone.aceFloors||!zone.aceFloors.length){ run.doubleAceZone=false; return; }
   const chance=zone.doubleAceChance!=null?zone.doubleAceChance:0.25;
   run.doubleAceZone=!!(zone.aceFloors.length===1&&Math.random()<chance);
 }
 
 function getEffectiveAceFloors(run,zone){
-  if(run.doubleAceZone&&zone.aceFloors.length===1) return [4,8];
-  return zone.aceFloors;
+  if(run.doubleAceZone&&zone.aceFloors&&zone.aceFloors.length===1) return [4,8];
+  return zone.aceFloors||[];
 }
 
 /* ── STATION (guaranteed recruit stop) ── */
@@ -3947,12 +3973,12 @@ function normalizedStatBonus(unit,stat){
 // zone overall, e.g. UC Space) is the easiest non-Earth DC; each zone after nudges it up a bit.
 function getDiceCheckDC(run){
   const zoneNum=run.visitedZones.length; // 1 for the 1st zone (Earth), 2 for the 2nd, etc.
-  // Grounded directly in the real numbers: a d100 roll plus up to a +30 stat bonus tops out at
-  // 130 total. The previous curve (45-85) let even a mid-bonus unit clear early zones on most
-  // rolls — confirmed too easy. Verified via simulation before landing here: even the player's
-  // BEST possible unit (bonus 25-30) only clears zone 1 about 63% of the time, dropping to ~23%
-  // by zone 9 — genuinely risky throughout, without ever being mathematically unwinnable.
-  return Math.min(105,65+(zoneNum-1)*5);
+  // Lowered by ANOTHER flat 10 points across the board (base 55->45, cap 95->85), stacking on top
+  // of the previous 65->55/105->95 pass — that one wasn't enough on its own. The player's BEST
+  // possible unit (bonus 30) now clears zone 2 about 81% of the time, zone 5 about 66%, and zone 9
+  // about 46% — still scales up with how deep into the run you are, but no longer a coin-flip-or-
+  // worse proposition even early on.
+  return Math.min(85,45+(zoneNum-1)*5);
 }
 
 const STAT_LABELS={hp:'HP',atk:'Attack',def:'Defense',spd:'Speed'};
@@ -4285,6 +4311,20 @@ function applyReward(item){
     return;
   }
   if(item.effect.type==='currency'){S.currency+=item.effect.value;return;}
+  // Party-wide heal (Repair Drone Swarm) — unlike Field Technician's single-target heal_reward,
+  // this needs no unit picker: it just applies to every currently-active unit at once, the moment
+  // it's picked from the reward screen. Deliberately skips any unit already at 0 HP — this can
+  // NEVER revive a downed unit, only top up units that are still standing, by explicit design.
+  if(item.effect.type==='heal_all'){
+    const amount=item.effect.value;
+    S.run.playerUnitIds.forEach(id=>{
+      const base=byId(id,DATA.playerUnits);if(!base) return;
+      const cur=(S.run.unitHp&&S.run.unitHp[id]!=null)?S.run.unitHp[id]:base.maxHp;
+      if(cur<=0) return; // downed — stays downed, this item can't touch it
+      S.run.unitHp[id]=Math.min(base.maxHp,cur+amount);
+    });
+    return;
+  }
   // Passive boosts become active buffs with stage-duration
   if(item.category==='passive_boost'){
     S.activePassives.push({
