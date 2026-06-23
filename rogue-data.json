@@ -362,7 +362,7 @@
       },
       "special": {
         "name": "Gundam Hammer + Beam Saber",
-        "description": "1.7× ATK on one target + applies DEF Down for 2 turns.",
+        "description": "1.7\u00d7 ATK on one target + applies DEF Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 1.7,
@@ -375,7 +375,7 @@
       },
       "ultimate": {
         "name": "Last Shooting",
-        "description": "0.85× ATK on all enemies + applies ATK Down to all for 2 turns.",
+        "description": "0.85\u00d7 ATK on all enemies + applies ATK Down to all for 2 turns.",
         "type": "damage_debuff",
         "target": "all",
         "multiplier": 0.85,
@@ -414,7 +414,7 @@
       },
       "special": {
         "name": "Dynames Full Burst",
-        "description": "2.0× ATK on one target + applies DEF Down for 2 turns.",
+        "description": "2.0\u00d7 ATK on one target + applies DEF Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 2.0,
@@ -427,7 +427,7 @@
       },
       "ultimate": {
         "name": "Trans-Am Dynames",
-        "description": "2.4× ATK on one target + applies ATK Down and DEF Down for 3 turns.",
+        "description": "2.4\u00d7 ATK on one target + applies ATK Down and DEF Down for 3 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 2.4,
@@ -466,7 +466,7 @@
       },
       "special": {
         "name": "Spallow Razor Shrike Assault",
-        "description": "1.8× ATK on one target + applies SPD Down for 2 turns.",
+        "description": "1.8\u00d7 ATK on one target + applies SPD Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 1.8,
@@ -479,7 +479,7 @@
       },
       "ultimate": {
         "name": "AGE-1 Spallow Full Drive",
-        "description": "2.2× ATK on one target + ATK Down and SPD Down for 2 turns + Spallow gains +20% SPD for 2 turns.",
+        "description": "2.2\u00d7 ATK on one target + ATK Down and SPD Down for 2 turns + Spallow gains +20% SPD for 2 turns.",
         "type": "damage_debuff_self_buff",
         "target": "single",
         "multiplier": 2.2,
@@ -560,7 +560,7 @@
       "spd": 35,
       "passive": {
         "name": "Striker Pack Versatility",
-        "description": "Special Attack can target either a single enemy (1.7x ATK + DEF Down) or all enemies (0.65x ATK each + ATK Down to one random target) — same energy cost either way.",
+        "description": "Special Attack can target either a single enemy (1.7x ATK + DEF Down) or all enemies (0.65x ATK each + ATK Down to one random target) \u2014 same energy cost either way.",
         "type": "flexible_special"
       },
       "basic": {
@@ -633,7 +633,7 @@
       },
       "special": {
         "name": "Bazooka Barrage",
-        "description": "1.5× ATK on one target + applies DEF Down for 2 turns.",
+        "description": "1.5\u00d7 ATK on one target + applies DEF Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 1.5,
@@ -668,7 +668,7 @@
       },
       "special": {
         "name": "Finger Vulcan Burst",
-        "description": "0.6× ATK on all 3 player units + applies SPD Down to one random target for 1 turn.",
+        "description": "0.6\u00d7 ATK on all 3 player units + applies SPD Down to one random target for 1 turn.",
         "type": "damage_debuff",
         "target": "all",
         "multiplier": 0.6,
@@ -704,7 +704,7 @@
       },
       "special": {
         "name": "Scattering Beam Gun",
-        "description": "1.3× ATK on one target + applies DoT (Burn) for 2 turns.",
+        "description": "1.3\u00d7 ATK on one target + applies DoT (Burn) for 2 turns.",
         "type": "damage_dot",
         "target": "single",
         "multiplier": 1.3,
@@ -744,7 +744,7 @@
       },
       "special": {
         "name": "Bazooka Precision Shot",
-        "description": "1.8× ATK on one target, ignores 30% of target's DEF.",
+        "description": "1.8\u00d7 ATK on one target, ignores 30% of target's DEF.",
         "type": "damage_pierce",
         "target": "single",
         "multiplier": 1.8,
@@ -753,7 +753,7 @@
       },
       "ultimate": {
         "name": "Red Comet Charge",
-        "description": "2.5× ATK on one target + ATK Down and SPD Down for 2 turns.",
+        "description": "2.5\u00d7 ATK on one target + ATK Down and SPD Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 2.5,
@@ -800,7 +800,7 @@
       },
       "special": {
         "name": "Tri-Star Formation Strike",
-        "description": "2.0× ATK on one target + ATK Down for 2 turns. +20% damage if both tokens alive.",
+        "description": "2.0\u00d7 ATK on one target + ATK Down for 2 turns. +20% damage if both tokens alive.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 2.0,
@@ -813,7 +813,7 @@
       },
       "ultimate": {
         "name": "Black Tri-Stars Overwhelming Force",
-        "description": "0.9× ATK on all player units + DEF Down to all for 2 turns.",
+        "description": "0.9\u00d7 ATK on all player units + DEF Down to all for 2 turns.",
         "type": "damage_debuff",
         "target": "all",
         "multiplier": 0.9,
@@ -857,7 +857,7 @@
       },
       "special": {
         "name": "Needle Missile Volley",
-        "description": "0.7× ATK on all player units + DoT to all for 1 turn.",
+        "description": "0.7\u00d7 ATK on all player units + DoT to all for 1 turn.",
         "type": "damage_dot",
         "target": "all",
         "multiplier": 0.7,
@@ -870,7 +870,7 @@
       },
       "ultimate": {
         "name": "Gyan's Final Gambit",
-        "description": "2.3× ATK on one target + ATK Down and DEF Down for 2 turns.",
+        "description": "2.3\u00d7 ATK on one target + ATK Down and DEF Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
         "multiplier": 2.3,
@@ -914,7 +914,7 @@
       },
       "special": {
         "name": "Heat Rod Electrocution",
-        "description": "1.6× ATK on one target + DoT AND ATK Down for 2 turns.",
+        "description": "1.6\u00d7 ATK on one target + DoT AND ATK Down for 2 turns.",
         "type": "damage_debuff_dot",
         "target": "single",
         "multiplier": 1.6,
@@ -928,7 +928,7 @@
       },
       "ultimate": {
         "name": "Soldier's Pride",
-        "description": "0.9× ATK on all player units + DEF Down to all for 2 turns.",
+        "description": "0.9\u00d7 ATK on all player units + DEF Down to all for 2 turns.",
         "type": "damage_debuff",
         "target": "all",
         "multiplier": 0.9,
@@ -944,7 +944,7 @@
           "forceSpecial": true,
           "forceUltOnBank": true,
           "targetMode": "highest_atk",
-          "description": "Ramba Ral's composure cracks — he fights now with desperate conviction."
+          "description": "Ramba Ral's composure cracks \u2014 he fights now with desperate conviction."
         }
       ],
       "introLines": [
@@ -1369,7 +1369,7 @@
       },
       "introLines": [
         "\"You face the will of a dead man given new purpose. Tremble.\"",
-        "\"This unit was built for one thing — your annihilation.\""
+        "\"This unit was built for one thing \u2014 your annihilation.\""
       ]
     },
     {
@@ -1430,12 +1430,12 @@
           "forceSpecial": true,
           "forceUltOnBank": true,
           "targetMode": "highest_spd",
-          "description": "Char abandons calculation for pure aggression — the Sazabi blazes with everything he has left."
+          "description": "Char abandons calculation for pure aggression \u2014 the Sazabi blazes with everything he has left."
         }
       ],
       "introLines": [
         "\"Newtype or not, you cannot win against thirty years of hatred!\"",
-        "\"I am Char Aznable! I will end this — for Lalah, for everyone!\""
+        "\"I am Char Aznable! I will end this \u2014 for Lalah, for everyone!\""
       ],
       "recruitCost": 4
     },
@@ -1675,7 +1675,7 @@
       },
       "introLines": [
         "\"Hmph. Vagan blood runs hotter than anything you Earth Federation scum can muster.\"",
-        "\"Don't mistake my caution for fear — it's simply how the strong survive.\""
+        "\"Don't mistake my caution for fear \u2014 it's simply how the strong survive.\""
       ]
     },
     {
@@ -1693,7 +1693,7 @@
       "spd": 47,
       "passive": {
         "name": "Forced Control",
-        "description": "30% chance to act a second time this round — but loses 20 HP each time this triggers (the unwilling pilot's body is being forced past its limits).",
+        "description": "30% chance to act a second time this round \u2014 but loses 20 HP each time this triggers (the unwilling pilot's body is being forced past its limits).",
         "type": "forced_extra_turn_chance",
         "chance": 0.3,
         "hpCost": 20
@@ -1777,7 +1777,7 @@
         "multiplier": 2.3
       },
       "introLines": [
-        "\"Strike me down if you can — I only grow stronger for the trouble.\"",
+        "\"Strike me down if you can \u2014 I only grow stronger for the trouble.\"",
         "\"Pain is just data. And I have plenty of room left to collect more.\""
       ]
     },
@@ -1995,7 +1995,7 @@
       "spd": 23,
       "basic": {
         "name": "Heavy Sword Cleave",
-        "description": "Standard melee hit on a single target — the heaviest IBO grunt.",
+        "description": "Standard melee hit on a single target \u2014 the heaviest IBO grunt.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -2077,7 +2077,7 @@
       "spd": 39,
       "passive": {
         "name": "Unshaken Resolve",
-        "description": "Cannot be affected by ATK Down — hard counters the player's main debuff tool.",
+        "description": "Cannot be affected by ATK Down \u2014 hard counters the player's main debuff tool.",
         "type": "atk_down_immune_marker",
         "immuneToAtkDown": true
       },
@@ -2403,7 +2403,7 @@
       "spd": 23,
       "basic": {
         "name": "GN Mega Launcher Shot",
-        "description": "Standard hit on a single target — the heaviest 00 grunt.",
+        "description": "Standard hit on a single target \u2014 the heaviest 00 grunt.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -2480,7 +2480,7 @@
       "spd": 27,
       "passive": {
         "name": "Compounding Affliction",
-        "description": "DEF Down applied by this unit's Special STACKS instead of refreshing — each hit adds another -15% DEF on top of the last, up to 3 stacks.",
+        "description": "DEF Down applied by this unit's Special STACKS instead of refreshing \u2014 each hit adds another -15% DEF on top of the last, up to 3 stacks.",
         "type": "stacking_def_down_on_special",
         "stackValue": 0.85,
         "maxStacks": 3
@@ -2564,7 +2564,7 @@
       "phases": [
         {
           "threshold": 0.5,
-          "description": "Andrei Smirnov calls for reinforcements — another Ahead joins the fight!"
+          "description": "Andrei Smirnov calls for reinforcements \u2014 another Ahead joins the fight!"
         }
       ]
     },
@@ -2585,7 +2585,7 @@
       "recruitCost": 4,
       "passive": {
         "name": "Way of the Sword",
-        "description": "+20% damage on single-target attacks only — zero bonus on AoE. Phase 1 targets the highest-SPD enemy, seeking the worthiest duel.",
+        "description": "+20% damage on single-target attacks only \u2014 zero bonus on AoE. Phase 1 targets the highest-SPD enemy, seeking the worthiest duel.",
         "type": "single_target_only_dmg_bonus",
         "value": 1.2
       },
@@ -2620,12 +2620,12 @@
         {
           "threshold": 0.5,
           "targetMode": "highest_spd",
-          "description": "Graham Aker seeks the worthiest opponent on the field — his blade now seeks only the fastest."
+          "description": "Graham Aker seeks the worthiest opponent on the field \u2014 his blade now seeks only the fastest."
         }
       ],
       "introLines": [
         "\"A worthy blade deserves a worthy duel. Show me yours!\"",
-        "\"I am Graham Aker — and I will not lose to anyone but a true rival!\""
+        "\"I am Graham Aker \u2014 and I will not lose to anyone but a true rival!\""
       ]
     },
     {
@@ -2706,7 +2706,7 @@
       "spd": 31,
       "basic": {
         "name": "Beam Saber Slash",
-        "description": "Standard hit on a single target — harder-hitting than Dilanza.",
+        "description": "Standard hit on a single target \u2014 harder-hitting than Dilanza.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -2740,7 +2740,7 @@
       "spd": 49,
       "basic": {
         "name": "GUND-ARM Vulcan Burst",
-        "description": "Standard hit on a single target — experimental, very fast.",
+        "description": "Standard hit on a single target \u2014 experimental, very fast.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -2774,7 +2774,7 @@
       "spd": 21,
       "basic": {
         "name": "GUND-ARM Cannon Shot",
-        "description": "Standard hit on a single target — the heaviest WFM grunt.",
+        "description": "Standard hit on a single target \u2014 the heaviest WFM grunt.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -2952,7 +2952,7 @@
       "recruitCost": 4,
       "passive": {
         "name": "Six Fingers of Betrayal",
-        "description": "Spawns 2 Beguir-Beu tokens at fight start. Gains +8% ATK permanently for each token destroyed — kill them to clear the field, or leave them to deny his stacking power.",
+        "description": "Spawns 2 Beguir-Beu tokens at fight start. Gains +8% ATK permanently for each token destroyed \u2014 kill them to clear the field, or leave them to deny his stacking power.",
         "type": "token_spawn",
         "spawnTrigger": "immediate",
         "tokenId": "beguir_beu_token",
@@ -2988,7 +2988,7 @@
       },
       "introLines": [
         "\"Power is just another tool to be spent. Watch how I spend mine.\"",
-        "\"Delling Rembran taught me well — betrayal is simply foresight.\""
+        "\"Delling Rembran taught me well \u2014 betrayal is simply foresight.\""
       ]
     },
     {
@@ -3091,7 +3091,7 @@
       "spd": 29,
       "basic": {
         "name": "Heat Lance Strike",
-        "description": "Standard hit on a single target — heavier than Daughtress.",
+        "description": "Standard hit on a single target \u2014 heavier than Daughtress.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -3159,7 +3159,7 @@
       "spd": 51,
       "basic": {
         "name": "Vulcan Burst",
-        "description": "Standard hit on a single target — the fastest After War X grunt.",
+        "description": "Standard hit on a single target \u2014 the fastest After War X grunt.",
         "type": "damage",
         "target": "single",
         "multiplier": 1.0
@@ -4310,7 +4310,7 @@
       "name": "Field Technician",
       "category": "heal_reward",
       "rarity": "Uncommon",
-      "description": "Also revives a defeated unit.",
+      "description": "Heals one unit 500hp immediately and can also revive it",
       "effect": {
         "type": "heal_one",
         "value": 500
@@ -4321,10 +4321,10 @@
       "name": "Repair Spray",
       "category": "consumable",
       "rarity": "Common",
-      "description": "Restores 50 HP to one unit. Can be used during combat on your turn. Stacks with other Repair Sprays.",
+      "description": "Restores 85 HP to one unit. Can be used during combat on your turn. Stacks with other Repair Sprays.",
       "effect": {
         "type": "heal_one",
-        "value": 50
+        "value": 85
       },
       "stackable": true
     },
@@ -4333,10 +4333,10 @@
       "name": "MS Repair Kit",
       "category": "consumable",
       "rarity": "Uncommon",
-      "description": "Restores 100 HP to one unit. Can be used during combat on your turn. Stacks with other MS Repair Kits.",
+      "description": "Restores 125 HP to one unit. Can be used during combat on your turn. Stacks with other MS Repair Kits.",
       "effect": {
         "type": "heal_one",
-        "value": 100
+        "value": 125
       },
       "stackable": true
     },
@@ -4362,7 +4362,7 @@
     },
     {
       "id": "gmp_common",
-      "name": "⬡ GMP",
+      "name": "\u2b21 GMP",
       "category": "currency",
       "rarity": "Common",
       "description": "Standard battlefield currency. Worth 50G.",
@@ -4373,7 +4373,7 @@
     },
     {
       "id": "rs_ore",
-      "name": "⬡ RS Ore",
+      "name": "\u2b21 RS Ore",
       "category": "currency",
       "rarity": "Uncommon",
       "description": "Resource Satellite Ore. Worth 150G.",
@@ -4597,9 +4597,20 @@
       "name": "Fleet Recon Directive",
       "category": "consumable",
       "rarity": "Legendary",
-      "description": "Choose the category and cost of your next encounter this zone. Still a real dice-check — this only decides who shows up. One-time per run.",
+      "description": "Choose the category and cost of your next encounter this zone. Still a real dice-check \u2014 this only decides who shows up. One-time per run.",
       "effect": {
         "type": "fleet_recon_directive"
+      }
+    },
+    {
+      "id": "repair_drone_swarm",
+      "name": "Repair Drone Swarm",
+      "category": "heal_party",
+      "rarity": "Uncommon",
+      "description": "Restores 200 HP to every active unit in your squad. Cannot revive a defeated unit.",
+      "effect": {
+        "type": "heal_all",
+        "value": 200
       }
     }
   ],
@@ -4860,7 +4871,7 @@
       "def": 18,
       "spd": 38,
       "passive": {
-        "name": "Satellite System — Partial Charge",
+        "name": "Satellite System \u2014 Partial Charge",
         "description": "Once per fight, the Satellite System charges over 3 turns. When fully charged, the next Special deals +40% bonus damage. Lost if GX is defeated before firing.",
         "type": "charge_special_bonus",
         "chargeTurns": 3,
@@ -4875,7 +4886,7 @@
         "energyGain": 2
       },
       "special": {
-        "name": "Satellite Cannon — Partial",
+        "name": "Satellite Cannon \u2014 Partial",
         "description": "1.7x ATK on one target (+40% if fully charged) + applies DEF Down for 2 turns.",
         "type": "damage_debuff",
         "target": "single",
@@ -4939,7 +4950,7 @@
         }
       },
       "ultimate": {
-        "name": "For Shagia — Always",
+        "name": "For Shagia \u2014 Always",
         "description": "2.4x ATK on one target + applies ATK Down and SPD Down for 3 turns + Ashtaron gains DEF Up for 2 turns.",
         "type": "damage_debuff_self_buff",
         "target": "single",
@@ -5286,7 +5297,7 @@
         "energyGain": 2
       },
       "special": {
-        "name": "Anchor Down — Covering Fire",
+        "name": "Anchor Down \u2014 Covering Fire",
         "description": "No damage. Grants the whole team +12% DEF for 2 turns.",
         "type": "team_buff_only",
         "target": "self",
@@ -5336,7 +5347,7 @@
         "energyGain": 2
       },
       "special": {
-        "name": "Seraphim Formation — Rally",
+        "name": "Seraphim Formation \u2014 Rally",
         "description": "No damage. Grants the whole team +15% ATK and +10% DEF for 2 turns.",
         "type": "team_buff_only",
         "target": "self",
@@ -6047,7 +6058,7 @@
       "spd": 32,
       "passive": {
         "name": "Escalated Counter",
-        "description": "25% chance to fire a free counter-Basic Attack after being hit, dealt at 1.3x strength — but costs this unit 8 HP each time it triggers.",
+        "description": "25% chance to fire a free counter-Basic Attack after being hit, dealt at 1.3x strength \u2014 but costs this unit 8 HP each time it triggers.",
         "type": "counter_chance",
         "chance": 0.25,
         "hpCost": 8,
@@ -6432,7 +6443,7 @@
       "spd": 36,
       "passive": {
         "name": "Twin Drive System",
-        "description": "Each round: 70% chance of +15% ATK for that round, 30% chance of reduced energy gain on Basic Attack instead — high-risk, high-reward.",
+        "description": "Each round: 70% chance of +15% ATK for that round, 30% chance of reduced energy gain on Basic Attack instead \u2014 high-risk, high-reward.",
         "type": "twin_drive_gamble",
         "successChance": 0.7,
         "successAtkMod": 1.15,
@@ -6526,7 +6537,7 @@
       "spd": 40,
       "passive": {
         "name": "Stable Synergy",
-        "description": "Passively grants +5% to the shared Ult gauge at the start of every round — no RNG involved, unlike Kyrios's gamble.",
+        "description": "Passively grants +5% to the shared Ult gauge at the start of every round \u2014 no RNG involved, unlike Kyrios's gamble.",
         "type": "ult_gauge_per_round",
         "value": 5
       },
@@ -6572,7 +6583,7 @@
       "spd": 38,
       "passive": {
         "name": "Fully Stabilized Twin Drive",
-        "description": "Basic Attack always grants +3 energy. Critical hits also grant +30% to the shared Ult gauge instead of the normal crit amount — the cleanest, most consistent kit in the 00 pool.",
+        "description": "Basic Attack always grants +3 energy. Critical hits also grant +30% to the shared Ult gauge instead of the normal crit amount \u2014 the cleanest, most consistent kit in the 00 pool.",
         "type": "energy_boost_and_ult_crit_bonus",
         "ultCritBonus": 30
       },
@@ -6618,7 +6629,7 @@
       "spd": 30,
       "passive": {
         "name": "Adapted Combat Frame",
-        "description": "+20% damage on single-target attacks only (no bonus on any AoE hit) — the highest single-target damage in the roster, at the cost of zero AoE scaling.",
+        "description": "+20% damage on single-target attacks only (no bonus on any AoE hit) \u2014 the highest single-target damage in the roster, at the cost of zero AoE scaling.",
         "type": "single_target_only_dmg_bonus",
         "value": 1.2
       },
@@ -6899,7 +6910,7 @@
       "spd": 36,
       "passive": {
         "name": "Escalating Permet",
-        "description": "+4% ATK per round, doubling to +8%/round starting round 5 — terrifying in long fights.",
+        "description": "+4% ATK per round, doubling to +8%/round starting round 5 \u2014 terrifying in long fights.",
         "type": "escalating_stacking_aura",
         "earlyRate": 0.04,
         "lateRate": 0.08,
@@ -7434,7 +7445,7 @@
       "spd": 26,
       "passive": {
         "name": "Dwindling Reserves",
-        "description": "Special costs 4 energy for its first 2 uses each fight, then 5 energy after that — ammo is running low.",
+        "description": "Special costs 4 energy for its first 2 uses each fight, then 5 energy after that \u2014 ammo is running low.",
         "type": "ammo_curve_special_cost",
         "earlyCost": 4,
         "earlyUses": 2,
@@ -7578,7 +7589,7 @@
       "spd": 30,
       "passive": {
         "name": "Escalated Aggression",
-        "description": "+25% damage against any enemy that has already acted this fight — applies to ALL attacks (Basic, Special, Ultimate), not just Basic like Shenlong's version.",
+        "description": "+25% damage against any enemy that has already acted this fight \u2014 applies to ALL attacks (Basic, Special, Ultimate), not just Basic like Shenlong's version.",
         "type": "acted_this_fight_dmg_bonus",
         "value": 1.25,
         "appliesToBasicOnly": false
@@ -7716,7 +7727,7 @@
       "spd": 16,
       "passive": {
         "name": "The Patience of a General",
-        "description": "+20% damage if this unit acted LAST (lowest SPD on the team) this round — genuinely engineerable via deliberate team SPD planning.",
+        "description": "+20% damage if this unit acted LAST (lowest SPD on the team) this round \u2014 genuinely engineerable via deliberate team SPD planning.",
         "type": "acted_last_this_round_bonus",
         "value": 1.2
       },
@@ -7761,7 +7772,7 @@
       "def": 46,
       "spd": 30,
       "passive": {
-        "name": "ZERO System — Guardian",
+        "name": "ZERO System \u2014 Guardian",
         "description": "The ZERO System locks onto whichever enemy is currently dealing the most damage to the team, protecting allies rather than the aggressive enemy-side version.",
         "type": "zero_system_locks_top_threat_to_team"
       },
