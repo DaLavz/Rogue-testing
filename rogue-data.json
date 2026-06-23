@@ -2989,7 +2989,13 @@
       "introLines": [
         "\"Power is just another tool to be spent. Watch how I spend mine.\"",
         "\"Delling Rembran taught me well \u2014 betrayal is simply foresight.\""
-      ]
+      ],
+      "playerPassive": {
+        "name": "Exploits the Opening",
+        "description": "Deals +25% damage to any target that currently has an active debuff. Shaddiq never confronts strength head-on \u2014 he waits until an opponent is already compromised, then strikes.",
+        "type": "debuffed_target_dmg_bonus",
+        "value": 1.25
+      }
     },
     {
       "id": "beguir_beu_token",
@@ -3818,7 +3824,14 @@
       "introLines": [
         "\"To know fear is to know how to fight. Let me teach you both.\"",
         "\"This is Zechs Merquise's duel, and I never lose a duel.\""
-      ]
+      ],
+      "playerPassive": {
+        "name": "ZERO System Foresight",
+        "description": "The ZERO System's tactical precognition shows exactly where the fight is already won \u2014 deals +30% damage to any target below 50% HP.",
+        "type": "low_hp_target_dmg_bonus",
+        "threshold": 0.5,
+        "value": 1.3
+      }
     },
     {
       "id": "rerise_final_boss",
